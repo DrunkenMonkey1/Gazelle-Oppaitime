@@ -108,7 +108,7 @@ if (!$debug && $Cache->get_value('jav_fill_json_'.$cn)) {
   }
   if ($jdb_page) {
     if (!$title) {
-      $title = trim(substr($jdb->query("//h1[contains(@class, 'entry-title')]")[0]->nodeValue, strlen($cn) + 3));
+      $title = trim($jdb->query("//b[contains(., 'Translated Title:')]")[0]->nextSibling->nodeValue);
     }
     if (!$studio) {
       $studio = $jdb->query("//b[contains(., 'Studio:')]")[0]->nextSibling->nodeValue;
