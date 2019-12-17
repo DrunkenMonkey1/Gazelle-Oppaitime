@@ -144,6 +144,80 @@ if (!$debug && $Cache->get_value('jav_fill_json_'.$cn)) {
       //Shit neither of the sites have descriptions
       $desc = '';
     }
+    if (!$genres) {
+      // Mapping of JDB genres that are different to ours.
+      $jdb_genre_map = [
+        'Actress Best Compilation' => 'compilation',
+        'Adultery' => 'cheating',
+        'Anal Sex' => 'anal',
+        'Big Tits' => 'big.breasts:female',
+        'Big Tits Lover' => 'big.breasts:female',
+        'Big Vibrator' => 'sex.toys',
+        'Bunny Girl' => 'bunny.girl',
+        'Cat Cosplay' => 'catgirl',
+        'Cheating Wife' => 'cheating',
+        'Chinese Dress' => 'chinese.dress',
+        'Creampie' => 'nakadashi',
+        'Cross Dresser' => 'crossdressing',
+        'Cum Swallowing' => 'gokkun',
+        'Deep Throat' => 'deepthroat',
+        'Drunk Girl' => 'drunk',
+        'Egg Vibrator' => 'sex.toys',
+        'Face Sitting' => 'facesitting',
+        'Female Ninja' => 'ninja',
+        'Female Teacher' => 'teacher',
+        'Gal' => 'gyaru:female',
+        'Gay' => 'yaoi:male',
+        'Golden Shower' => 'urination',
+        'Huge Tits' => 'huge.breasts',
+        'Hypnotism' => 'hypnosis',
+        'Kiss Kiss' => 'kissing',
+        'Leotards' => 'leotard',
+        'Lesbian' => 'yuri:female',
+        'Lesbian Kissing' => ['yuri:female', 'kissing'],
+        'Lotion' => 'oil',
+        'Massage Parlor' => 'massage',
+        'MILF' => 'milf:female',
+        'Muscular' => 'muscle',
+        'Naked Apron' => 'apron',
+        'Non-nude Erotica' => 'nonnude',
+        'Office Lady' => 'office.lady:female',
+        'Older Sister' => ['oneesan:female', 'sister:female'],
+        'Orgy' => 'group',
+        'Pregnant' => 'pregnant:female',
+        'Private Tutor' => 'tutor',
+        'Race Queen' => 'race.queen',
+        'Relatives' => 'incest',
+        'Sailor Uniform' => 'schoolgirl.uniform:female',
+        'School Swimsuits' => 'school.swimsuit',
+        'School Uniform' => 'schoolgirl.uniform:female',
+        'Schoolgirl' => 'schoolgirl:female',
+        'Sex Toys' => 'sex.toys',
+        'Shaved Pussy' => 'shaved:female',
+        'Shotacon' => 'shotacon:male',
+        'Sister' => 'sister:female',
+        'Small Tits' => 'small.breasts:female',
+        'Substance Use' => 'drugs',
+        'Swimsuits' => 'swimsuit',
+        'Tall Girl' => 'tall.girl',
+        'Threesome / Foursome' => 'threesome',
+        'Titty Fuck' => 'paizuri',
+        'Vibrator' => 'sex.toys',
+        'Voyeur' => 'voyeurism',
+        'Waitress' => 'waiter',
+      ];
+      foreach ($jdb->query("//a[@rel='tag' and starts-with(@href, 'https://www.javdatabase.com/genres/')]") as $tag) {
+        if (array_key_exists($tag->nodeValue, $jdb_genre_map)) {
+          if (is_array($jdb_genre_map[$tag->nodeValue])) {
+            $genres += $jdb_genre_map[$tag->nodeValue];
+          } else {
+            $genres[] = $jdb_genre_map[$tag->nodeValue];
+          }
+        } else {
+          $genres[] = strtolower($tag->nodeValue);
+        }
+      }
+    }
   }
 
   if (!($title || $idols || $year || $studio || $label || $genres)) {
