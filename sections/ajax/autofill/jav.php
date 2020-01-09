@@ -125,7 +125,7 @@ if (!$debug && $Cache->get_value('jav_fill_json_'.$cn)) {
           $idol_lower = strtolower(str_replace(' ', '-', $idol_name));
           // ensure it's actually an idol name
           if (strpos($idols_raw->attributes->item(0)->nodeValue, '.com/idols/' . $idol_lower) !== false) {
-            $idols[] = $idols_raw->nodeValue;
+            $idols[] = implode(' ', array_reverse(explode(' ', $idols_raw->nodeValue)));
           }
         }
         $idols_raw = $idols_raw->nextSibling;
