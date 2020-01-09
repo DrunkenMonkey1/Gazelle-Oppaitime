@@ -135,7 +135,7 @@ if (!$debug && $Cache->get_value('jav_fill_json_'.$cn)) {
       $year = substr($jdb->query("//b[contains(., 'Release Date:')]")[0]->nextSibling->nodeValue, 1, 4);
     }
     if (!$image) {
-      $image = $jdb->query("//img[contains(@alt, ' download or stream.')]")->item(0)->getAttribute('src');
+      $image = $jdb->query("//img[@alt='" . $cn . "']")->item(0)->getAttribute('src');
     }
     if (substr($image, 0, 2) == '//') {
       $image = 'https:'.$image;
