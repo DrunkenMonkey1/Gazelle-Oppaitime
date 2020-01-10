@@ -209,7 +209,7 @@ if (!$debug && $Cache->get_value('jav_fill_json_'.$cn)) {
       foreach ($jdb->query("//a[@rel='tag' and starts-with(@href, 'https://www.javdatabase.com/genres/')]") as $tag) {
         if (array_key_exists($tag->nodeValue, $jdb_genre_map)) {
           if (is_array($jdb_genre_map[$tag->nodeValue])) {
-            $genres += $jdb_genre_map[$tag->nodeValue];
+            $genres = array_merge($genres, $jdb_genre_map[$tag->nodeValue]);
           } else {
             $genres[] = $jdb_genre_map[$tag->nodeValue];
           }
