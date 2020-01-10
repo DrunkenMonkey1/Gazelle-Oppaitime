@@ -570,6 +570,35 @@ function MediaInfoExtract() {
       else if (codecTable[codec]) {
         codel.value = codecTable[codec]
       }
+    } else if (sel == 'audioformat') {
+      var audioFormats = ['MP3', 'OGG', 'OGG 5.1', 'AAC', 'AAC 5.1', 'AC3', 'AC3 5.1', 'DTS 2.0', 'DTS 5.1', 'DTS-ES 6.1', 'FLAC 2.0', 'FLAC 5.1', 'FLAC 6.1', 'PCM 2.0', 'PCM 5.1', 'PCM 6.1', 'WMA', 'Real Audio', 'DTS-HD', 'DTS-HD MA']
+      var audioFormatTable = {'AAC LC': 'AAC', 'AAC LC SBR': 'AAC', 'AC-3': 'AC3', 'Vorbis': 'OGG'}
+      var format = getval(mi.slice(mi.search(/^Audio$/m)), 'Format')
+      var channels = getval(mi.slice(mi.search(/^Audio$/m)), 'Channel\\(s\\)')
+      var el = $('[name=audioformat]').raw()
+      if (format == 'MPEG Audio') {
+        var profile = getval(mi.slice(mi.search(/^Audio$/m)), 'Format profile')
+        if (profile == 'Layer 3') {
+          el.value = 'MP3'
+        }
+      }
+      else {
+        if (audioFormatTable[format]) {
+          format = audioFormatTable[format]
+        }
+        if (channels[0] == 7 && audioFormats.indexOf(format + ' 6.1') !== -1) {
+          format += ' 6.1'
+        }
+        else if (channels[0] == 6 && audioFormats.indexOf(format + ' 5.1') !== -1) {
+          format += ' 5.1'
+        }
+        else if (channels[0] == 2 && audioFormats.indexOf(format + ' 2.0') !== -1) {
+          format += ' 2.0'
+        }
+        if (audioFormats.indexOf(format) !== -1) {
+          el.value = format
+        }
+      }
     }
   })
 }
