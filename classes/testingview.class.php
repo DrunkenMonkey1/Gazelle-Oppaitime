@@ -1,24 +1,25 @@
-<?
+<?php
 
-class TestingView {
-  /**
-   * Render the linkbox
-   */
-  public static function render_linkbox($Page) { ?>
+class TestingView
+{
+    /**
+     * Render the linkbox
+     */
+    public static function render_linkbox($Page) { ?>
     <div class="linkbox">
-<?      if ($Page != "classes") { ?>
+<?php      if ("classes" != $Page) { ?>
         <a href="testing.php" class="brackets">Classes</a>
-<?      }
-      if ($Page != "comments") { ?>
+<?php      }
+      if ("comments" != $Page) { ?>
         <a href="testing.php?action=comments" class="brackets">Comments</a>
-<?      } ?>
+<?php      } ?>
     </div>
-<?  }
+<?php  }
 
-  /**
-   * Render a list of classes
-   */
-  public static function render_classes($Classes) { ?>
+    /**
+     * Render a list of classes
+     */
+    public static function render_classes($Classes) { ?>
     <table>
       <tr class="colhead">
         <td>
@@ -28,10 +29,9 @@ class TestingView {
           Testable functions
         </td>
       </tr>
-<?      foreach($Classes as $Key => $Value) {
+<?php      foreach ($Classes as $Key => $Value) {
         $Doc = Testing::get_class_comment($Key);
-        $Methods = count(Testing::get_testable_methods($Key));
-?>
+        $Methods = count(Testing::get_testable_methods($Key)); ?>
         <tr>
           <td>
             <a href="testing.php?action=class&amp;name=<?=$Key?>" class="tooltip" title="<?=$Doc?>"><?=$Key?></a>
@@ -40,18 +40,19 @@ class TestingView {
             <?=$Methods?>
           </td>
         </tr>
-<?      } ?>
+<?php
+    } ?>
     </table>
-<?  }
+<?php  }
 
-  /**
-   * Render functions in a class
-   */
-  public static function render_functions($Methods) {
-    foreach($Methods as $Index => $Method) {
-      $ClassName = $Method->getDeclaringClass()->getName();
-      $MethodName = $Method->getName();
-?>
+    /**
+     * Render functions in a class
+     */
+    public static function render_functions($Methods)
+    {
+        foreach ($Methods as $Index => $Method) {
+            $ClassName = $Method->getDeclaringClass()->getName();
+            $MethodName = $Method->getName(); ?>
       <div class="box box2">
         <div class="head">
           <span><?=self::render_method_definition($Method)?></span>
@@ -66,17 +67,17 @@ class TestingView {
         <div class="pad hidden" id="method_results_<?=$Index?>">
         </div>
       </div>
-<?    }
-  }
+<?php
+        }
+    }
 
-  /**
-   * Render method parameters
-   */
-  private static function render_method_params($Method) { ?>
+    /**
+     * Render method parameters
+     */
+    private static function render_method_params($Method) { ?>
     <table>
-<?    foreach($Method->getParameters() as $Parameter) {
-      $DefaultValue = $Parameter->isDefaultValueAvailable() ? $Parameter->getDefaultValue() : "";
-?>
+<?php    foreach ($Method->getParameters() as $Parameter) {
+        $DefaultValue = $Parameter->isDefaultValueAvailable() ? $Parameter->getDefaultValue() : ""; ?>
       <tr>
         <td class="label">
           <?=$Parameter->getName()?>
@@ -85,38 +86,39 @@ class TestingView {
           <input type="text" name="<?=$Parameter->getName()?>" value="<?=$DefaultValue?>"/>
         </td>
       </tr>
-<?    } ?>
+<?php
+    } ?>
     </table>
-<?  }
+<?php  }
 
-  /**
-   * Render the method definition
-   */
-  private static function render_method_definition($Method) {
-    $Title = "<span class='tooltip' title='" . Testing::get_method_comment($Method) . "'>" . $Method->getName() . "</span> (";
-    foreach($Method->getParameters() as $Parameter) {
-      $Color = "red";
-      if ($Parameter->isDefaultValueAvailable()) {
-        $Color = "green";
-      }
-      $Title .= "<span style='color: $Color'>";
-      $Title .= "$" . $Parameter->getName();
-      if ($Parameter->isDefaultValueAvailable()) {
-        $Title .= " = " . $Parameter->getDefaultValue();
-      }
-      $Title .= "</span>";
-      $Title .= ", ";
-
+    /**
+     * Render the method definition
+     */
+    private static function render_method_definition($Method)
+    {
+        $Title = "<span class='tooltip' title='" . Testing::get_method_comment($Method) . "'>" . $Method->getName() . "</span> (";
+        foreach ($Method->getParameters() as $Parameter) {
+            $Color = "red";
+            if ($Parameter->isDefaultValueAvailable()) {
+                $Color = "green";
+            }
+            $Title .= "<span style='color: $Color'>";
+            $Title .= "$" . $Parameter->getName();
+            if ($Parameter->isDefaultValueAvailable()) {
+                $Title .= " = " . $Parameter->getDefaultValue();
+            }
+            $Title .= "</span>";
+            $Title .= ", ";
+        }
+        $Title = rtrim($Title, ", ");
+        $Title .= ")";
+        return $Title;
     }
-    $Title = rtrim($Title, ", ");
-    $Title .= ")";
-    return $Title;
-  }
 
-  /**
-   * Renders class documentation stats
-   */
-  public static function render_missing_documentation($Classes) { ?>
+    /**
+     * Renders class documentation stats
+     */
+    public static function render_missing_documentation($Classes) { ?>
     <table>
       <tr class="colhead">
         <td>
@@ -132,9 +134,8 @@ class TestingView {
           Documented functions
         </td>
       </tr>
-<?      foreach($Classes as $Key => $Value) {
-        $ClassComment = Testing::get_class_comment($Key);
-?>
+<?php      foreach ($Classes as $Key => $Value) {
+        $ClassComment = Testing::get_class_comment($Key); ?>
         <tr>
           <td>
             <?=$Key?>
@@ -148,28 +149,29 @@ class TestingView {
             <?=count(Testing::get_documented_methods($Key))?>
           </td>
         </tr>
-<?      } ?>
+<?php
+    } ?>
     </table>
-<?  }
+<?php  }
 
-  /**
-   * Pretty print any data
-   */
-  public static function render_results($Data) {
-    $Results = '<pre><ul style="list-style-type: none">';
-    if (is_array($Data)) {
-      foreach ($Data as $Key => $Value){
-        if (is_array($Value)){
-          $Results .= '<li>' . $Key . ' => ' . self::render_results($Value) . '</li>';
-        } else{
-          $Results .= '<li>' . $Key . ' => ' . $Value . '</li>';
+    /**
+     * Pretty print any data
+     */
+    public static function render_results($Data)
+    {
+        $Results = '<pre><ul style="list-style-type: none">';
+        if (is_array($Data)) {
+            foreach ($Data as $Key => $Value) {
+                if (is_array($Value)) {
+                    $Results .= '<li>' . $Key . ' => ' . self::render_results($Value) . '</li>';
+                } else {
+                    $Results .= '<li>' . $Key . ' => ' . $Value . '</li>';
+                }
+            }
+        } else {
+            $Results .= '<li>' . $Data . '</li>';
         }
-      }
-    } else {
-      $Results .= '<li>' . $Data . '</li>';
+        $Results .= '</ul></pre>';
+        echo $Results;
     }
-    $Results .= '</ul></pre>';
-    echo $Results;
-  }
-
 }

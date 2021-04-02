@@ -1,19 +1,19 @@
-<?
+<?php
 
   $FeaturedMerchURL = '';
 
   $FeaturedMerch = $Cache->get_value('featured_merch');
-  if ($FeaturedMerch === false) {
-    $DB->query('
+  if (false === $FeaturedMerch) {
+      $DB->query('
       SELECT ProductID, Title, Image, ArtistID
       FROM featured_merch
       WHERE Ended = 0');
-    $FeaturedMerch = $DB->next_record(MYSQLI_ASSOC);
-    $Cache->cache_value('featured_merch', $FeaturedMerch, 0);
+      $FeaturedMerch = $DB->next_record(MYSQLI_ASSOC);
+      $Cache->cache_value('featured_merch', $FeaturedMerch, 0);
   }
 
-  if ($FeaturedMerch != null) {
-?>
+  if (null != $FeaturedMerch) {
+      ?>
 <div id="merchbox" class="box">
   <div class="head colhead_dark">
     <strong>Featured Product</strong>
@@ -23,13 +23,14 @@
   </div>
   <div class="center pad">
     <a href="http://anonym.to/?<?=$FeaturedMerchURL . $FeaturedMerch['ProductID']?>"><em>Product Page</em></a>
-<?    if ($FeaturedMerch['ArtistID'] > 0) {
-      $UserInfo = Users::user_info($FeaturedMerch['ArtistID']);
-?>    - Artist: <a href="user.php?id=<?=$FeaturedMerch['ArtistID']?>"><?=$UserInfo['Username']?></a>
-<?    } ?>
+<?php    if ($FeaturedMerch['ArtistID'] > 0) {
+          $UserInfo = Users::user_info($FeaturedMerch['ArtistID']); ?>    - Artist: <a href="user.php?id=<?=$FeaturedMerch['ArtistID']?>"><?=$UserInfo['Username']?></a>
+<?php
+      } ?>
   </div>
 </div>
-<?  } else { //Disabled mystery box ?>
+<?php
+  } else { //Disabled mystery box?>
 <div class="box" style="display: none;">
   <div class="head colhead_dark">
     <strong>It's a mystery!</strong>
@@ -38,6 +39,6 @@
     You may want to put an image here.
   </div>
 </div>
-<?
+<?php
   }
 ?>

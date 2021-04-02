@@ -1,6 +1,6 @@
-<?
+<?php
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 $Title = "BBCode Sandbox";
 View::show_header($Title, 'bbcode_sandbox');
@@ -21,5 +21,5 @@ View::show_header($Title, 'bbcode_sandbox');
     </table>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

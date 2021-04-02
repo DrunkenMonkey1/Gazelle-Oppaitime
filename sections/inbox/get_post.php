@@ -1,4 +1,5 @@
-<?
+<?php
+
 //TODO: make this use the cache version of the thread, save the db query
 /*********************************************************************\
 //--------------Get Post--------------------------------------------//
@@ -13,7 +14,7 @@ $_GET['post'], which is the ID of the post.
 
 // Quick SQL injection check
 if (!$_GET['post'] || !is_number($_GET['post'])) {
-  error(0);
+    error(0);
 }
 
 // Variables for database input
@@ -25,12 +26,10 @@ $DB->query("
   FROM pm_messages AS m
     JOIN pm_conversations_users AS u ON m.ConvID = u.ConvID
   WHERE m.ID = '$PostID'
-    AND u.UserID = ".$LoggedUser['ID']);
-list($Body) = $DB->next_record(MYSQLI_NUM);
+    AND u.UserID = " . $LoggedUser['ID']);
+[$Body] = $DB->next_record(MYSQLI_NUM);
 $Body = apcu_exists('DBKEY') ? Crypto::decrypt($Body) : '[Encrypted]';
 
 // This gets sent to the browser, which echoes it wherever
 
 echo trim($Body);
-
-?>

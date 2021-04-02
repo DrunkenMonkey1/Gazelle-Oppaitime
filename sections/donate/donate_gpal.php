@@ -1,19 +1,19 @@
-<?
+<?php
 //TODO: Developer, add resend last donation when available AND add missing headers to Test IPN
 enforce_login();
 
 //Include the header
 if ($LoggedUser['RatioWatch']) {
-  error('Due to the high volume of payment disputes, we do not accept donations from users on ratio watch. Sorry.');
+    error('Due to the high volume of payment disputes, we do not accept donations from users on ratio watch. Sorry.');
 }
 
 if (!$UserCount = $Cache->get_value('stats_user_count')) {
-  $DB->query("
+    $DB->query("
     SELECT COUNT(ID)
     FROM users_main
     WHERE Enabled = '1'");
-  list($UserCount) = $DB->next_record();
-  $Cache->cache_value('stats_user_count', $UserCount, 0); //inf cache
+    [$UserCount] = $DB->next_record();
+    $Cache->cache_value('stats_user_count', $UserCount, 0); //inf cache
 }
 
 $DonorPerms = Permissions::get_permissions(DONOR);
@@ -23,7 +23,7 @@ View::show_header('Donate');
 ?>
 <!-- Donate -->
 <div class="thin">
-<? if (check_perms('site_debug')) { ?>
+<?php if (check_perms('site_debug')) { ?>
   <div class="header">
     <h2>Test IPN</h2>
   </div>
@@ -43,7 +43,7 @@ View::show_header('Donate');
       <input name="test" type="submit" value="Donate" />
     </form>
   </div>
-<?
+<?php
 }
 ?>
   <div class="header">
@@ -77,34 +77,35 @@ View::show_header('Donate');
   <h3>What you will receive for a 5&euro; minimum donation</h3>
   <div class="box pad" style="padding: 10px 10px 10px 20px;">
     <ul>
-<?  if ($LoggedUser['Donor']) { ?>
+<?php  if ($LoggedUser['Donor']) { ?>
       <li>Even more love! (You will not get multiple hearts.)</li>
       <li>A warmer, fuzzier feeling than before!</li>
-<?  } else { ?>
+<?php  } else { ?>
       <li>Our eternal love, as represented by the <img src="<?=STATIC_SERVER?>common/symbols/donor.png" alt="Donor" /> you get next to your name.</li>
       <li>Two invitations to invite 2 good friends to use this tracker.</li>
-<?
+<?php
     if (USER_LIMIT != 0 && $UserCount >= USER_LIMIT && !check_perms('site_can_invite_always') && !isset($DonorPerms['site_can_invite_always'])) {
-?>
+        ?>
       <li class="warning">Note: Because the user limit has been reached, you will be unable to use the invites received until a later date.</li>
-<?    } ?>
+<?php
+    } ?>
       <li>Immunity to inactivity pruning.</li>
       <li>Access to an ever growing list of exclusive features, including the ability to submit requests and personal collages.</li>
       <li>A warm, fuzzy feeling.</li>
 
-<?  } ?>
+<?php  } ?>
     </ul>
   </div>
   <h3>What you will <strong>not</strong> receive</h3>
   <div class="box pad" style="padding: 10px 10px 10px 20px;">
     <ul>
-<?  if ($LoggedUser['Donor']) { ?>
+<?php  if ($LoggedUser['Donor']) { ?>
       <li>Two more invitations; these are one time only.</li>
-<?  } ?>
+<?php  } ?>
       <li>Immunity from the rules.</li>
       <li>Additional upload credit.</li>
     </ul>
   </div>
 </div>
 <!-- END Donate -->
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

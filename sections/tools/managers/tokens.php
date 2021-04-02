@@ -1,68 +1,68 @@
 <?php
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 
 if (isset($_REQUEST['addtokens'])) {
-  authorize();
-  $Tokens = $_REQUEST['numtokens'];
+    authorize();
+    $Tokens = $_REQUEST['numtokens'];
 
-  if (!is_number($Tokens) || ($Tokens < 0)) {
-    error('Please enter a valid number of tokens.');
-  }
-  $sql = "
+    if (!is_number($Tokens) || ($Tokens < 0)) {
+        error('Please enter a valid number of tokens.');
+    }
+    $sql = "
     UPDATE users_main
     SET FLTokens = FLTokens + $Tokens
     WHERE Enabled = '1'";
-  if (!isset($_REQUEST['leechdisabled'])) {
-    $sql .= "
+    if (!isset($_REQUEST['leechdisabled'])) {
+        $sql .= "
       AND can_leech = 1";
-  }
-  $DB->query($sql);
-  $sql = "
+    }
+    $DB->query($sql);
+    $sql = "
     SELECT ID
     FROM users_main
     WHERE Enabled = '1'";
-  if (!isset($_REQUEST['leechdisabled'])) {
-    $sql .= "
+    if (!isset($_REQUEST['leechdisabled'])) {
+        $sql .= "
       AND can_leech = 1";
-  }
-  $DB->query($sql);
-  while (list($UserID) = $DB->next_record()) {
-    $Cache->delete_value("user_info_heavy_$UserID");
-  }
-  $message = '<strong>' . number_format($Tokens) . 'freeleech tokens added to all enabled users' . (!isset($_REQUEST['leechdisabled']) ? ' with enabled leeching privs' : '') . '.</strong><br /><br />';
+    }
+    $DB->query($sql);
+    while ([$UserID] = $DB->next_record()) {
+        $Cache->delete_value("user_info_heavy_$UserID");
+    }
+    $message = '<strong>' . number_format($Tokens) . 'freeleech tokens added to all enabled users' . (!isset($_REQUEST['leechdisabled']) ? ' with enabled leeching privs' : '') . '.</strong><br /><br />';
 } elseif (isset($_REQUEST['cleartokens'])) {
-  authorize();
-  $Tokens = $_REQUEST['numtokens'];
+    authorize();
+    $Tokens = $_REQUEST['numtokens'];
 
-  if (!is_number($Tokens) || ($Tokens < 0)) {
-    error('Please enter a valid number of tokens.');
-  }
+    if (!is_number($Tokens) || ($Tokens < 0)) {
+        error('Please enter a valid number of tokens.');
+    }
 
-  if (isset($_REQUEST['onlydrop'])) {
-    $Where = "WHERE FLTokens > $Tokens";
-  } elseif (!isset($_REQUEST['leechdisabled'])) {
-    $Where = "WHERE (Enabled = '1' AND can_leech = 1) OR FLTokens > $Tokens";
-  } else {
-    $Where = "WHERE Enabled = '1' OR FLTokens > $Tokens";
-  }
-  $DB->query("
+    if (isset($_REQUEST['onlydrop'])) {
+        $Where = "WHERE FLTokens > $Tokens";
+    } elseif (!isset($_REQUEST['leechdisabled'])) {
+        $Where = "WHERE (Enabled = '1' AND can_leech = 1) OR FLTokens > $Tokens";
+    } else {
+        $Where = "WHERE Enabled = '1' OR FLTokens > $Tokens";
+    }
+    $DB->query("
     SELECT ID
     FROM users_main
     $Where");
-  $Users = $DB->to_array();
-  $DB->query("
+    $Users = $DB->to_array();
+    $DB->query("
     UPDATE users_main
     SET FLTokens = $Tokens
     $Where");
 
-  foreach ($Users as $UserID) {
-    list($UserID) = $UserID;
-    $Cache->delete_value("user_info_heavy_$UserID");
-  }
+    foreach ($Users as $UserID) {
+        [$UserID] = $UserID;
+        $Cache->delete_value("user_info_heavy_$UserID");
+    }
 
-  $where = '';
+    $where = '';
 }
 
 
@@ -97,7 +97,7 @@ if (isset($_REQUEST['addtokens'])) {
     <input type="submit" name="cleartokens" value="Set token total" />
   </form>
 </div>
-<?
+<?php
 
 View::show_footer()
 ?>

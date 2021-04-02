@@ -1,30 +1,30 @@
-<?
+<?php
 
 if (empty($Return)) {
-  $ToID = $_GET['to'];
-/*
-  if ($ToID == $LoggedUser['ID']) {
-    error('You cannot start a conversation with yourself!');
-    header('Location: ' . Inbox::get_inbox_link());
-  }
-*/
+    $ToID = $_GET['to'];
+    /*
+      if ($ToID == $LoggedUser['ID']) {
+        error('You cannot start a conversation with yourself!');
+        header('Location: ' . Inbox::get_inbox_link());
+      }
+    */
 }
 
 if (!$ToID || !is_number($ToID)) {
-  error(404);
+    error(404);
 }
 
 if (!empty($LoggedUser['DisablePM']) && !isset($StaffIDs[$ToID])) {
-  error(403);
+    error(403);
 }
 
 $DB->query("
   SELECT Username
   FROM users_main
   WHERE ID='$ToID'");
-list($Username) = $DB->next_record();
+[$Username] = $DB->next_record();
 if (!$Username) {
-  error(404);
+    error(404);
 }
 View::show_header('Compose', 'inbox,bbcode,jquery.validate,form_validate');
 ?>
@@ -51,6 +51,6 @@ View::show_header('Compose', 'inbox,bbcode,jquery.validate,form_validate');
     </div>
   </form>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

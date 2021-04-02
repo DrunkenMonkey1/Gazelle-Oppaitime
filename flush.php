@@ -1,4 +1,5 @@
-<?
+<?php
+
 ob_start();
 
 echo '0';
@@ -15,4 +16,3 @@ sleep(20);
 
 echo '60';
 ob_end_flush();
-

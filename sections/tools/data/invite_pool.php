@@ -1,24 +1,24 @@
-<?
+<?php
 if (!check_perms('users_view_invites')) {
-  error(403);
+    error(403);
 }
 $Title = 'Invite Pool';
 View::show_header($Title);
 define('INVITES_PER_PAGE', 50);
-list($Page, $Limit) = Format::page_limit(INVITES_PER_PAGE);
+[$Page, $Limit] = Format::page_limit(INVITES_PER_PAGE);
 
 if (!empty($_POST['invitekey']) && check_perms('users_edit_invites')) {
-  authorize();
+    authorize();
 
-  $DB->query("
+    $DB->query("
     DELETE FROM invites
-    WHERE InviteKey = '".db_string($_POST['invitekey'])."'");
+    WHERE InviteKey = '" . db_string($_POST['invitekey']) . "'");
 }
 
 if (!empty($_GET['search'])) {
-  $Search = db_string($_GET['search']);
+    $Search = db_string($_GET['search']);
 } else {
-  $Search = '';
+    $Search = '';
 }
 
 $sql = "
@@ -32,7 +32,7 @@ $sql = "
   FROM invites AS i
     JOIN users_main AS um ON um.ID = i.InviterID ";
 if ($Search) {
-  $sql .= "
+    $sql .= "
   WHERE i.Email LIKE '%$Search%' ";
 }
 $sql .= "
@@ -41,7 +41,7 @@ $sql .= "
 $RS = $DB->query($sql);
 
 $DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
+[$Results] = $DB->next_record();
 
 $DB->set_query_id($RS);
 ?>
@@ -68,7 +68,7 @@ $DB->set_query_id($RS);
     </form>
   </div>
   <div class="linkbox">
-<?
+<?php
   $Pages = Format::get_pages($Page, $Results, INVITES_PER_PAGE, 11) ;
   echo $Pages;
 ?>
@@ -80,22 +80,21 @@ $DB->set_query_id($RS);
       <td>IP address</td>
       <td>InviteCode</td>
       <td>Expires</td>
-<? if (check_perms('users_edit_invites')) { ?>
+<?php if (check_perms('users_edit_invites')) { ?>
       <td>Controls</td>
-<? } ?>
+<?php } ?>
     </tr>
-<?
-  while (list($UserID, $IP, $InviteKey, $Expires, $Email) = $DB->next_record()) {
-    $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
-    $Email = apcu_exists('DBKEY') ? Crypto::decrypt($Email) : '[Encrypted]';
-?>
+<?php
+  while ([$UserID, $IP, $InviteKey, $Expires, $Email] = $DB->next_record()) {
+      $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
+      $Email = apcu_exists('DBKEY') ? Crypto::decrypt($Email) : '[Encrypted]'; ?>
     <tr class="row">
       <td><?=Users::format_username($UserID, true, true, true, true)?></td>
       <td><?=display_str($Email)?></td>
       <td><?=Tools::display_ip($IP)?></td>
       <td><?=display_str($InviteKey)?></td>
       <td><?=time_diff($Expires)?></td>
-<?    if (check_perms('users_edit_invites')) { ?>
+<?php    if (check_perms('users_edit_invites')) { ?>
       <td>
         <form class="delete_form" name="invite" action="" method="post">
           <input type="hidden" name="action" value="invite_pool" />
@@ -104,11 +103,12 @@ $DB->set_query_id($RS);
           <input type="submit" value="Delete" />
         </form>
       </td>
-<?    } ?>
+<?php    } ?>
     </tr>
-<?  } ?>
+<?php
+  } ?>
   </table>
-<?  if ($Pages) { ?>
+<?php  if ($Pages) { ?>
   <div class="linkbox pager"><?=($Pages)?></div>
-<?  }
+<?php  }
 View::show_footer(); ?>

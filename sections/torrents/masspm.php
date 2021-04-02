@@ -1,6 +1,6 @@
-<?
+<?php
 if (!isset($_GET['id']) || !is_number($_GET['id']) || !isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
-  error(0);
+    error(0);
 }
 $GroupID = $_GET['id'];
 $TorrentID = $_GET['torrentid'];
@@ -22,16 +22,16 @@ $DB->query("
     LEFT JOIN artists_group AS ag ON ag.ArtistID=tg.ArtistID
   WHERE t.ID='$TorrentID'");
 
-list($Properties) = $DB->to_array(false,MYSQLI_BOTH);
+[$Properties] = $DB->to_array(false, MYSQLI_BOTH);
 
 if (!$Properties) {
-  error(404);
+    error(404);
 }
 
 View::show_header('Edit torrent', 'upload');
 
 if (!check_perms('site_moderate_requests')) {
-  error(403);
+    error(403);
 }
 
 ?>
@@ -65,4 +65,4 @@ if (!check_perms('site_moderate_requests')) {
     </table>
   </form>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

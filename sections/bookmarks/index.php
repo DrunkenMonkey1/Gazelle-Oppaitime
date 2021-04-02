@@ -1,4 +1,5 @@
-<?
+<?php
+
 enforce_login();
 
 
@@ -6,20 +7,20 @@ enforce_login();
 define('BOOKMARKS_PER_PAGE', '20');
 
 if (empty($_REQUEST['action'])) {
-  $_REQUEST['action'] = 'view';
+    $_REQUEST['action'] = 'view';
 }
 switch ($_REQUEST['action']) {
   case 'add':
-    require(SERVER_ROOT.'/sections/bookmarks/add.php');
+    require SERVER_ROOT . '/sections/bookmarks/add.php';
     break;
 
 
   case 'remove':
-    require(SERVER_ROOT.'/sections/bookmarks/remove.php');
+    require SERVER_ROOT . '/sections/bookmarks/remove.php';
     break;
 
   case 'mass_edit':
-    require(SERVER_ROOT.'/sections/bookmarks/mass_edit.php');
+    require SERVER_ROOT . '/sections/bookmarks/mass_edit.php';
     break;
 
   case 'remove_snatched':
@@ -46,11 +47,11 @@ switch ($_REQUEST['action']) {
 
   case 'edit':
     if (empty($_REQUEST['type'])) {
-      $_REQUEST['type'] = false;
+        $_REQUEST['type'] = false;
     }
     switch ($_REQUEST['type']) {
       case 'torrents':
-        require(SERVER_ROOT.'/sections/bookmarks/edit_torrents.php');
+        require SERVER_ROOT . '/sections/bookmarks/edit_torrents.php';
         break;
       default:
         error(404);
@@ -59,22 +60,22 @@ switch ($_REQUEST['action']) {
 
   case 'view':
     if (empty($_REQUEST['type'])) {
-      $_REQUEST['type'] = 'torrents';
+        $_REQUEST['type'] = 'torrents';
     }
     switch ($_REQUEST['type']) {
       case 'torrents':
-        require(SERVER_ROOT.'/sections/bookmarks/torrents.php');
+        require SERVER_ROOT . '/sections/bookmarks/torrents.php';
         break;
       case 'artists':
-        require(SERVER_ROOT.'/sections/bookmarks/artists.php');
+        require SERVER_ROOT . '/sections/bookmarks/artists.php';
         break;
       case 'collages':
         $_GET['bookmarks'] = '1';
-        require(SERVER_ROOT.'/sections/collages/browse.php');
+        require SERVER_ROOT . '/sections/collages/browse.php';
         break;
       case 'requests':
         $_GET['type'] = 'bookmarks';
-        require(SERVER_ROOT.'/sections/requests/requests.php');
+        require SERVER_ROOT . '/sections/requests/requests.php';
         break;
       default:
         error(404);

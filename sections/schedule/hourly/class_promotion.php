@@ -1,4 +1,5 @@
-<?
+<?php
+
 //------------- Promote users -------------------------------------------//
 
 // Disabled in favor of store-based promotions
@@ -171,4 +172,3 @@ $Criteria[] = array(
   }
  }
 */
-?>

@@ -1,25 +1,25 @@
-<?
+<?php
 if (!check_perms('users_mod') || !check_perms('admin_clear_cache')) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Clear a cache key');
 
 //Make sure the form was sent
 if (!empty($_GET['key'])) {
-  $Keys = array_map('trim', preg_split('/\s+/', $_GET['key']));
+    $Keys = array_map('trim', preg_split('/\s+/', $_GET['key']));
 }
-if (isset($Keys) && $_GET['type'] == 'clear') {
-  foreach ($Keys as $Key) {
-    if (preg_match('/(.*?)(\d+)\.\.(\d+)$/', $Key, $Matches) && is_number($Matches[2]) && is_number($Matches[3])) {
-      for ($i = $Matches[2]; $i <= $Matches[3]; $i++) {
-        $Cache->delete_value($Matches[1].$i);
-      }
-    } else {
-      $Cache->delete_value($Key);
+if (isset($Keys) && 'clear' == $_GET['type']) {
+    foreach ($Keys as $Key) {
+        if (preg_match('/(.*?)(\d+)\.\.(\d+)$/', $Key, $Matches) && is_number($Matches[2]) && is_number($Matches[3])) {
+            for ($i = $Matches[2]; $i <= $Matches[3]; $i++) {
+                $Cache->delete_value($Matches[1] . $i);
+            }
+        } else {
+            $Cache->delete_value($Key);
+        }
     }
-  }
-  echo '<div class="save_message">Key(s) ' . implode(', ', array_map('display_str', $Keys)) . ' cleared!</div>';
+    echo '<div class="save_message">Key(s) ' . implode(', ', array_map('display_str', $Keys)) . ' cleared!</div>';
 }
 $MultiKeyTooltip = 'Enter cache keys delimited by any amount of whitespace.';
 ?>
@@ -42,22 +42,23 @@ $MultiKeyTooltip = 'Enter cache keys delimited by any amount of whitespace.';
       </td>
     </tr>
   </table>
-<?
-if (isset($Keys) && $_GET['type'] == 'view') {
-?>
+<?php
+if (isset($Keys) && 'view' == $_GET['type']) {
+    ?>
   <table class="layout" cellpadding="2" cellspacing="1" border="0" align="center" style="margin-top: 1em;">
-<?
+<?php
   foreach ($Keys as $Key) {
-?>
+      ?>
     <tr>
       <td><?=display_str($Key)?></td>
       <td>
-        <pre><? var_dump($Cache->get_value($Key)); ?></pre>
+        <pre><?php var_dump($Cache->get_value($Key)); ?></pre>
       </td>
     </tr>
-<?  } ?>
+<?php
+  } ?>
   </table>
-<?
+<?php
 }
 
 View::show_footer();

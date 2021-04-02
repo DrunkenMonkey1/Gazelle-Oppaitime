@@ -1,19 +1,19 @@
-<?
+<?php
 $CollageID = $_GET['collageid'];
 if (!is_number($CollageID)) {
-  error(0);
+    error(0);
 }
 
 $DB->query("
   SELECT Name, UserID, CategoryID
   FROM collages
   WHERE ID = '$CollageID'");
-list($Name, $UserID, $CategoryID) = $DB->next_record();
-if ($CategoryID === '0' && $UserID !== $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
-  error(403);
+[$Name, $UserID, $CategoryID] = $DB->next_record();
+if ('0' === $CategoryID && $UserID !== $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
+    error(403);
 }
-if ($CategoryID != array_search(ARTIST_COLLAGE, $CollageCats)) {
-  error(404);
+if ($CategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
+    error(404);
 }
 
 $DB->query("
@@ -69,11 +69,10 @@ View::show_header("Manage collage $Name", 'jquery-ui,jquery.tablesorter,sort');
       </tr>
     </thead>
   <tbody>
-<?
+<?php
   $Number = 0;
   foreach ($Artists as $Artist) {
-    $Number++;
-    ?>
+      $Number++; ?>
     <tr class="drag row" id="li_<?=$Artist['ArtistID']?>">
       <form class="manage_form" name="collage" action="collages.php" method="post">
         <td>
@@ -92,7 +91,8 @@ View::show_header("Manage collage $Name", 'jquery-ui,jquery.tablesorter,sort');
         </td>
       </form>
     </tr>
-<?  } ?>
+<?php
+  } ?>
     </tbody>
   </table>
   <div class="drag_drop_save hidden">
@@ -108,4 +108,4 @@ View::show_header("Manage collage $Name", 'jquery-ui,jquery.tablesorter,sort');
     </div>
   </form>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

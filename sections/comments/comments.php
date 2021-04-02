@@ -1,4 +1,4 @@
-<?
+<?php
 /*
  * $_REQUEST['action'] is artist, collages, requests or torrents (default torrents)
  * $_REQUEST['type'] depends on the page:
@@ -15,44 +15,44 @@
 
 // User ID
 if (isset($_GET['id']) && is_number($_GET['id'])) {
-  $UserID = (int)$_GET['id'];
+    $UserID = (int)$_GET['id'];
 
-  $UserInfo = Users::user_info($UserID);
+    $UserInfo = Users::user_info($UserID);
 
-  $Username = $UserInfo['Username'];
-  if ($LoggedUser['ID'] == $UserID) {
-    $Self = true;
-  } else {
-    $Self = false;
-  }
-  $Perms = Permissions::get_permissions($UserInfo['PermissionID']);
-  $UserClass = $Perms['Class'];
-  if (!check_paranoia('torrentcomments', $UserInfo['Paranoia'], $UserClass, $UserID)) {
-    error(403);
-  }
+    $Username = $UserInfo['Username'];
+    if ($LoggedUser['ID'] == $UserID) {
+        $Self = true;
+    } else {
+        $Self = false;
+    }
+    $Perms = Permissions::get_permissions($UserInfo['PermissionID']);
+    $UserClass = $Perms['Class'];
+    if (!check_paranoia('torrentcomments', $UserInfo['Paranoia'], $UserClass, $UserID)) {
+        error(403);
+    }
 } else {
-  $UserID = $LoggedUser['ID'];
-  $Username = $LoggedUser['Username'];
-  $Self = true;
+    $UserID = $LoggedUser['ID'];
+    $Username = $LoggedUser['Username'];
+    $Self = true;
 }
 
 // Posts per page limit stuff
 if (isset($LoggedUser['PostsPerPage'])) {
-  $PerPage = $LoggedUser['PostsPerPage'];
+    $PerPage = $LoggedUser['PostsPerPage'];
 } else {
-  $PerPage = POSTS_PER_PAGE;
+    $PerPage = POSTS_PER_PAGE;
 }
-list($Page, $Limit) = Format::page_limit($PerPage);
+[$Page, $Limit] = Format::page_limit($PerPage);
 
 if (!isset($_REQUEST['action'])) {
-  $Action = 'torrents';
+    $Action = 'torrents';
 } else {
-  $Action = $_REQUEST['action'];
+    $Action = $_REQUEST['action'];
 }
 if (!isset($_REQUEST['type'])) {
-  $Type = 'default';
+    $Type = 'default';
 } else {
-  $Type = $_REQUEST['type'];
+    $Type = $_REQUEST['type'];
 }
 
 // Construct the SQL query
@@ -71,45 +71,45 @@ switch ($Action) {
     $Field2 = 'collages.Name';
     $Table = 'collages';
     $Conditions[] = "collages.Deleted = '0'";
-    if ($Type == 'created') {
-      $Conditions[] = "collages.UserID = $UserID";
-      $Conditions[] = "comments.AuthorID != $UserID";
-      $Title = 'Comments left on collages ' . ($Self ? 'you' : $Username) . ' created';
-      $Header = 'Comments left on collages ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false)) . ' created';
-    } elseif ($Type == 'contributed') {
-      $Conditions[] = 'IF(collages.CategoryID = ' . array_search('Artists', $CollageCats) . ', collages_artists.ArtistID, collages_torrents.GroupID) IS NOT NULL';
-      $Conditions[] = "comments.AuthorID != $UserID";
-      $Join[] = "LEFT JOIN collages_torrents ON collages_torrents.CollageID = collages.ID AND collages_torrents.UserID = $UserID";
-      $Join[] = "LEFT JOIN collages_artists ON collages_artists.CollageID = collages.ID AND collages_artists.UserID = $UserID";
-      $Title = 'Comments left on collages ' . ($Self ? 'you\'ve' : $Username . ' has') . ' contributed to';
-      $Header = 'Comments left on collages ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false).' has') . ' contributed to';
+    if ('created' == $Type) {
+        $Conditions[] = "collages.UserID = $UserID";
+        $Conditions[] = "comments.AuthorID != $UserID";
+        $Title = 'Comments left on collages ' . ($Self ? 'you' : $Username) . ' created';
+        $Header = 'Comments left on collages ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false)) . ' created';
+    } elseif ('contributed' == $Type) {
+        $Conditions[] = 'IF(collages.CategoryID = ' . array_search('Artists', $CollageCats, true) . ', collages_artists.ArtistID, collages_torrents.GroupID) IS NOT NULL';
+        $Conditions[] = "comments.AuthorID != $UserID";
+        $Join[] = "LEFT JOIN collages_torrents ON collages_torrents.CollageID = collages.ID AND collages_torrents.UserID = $UserID";
+        $Join[] = "LEFT JOIN collages_artists ON collages_artists.CollageID = collages.ID AND collages_artists.UserID = $UserID";
+        $Title = 'Comments left on collages ' . ($Self ? 'you\'ve' : $Username . ' has') . ' contributed to';
+        $Header = 'Comments left on collages ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false) . ' has') . ' contributed to';
     } else {
-      $Type = 'default';
-      $Conditions[] = "comments.AuthorID = $UserID";
-      $Title = 'Collage comments left by ' . ($Self ? 'you' : $Username);
-      $Header = 'Collage comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
+        $Type = 'default';
+        $Conditions[] = "comments.AuthorID = $UserID";
+        $Title = 'Collage comments left by ' . ($Self ? 'you' : $Username);
+        $Header = 'Collage comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
     }
     break;
   case 'requests':
     $Field1 = 'requests.ID';
     $Field2 = 'requests.Title';
     $Table = 'requests';
-    if ($Type == 'created') {
-      $Conditions[] = "requests.UserID = $UserID";
-      $Conditions[] = "comments.AuthorID != $UserID";
-      $Title = 'Comments left on requests ' . ($Self ? 'you' : $Username) . ' created';
-      $Header = 'Comments left on requests ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false)) . ' created';
-    } elseif ($Type == 'voted') {
-      $Conditions[] = "requests_votes.UserID = $UserID";
-      $Conditions[] = "comments.AuthorID != $UserID";
-      $Join[] = 'JOIN requests_votes ON requests_votes.RequestID = requests.ID';
-      $Title = 'Comments left on requests ' . ($Self ? 'you\'ve' : $Username . ' has') . ' voted on';
-      $Header = 'Comments left on requests ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false) . ' has') . ' voted on';
+    if ('created' == $Type) {
+        $Conditions[] = "requests.UserID = $UserID";
+        $Conditions[] = "comments.AuthorID != $UserID";
+        $Title = 'Comments left on requests ' . ($Self ? 'you' : $Username) . ' created';
+        $Header = 'Comments left on requests ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false)) . ' created';
+    } elseif ('voted' == $Type) {
+        $Conditions[] = "requests_votes.UserID = $UserID";
+        $Conditions[] = "comments.AuthorID != $UserID";
+        $Join[] = 'JOIN requests_votes ON requests_votes.RequestID = requests.ID';
+        $Title = 'Comments left on requests ' . ($Self ? 'you\'ve' : $Username . ' has') . ' voted on';
+        $Header = 'Comments left on requests ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false) . ' has') . ' voted on';
     } else {
-      $Type = 'default';
-      $Conditions[] = "comments.AuthorID = $UserID";
-      $Title = 'Request comments left by ' . ($Self ? 'you' : $Username);
-      $Header = 'Request comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
+        $Type = 'default';
+        $Conditions[] = "comments.AuthorID = $UserID";
+        $Title = 'Request comments left by ' . ($Self ? 'you' : $Username);
+        $Header = 'Request comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
     }
     break;
   case 'torrents':
@@ -119,17 +119,17 @@ switch ($Action) {
     $Field2 = "COALESCE(NULLIF(tg.Name,''),NULLIF(tg.NameRJ,''),tg.NameJP) AS Name";
     $Table = 'torrents';
     $Join[] = 'JOIN torrents_group AS tg ON torrents.GroupID = tg.ID';
-    if ($Type == 'uploaded') {
-      $Conditions[] = "torrents.UserID = $UserID";
-      $Conditions[] = 'comments.AddedTime > torrents.Time';
-      $Conditions[] = "comments.AuthorID != $UserID";
-      $Title = 'Comments left on torrents ' . ($Self ? 'you\'ve' : $Username . ' has') . ' uploaded';
-      $Header = 'Comments left on torrents ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false) . ' has') . ' uploaded';
+    if ('uploaded' == $Type) {
+        $Conditions[] = "torrents.UserID = $UserID";
+        $Conditions[] = 'comments.AddedTime > torrents.Time';
+        $Conditions[] = "comments.AuthorID != $UserID";
+        $Title = 'Comments left on torrents ' . ($Self ? 'you\'ve' : $Username . ' has') . ' uploaded';
+        $Header = 'Comments left on torrents ' . ($Self ? 'you\'ve' : Users::format_username($UserID, false, false, false) . ' has') . ' uploaded';
     } else {
-      $Type = 'default';
-      $Conditions[] = "comments.AuthorID = $UserID";
-      $Title = 'Torrent comments left by ' . ($Self ? 'you' : $Username);
-      $Header = 'Torrent comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
+        $Type = 'default';
+        $Conditions[] = "comments.AuthorID = $UserID";
+        $Title = 'Torrent comments left by ' . ($Self ? 'you' : $Username);
+        $Header = 'Torrent comments left by ' . ($Self ? 'you' : Users::format_username($UserID, false, false, false));
     }
     break;
 }
@@ -161,68 +161,68 @@ $Comments = $DB->query($SQL);
 $Count = $DB->record_count();
 
 $DB->query("SELECT FOUND_ROWS()");
-list($Results) = $DB->next_record();
+[$Results] = $DB->next_record();
 $Pages = Format::get_pages($Page, $Results, $PerPage, 11);
 
 $DB->set_query_id($Comments);
-if ($Action == 'requests') {
-  $RequestIDs = array_flip(array_flip($DB->collect('PageID')));
-  $Artists = [];
-  foreach ($RequestIDs as $RequestID) {
-    $Artists[$RequestID] = Requests::get_artists($RequestID);
-  }
-  $DB->set_query_id($Comments);
-} elseif ($Action == 'torrents') {
-  $GroupIDs = array_flip(array_flip($DB->collect('PageID')));
-  $Artists = Artists::get_artists($GroupIDs);
-  $DB->set_query_id($Comments);
+if ('requests' == $Action) {
+    $RequestIDs = array_flip(array_flip($DB->collect('PageID')));
+    $Artists = [];
+    foreach ($RequestIDs as $RequestID) {
+        $Artists[$RequestID] = Requests::get_artists($RequestID);
+    }
+    $DB->set_query_id($Comments);
+} elseif ('torrents' == $Action) {
+    $GroupIDs = array_flip(array_flip($DB->collect('PageID')));
+    $Artists = Artists::get_artists($GroupIDs);
+    $DB->set_query_id($Comments);
 }
 
 $LinkID = (!$Self ? '&amp;id=' . $UserID : '');
 $ActionLinks = $TypeLinks = [];
-if ($Action != 'artist') {
-  $ActionLinks[] = '<a href="comments.php?action=artist' . $LinkID . '" class="brackets">Artist comments</a>';
+if ('artist' != $Action) {
+    $ActionLinks[] = '<a href="comments.php?action=artist' . $LinkID . '" class="brackets">Artist comments</a>';
 }
-if ($Action != 'collages') {
-  $ActionLinks[] = '<a href="comments.php?action=collages' . $LinkID . '" class="brackets">Collections comments</a>';
+if ('collages' != $Action) {
+    $ActionLinks[] = '<a href="comments.php?action=collages' . $LinkID . '" class="brackets">Collections comments</a>';
 }
-if ($Action != 'requests') {
-  $ActionLinks[] = '<a href="comments.php?action=requests' . $LinkID . '" class="brackets">Request comments</a>';
+if ('requests' != $Action) {
+    $ActionLinks[] = '<a href="comments.php?action=requests' . $LinkID . '" class="brackets">Request comments</a>';
 }
-if ($Action != 'torrents') {
-  $ActionLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '" class="brackets">Torrent comments</a>';
+if ('torrents' != $Action) {
+    $ActionLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '" class="brackets">Torrent comments</a>';
 }
 switch ($Action) {
   case 'collages':
     $BaseLink = 'comments.php?action=collages' . $LinkID;
-    if ($Type != 'default') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '" class="brackets">Display collage comments ' . ($Self ? 'you\'ve' : $Username . ' has') . ' made</a>';
+    if ('default' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '" class="brackets">Display collage comments ' . ($Self ? 'you\'ve' : $Username . ' has') . ' made</a>';
     }
-    if ($Type != 'created') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=created" class="brackets">Display comments left on ' . ($Self ? 'your collections' : 'collections created by ' .$Username) . '</a>';
+    if ('created' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=created" class="brackets">Display comments left on ' . ($Self ? 'your collections' : 'collections created by ' . $Username) . '</a>';
     }
-    if ($Type != 'contributed') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=contributed" class="brackets">Display comments left on collections ' . ($Self ? 'you\'ve' : $Username . ' has') . ' contributed to</a>';
+    if ('contributed' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=contributed" class="brackets">Display comments left on collections ' . ($Self ? 'you\'ve' : $Username . ' has') . ' contributed to</a>';
     }
     break;
   case 'requests':
     $BaseLink = 'comments.php?action=requests' . $LinkID;
-    if ($Type != 'default') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '" class="brackets">Display request comments you\'ve made</a>';
+    if ('default' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '" class="brackets">Display request comments you\'ve made</a>';
     }
-    if ($Type != 'created') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=created" class="brackets">Display comments left on your requests</a>';
+    if ('created' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=created" class="brackets">Display comments left on your requests</a>';
     }
-    if ($Type != 'voted') {
-      $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=voted" class="brackets">Display comments left on requests you\'ve voted on</a>';
+    if ('voted' != $Type) {
+        $TypeLinks[] = '<a href="' . $BaseLink . '&amp;type=voted" class="brackets">Display comments left on requests you\'ve voted on</a>';
     }
     break;
   case 'torrents':
-    if ($Type != 'default') {
-      $TypeLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '" class="brackets">Display comments you have made</a>';
+    if ('default' != $Type) {
+        $TypeLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '" class="brackets">Display comments you have made</a>';
     }
-    if ($Type != 'uploaded') {
-      $TypeLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '&amp;type=uploaded" class="brackets">Display comments left on your uploads</a>';
+    if ('uploaded' != $Type) {
+        $TypeLinks[] = '<a href="comments.php?action=torrents' . $LinkID . '&amp;type=uploaded" class="brackets">Display comments left on your uploads</a>';
     }
     break;
 }
@@ -232,21 +232,21 @@ View::show_header($Title, 'bbcode,comments');
 ?><div class="thin">
   <div class="header">
     <h2><?=$Header?></h2>
-<? if ($Links !== '') { ?>
+<?php if ('' !== $Links) { ?>
     <div class="linkbox">
       <?=$Links?>
     </div>
-<? } ?>
+<?php } ?>
   </div>
   <div class="linkbox">
     <?=$Pages?>
   </div>
-<?
+<?php
 if ($Count > 0) {
-  $DB->set_query_id($Comments);
-  while (list($AuthorID, $Page, $PageID, $Name, $PostID, $Body, $AddedTime, $EditedTime, $EditedUserID) = $DB->next_record()) {
-    $Link = Comments::get_url($Page, $PageID, $PostID);
-    switch ($Page) {
+    $DB->set_query_id($Comments);
+    while ([$AuthorID, $Page, $PageID, $Name, $PostID, $Body, $AddedTime, $EditedTime, $EditedUserID] = $DB->next_record()) {
+        $Link = Comments::get_url($Page, $PageID, $PostID);
+        switch ($Page) {
       case 'artist':
         $Header = " on <a href=\"artist.php?id=$PageID\">$Name</a>";
         break;
@@ -260,14 +260,14 @@ if ($Count > 0) {
         $Header = ' on ' . Artists::display_artists($Artists[$PageID]) . " <a href=\"torrents.php?id=$PageID\">$Name</a>";
         break;
     }
-    CommentsView::render_comment($AuthorID, $PostID, $Body, $AddedTime, $EditedUserID, $EditedTime, $Link, false, $Header, false);
-  }
+        CommentsView::render_comment($AuthorID, $PostID, $Body, $AddedTime, $EditedUserID, $EditedTime, $Link, false, $Header, false);
+    }
 } else { ?>
   <div class="center">No results.</div>
-<? } ?>
+<?php } ?>
   <div class="linkbox">
     <?=$Pages?>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

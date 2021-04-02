@@ -1,10 +1,10 @@
-<?
+<?php
 $UserID = $LoggedUser['ID'];
 $PermID = $LoggedUser['PermissionID'];
 
 if (!$LoggedUser['DisablePoints']) {
-  $PointsRate = 0;
-  $getTorrents = $DB->query("
+    $PointsRate = 0;
+    $getTorrents = $DB->query("
     SELECT um.BonusPoints,
            COUNT(DISTINCT x.fid) AS Torrents,
            SUM(t.Size) AS Size,
@@ -22,16 +22,16 @@ if (!$LoggedUser['DisablePoints']) {
       AND x.completed = 0
       AND x.Remaining = 0
     GROUP BY um.ID", $UserID);
-  if ($DB->has_results()) {
-    list($BonusPoints, $NumTorr, $TSize, $TTime, $TSeeds) = $DB->next_record();
-    $PointsRate = (0.5 + (0.55*($NumTorr * (sqrt(($TSize/$NumTorr)/1073741824) * pow(1.5,($TTime/$NumTorr)/(24*365))))) / (max(1, sqrt(($TSeeds/$NumTorr)+4)/3)))**0.95;
-  }
-  $PointsRate = intval(max(min($PointsRate, ($PointsRate * 2) - ($BonusPoints/1440)), 0));
-  $PointsPerHour = number_format($PointsRate) . " ".BONUS_POINTS."/hour";
-  $PointsPerDay = number_format($PointsRate*24) . " ".BONUS_POINTS."/day";
+    if ($DB->has_results()) {
+        [$BonusPoints, $NumTorr, $TSize, $TTime, $TSeeds] = $DB->next_record();
+        $PointsRate = (0.5 + (0.55*($NumTorr * (sqrt(($TSize/$NumTorr)/1073741824) * pow(1.5, ($TTime/$NumTorr)/(24*365))))) / (max(1, sqrt(($TSeeds/$NumTorr)+4)/3)))**0.95;
+    }
+    $PointsRate = intval(max(min($PointsRate, ($PointsRate * 2) - ($BonusPoints/1440)), 0));
+    $PointsPerHour = number_format($PointsRate) . " " . BONUS_POINTS . "/hour";
+    $PointsPerDay = number_format($PointsRate*24) . " " . BONUS_POINTS . "/day";
 } else {
-  $PointsPerHour = "0 ".BONUS_POINTS."/hour";
-  $PointsPerDay = BONUS_POINTS." disabled";
+    $PointsPerHour = "0 " . BONUS_POINTS . "/hour";
+    $PointsPerDay = BONUS_POINTS . " disabled";
 }
 
 //Include the header
@@ -169,21 +169,21 @@ View::show_header('Store');
           Purchase an invite for your friend
         </td>
       </tr>
-<? switch ($PermID) {
+<?php switch ($PermID) {
   case USER:
-    $To = array('Modest Mounds', '1,000');
+    $To = ['Modest Mounds', '1,000'];
     break;
   case MEMBER:
-    $To = array('Well Endowed', '10,000');
+    $To = ['Well Endowed', '10,000'];
     break;
   case POWER:
-    $To = array('Bombshell', '30,000');
+    $To = ['Bombshell', '30,000'];
     break;
   case ELITE:
-    $To = array('Top Heavy', '60,000');
+    $To = ['Top Heavy', '60,000'];
     break;
   case TORRENT_MASTER:
-    $To = array('Titty Monster', '100,000');
+    $To = ['Titty Monster', '100,000'];
     break;
 }
 if (isset($To)) { ?>
@@ -192,13 +192,13 @@ if (isset($To)) { ?>
           <a href="store.php?item=promotion">Promotion</a>
         </td>
         <td class="nobr">
-        <?=$To[1]." ".BONUS_POINTS?>
+        <?=$To[1] . " " . BONUS_POINTS?>
         </td>
         <td class="nobr">
           Get promoted to <?=$To[0]?>
         </td>
       </tr>
-<? } ?>
+<?php } ?>
       <tr class="row">
         <td class="nobr">
           <a href="store.php?item=become_admin">Become Admin</a>
@@ -229,29 +229,28 @@ if (isset($To)) { ?>
         <td style="width: 100px;">Cost</td>
         <!--<td style="width: 400px;">Description</td>-->
       </tr>
-<?
+<?php
 $DB->query("
   SELECT ID AS BadgeID, Name, Description
   FROM badges
   WHERE ID IN (100, 101, 102, 103, 104, 105, 106, 107)");
 
 if ($DB->has_results()) {
-  $Badges = $DB->to_array();
-  foreach ($Badges as $ID => $Badge) {
-?>
+    $Badges = $DB->to_array();
+    foreach ($Badges as $ID => $Badge) {
+        ?>
       <tr class="row">
-<?
-    if (($ID == 0 || Badges::has_badge($LoggedUser['ID'], $Badges[$ID-1]['BadgeID'])) && !Badges::has_badge($LoggedUser['ID'], $Badge['BadgeID']))
-      $BadgeText = '<a href="store.php?item=badge&badge='.$Badge['BadgeID'].'">'.$Badge['Name'].'</a>';
-    else
-      $BadgeText = $Badge['Name']
-
-?>
+<?php
+    if ((0 == $ID || Badges::has_badge($LoggedUser['ID'], $Badges[$ID-1]['BadgeID'])) && !Badges::has_badge($LoggedUser['ID'], $Badge['BadgeID'])) {
+        $BadgeText = '<a href="store.php?item=badge&badge=' . $Badge['BadgeID'] . '">' . $Badge['Name'] . '</a>';
+    } else {
+        $BadgeText = $Badge['Name'];
+    } ?>
         <td class="nobr"><?=Badges::display_badge($Badge['BadgeID'])?><span class="badge_name" style="margin-left: 10px;"><?=$BadgeText?></span></td>
         <td class="nobr"><?=$Badge['Description']?></td>
       </tr>
-<?
-  }
+<?php
+    }
 }
 
 $DB->query("
@@ -259,15 +258,15 @@ $DB->query("
   FROM badges
   WHERE Name='Oppaicoin'");
 if ($DB->has_results()) {
-  $CoinBadge = $DB->to_array()[0];
-  $BadgeText = '<a href="store.php?item=coinbadge">'.$CoinBadge['Name'].'</a>';
-?>
+    $CoinBadge = $DB->to_array()[0];
+    $BadgeText = '<a href="store.php?item=coinbadge">' . $CoinBadge['Name'] . '</a>'; ?>
       <tr class="row">
       <td class="nobr"><?=Badges::display_badge($CoinBadge['BadgeID'])?><span class="badge_name" style="margin-left: 10px;"><?=$BadgeText?></span></td>
         <td class="nobr"><?=$CoinBadge['Description']?></td>
       </tr>
-<? } ?>
+<?php
+} ?>
     </table>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

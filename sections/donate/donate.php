@@ -1,14 +1,14 @@
-<?
+<?php
 enforce_login();
 
 //Include the header
 if (!$UserCount = $Cache->get_value('stats_user_count')) {
-  $DB->query("
+    $DB->query("
     SELECT COUNT(ID)
     FROM users_main
     WHERE Enabled = '1'");
-  list($UserCount) = $DB->next_record();
-  $Cache->cache_value('stats_user_count', $UserCount, 0); //inf cache
+    [$UserCount] = $DB->next_record();
+    $Cache->cache_value('stats_user_count', $UserCount, 0); //inf cache
 }
 
 $DonorPerms = Permissions::get_permissions(DONOR);
@@ -48,4 +48,4 @@ View::show_header('Donate');
   </div>
 </div>
 <!-- END Donate -->
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

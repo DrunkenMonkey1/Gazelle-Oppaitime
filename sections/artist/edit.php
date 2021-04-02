@@ -1,4 +1,4 @@
-<?
+<?php
 /************************************************************************
 ||------------|| Edit artist wiki page ||------------------------------||
 
@@ -12,7 +12,7 @@ ID of the artist, and must be set.
 
 $ArtistID = $_GET['artistid'];
 if (!is_number($ArtistID)) {
-  error(0);
+    error(0);
 }
 
 // Get the artist name and the body of the last revision
@@ -37,10 +37,10 @@ $DB->query("
   WHERE a.ArtistID = '$ArtistID'");
 
 if (!$DB->has_results()) {
-  error("Cannot find an artist with the ID {$ArtistID}: See the <a href=\"log.php?search=Artist+$ArtistID\">site log</a>.");
+    error("Cannot find an artist with the ID {$ArtistID}: See the <a href=\"log.php?search=Artist+$ArtistID\">site log</a>.");
 }
 
-list($Name, $Image, $Body) = $DB->next_record(MYSQLI_NUM, true);
+[$Name, $Image, $Body] = $DB->next_record(MYSQLI_NUM, true);
 
 // Start printing form
 View::show_header('Edit artist');
@@ -67,7 +67,7 @@ View::show_header('Edit artist');
       </div>
     </form>
   </div>
-<? if (check_perms('torrents_edit')) { ?>
+<?php if (check_perms('torrents_edit')) { ?>
   <h2>Rename</h2>
   <div class="box pad">
     <form class="rename_form" name="artist" action="artist.php" method="post">
@@ -83,7 +83,7 @@ View::show_header('Edit artist');
     </form>
   </div>
 
-<? /* <h2>Make into non-redirecting alias</h2>
+<?php /* <h2>Make into non-redirecting alias</h2>
   <div class="box pad">
     <form class="merge_form" name="artist" action="artist.php" method="post">
       <input type="hidden" name="action" value="change_artistid" />
@@ -156,6 +156,6 @@ View::show_header('Edit artist');
       </form>
     </div>
   </div> */ ?>
-<? } ?>
+<?php } ?>
 </div>
-<? View::show_footer() ?>
+<?php View::show_footer() ?>

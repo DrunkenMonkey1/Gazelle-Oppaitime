@@ -1,4 +1,5 @@
-<?
+<?php
+
 //------------- Freeleech -----------------------------------------------//
 
 //We use this to control 6 hour freeleeches. They're actually 7 hours, but don't tell anyone.
@@ -25,4 +26,3 @@ $DB->query("
     AND Time < '$TimeMinus'");
 
 */
-?>

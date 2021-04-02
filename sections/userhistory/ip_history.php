@@ -14,7 +14,7 @@ define('IPS_PER_PAGE', 25);
 
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
-  error(404);
+    error(404);
 }
 
 $DB->query("
@@ -24,19 +24,19 @@ $DB->query("
   FROM users_main AS um
     LEFT JOIN permissions AS p ON p.ID = um.PermissionID
   WHERE um.ID = $UserID");
-list($Username, $Class) = $DB->next_record();
+[$Username, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_ips', $Class)) {
-  error(403);
+    error(403);
 }
 
 $UsersOnly = isset($_GET['usersonly']) ? $_GET['usersonly'] : 0;
 
 if (isset($_POST['ip'])) {
-  $SearchIP = db_string(str_replace("*", "%", trim($_POST['ip'])));
-  $SearchIPQuery = " AND h1.IP LIKE '$SearchIP' ";
+    $SearchIP = db_string(str_replace("*", "%", trim($_POST['ip'])));
+    $SearchIPQuery = " AND h1.IP LIKE '$SearchIP' ";
 } else {
-  $SearchIPQuery = "";
+    $SearchIPQuery = "";
 }
 
 View::show_header("IP address history for $Username");
@@ -85,11 +85,11 @@ function UnBan(ip, id, elemID) {
 */
 //]]>
 </script>
-<?
-list($Page, $Limit) = Format::page_limit(IPS_PER_PAGE);
+<?php
+[$Page, $Limit] = Format::page_limit(IPS_PER_PAGE);
 
-if ($UsersOnly == 1) {
-  $RS = $DB->query("
+if (1 == $UsersOnly) {
+    $RS = $DB->query("
     SELECT
       SQL_CALC_FOUND_ROWS
       h1.IP,
@@ -112,7 +112,7 @@ if ($UsersOnly == 1) {
     ORDER BY h1.StartTime DESC
     LIMIT $Limit");
 } else {
-  $RS = $DB->query("
+    $RS = $DB->query("
     SELECT
       SQL_CALC_FOUND_ROWS
       h1.IP,
@@ -135,7 +135,7 @@ if ($UsersOnly == 1) {
     LIMIT $Limit");
 }
 $DB->query('SELECT FOUND_ROWS()');
-list($NumResults) = $DB->next_record();
+[$NumResults] = $DB->next_record();
 $DB->set_query_id($RS);
 
 $Pages = Format::get_pages($Page, $NumResults, IPS_PER_PAGE, 9);
@@ -145,15 +145,15 @@ $Pages = Format::get_pages($Page, $NumResults, IPS_PER_PAGE, 9);
   <div class="header">
     <h2>IP address history for <a href="user.php?id=<?=$UserID?>"><?=$Username?></a></h2>
     <div class="linkbox">
-<?  if ($UsersOnly) { ?>
+<?php  if ($UsersOnly) { ?>
       <a href="userhistory.php?action=ips&amp;userid=<?=$UserID?>" class="brackets">View all IP addresses</a>
-<?  } else { ?>
+<?php  } else { ?>
       <a href="userhistory.php?action=ips&amp;userid=<?=$UserID?>&amp;usersonly=1" class="brackets">View IP addresses with users</a>
-<?  } ?>
+<?php  } ?>
     </div>
-<?  if ($Pages) { ?>
+<?php  if ($Pages) { ?>
     <div class="linkbox pager"><?=$Pages?></div>
-<?  } ?>
+<?php  } ?>
   </div>
   <table>
     <tr class="colhead">
@@ -178,62 +178,58 @@ $Pages = Format::get_pages($Page, $NumResults, IPS_PER_PAGE, 9);
       <td class="hidden">Ended</td>
       <td>Elapsed</td>
     </tr>
-<?
+<?php
 $counter = 0;
 $IPs = [];
 $Results = $DB->to_array();
 $CanManageIPBans = check_perms('admin_manage_ipbans');
 
 foreach ($Results as $Index => $Result) {
-  list($IP, $StartTime, $EndTime, $UserIDs, $UserStartTimes, $UserEndTimes, $Usernames, $UsersEnabled, $UsersDonor, $UsersWarned) = $Result;
+    [$IP, $StartTime, $EndTime, $UserIDs, $UserStartTimes, $UserEndTimes, $Usernames, $UsersEnabled, $UsersDonor, $UsersWarned] = $Result;
 
-  $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
+    $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
 
-  $HasDupe = false;
-  $UserIDs = explode('|', $UserIDs);
-  if (!$EndTime) {
-    $EndTime = sqltime();
-  }
-  if ($UserIDs[0] != 0) {
-    $HasDupe = true;
-    $UserStartTimes = explode('|', $UserStartTimes);
-    $UserEndTimes = explode('|', $UserEndTimes);
-    $Usernames = explode('|', $Usernames);
-    $UsersEnabled = explode('|', $UsersEnabled);
-    $UsersDonor = explode('|', $UsersDonor);
-    $UsersWarned = explode('|', $UsersWarned);
-  }
-?>
+    $HasDupe = false;
+    $UserIDs = explode('|', $UserIDs);
+    if (!$EndTime) {
+        $EndTime = sqltime();
+    }
+    if (0 != $UserIDs[0]) {
+        $HasDupe = true;
+        $UserStartTimes = explode('|', $UserStartTimes);
+        $UserEndTimes = explode('|', $UserEndTimes);
+        $Usernames = explode('|', $Usernames);
+        $UsersEnabled = explode('|', $UsersEnabled);
+        $UsersDonor = explode('|', $UsersDonor);
+        $UsersWarned = explode('|', $UsersWarned);
+    } ?>
     <tr class="row">
       <td>
-        <?=$IP?> (<?=Tools::get_country_code_by_ajax($IP)?>)<?
+        <?=$IP?> (<?=Tools::get_country_code_by_ajax($IP)?>)<?php
   if ($CanManageIPBans) {
-    if (!isset($IPs[$IP])) {
-      $sql = "
+      if (!isset($IPs[$IP])) {
+          $sql = "
         SELECT ID, FromIP, ToIP
         FROM ip_bans
-        WHERE '".Tools::ip_to_unsigned($IP)."' BETWEEN FromIP AND ToIP
+        WHERE '" . Tools::ip_to_unsigned($IP) . "' BETWEEN FromIP AND ToIP
         LIMIT 1";
-      $DB->query($sql);
+          $DB->query($sql);
 
-      if ($DB->has_results()) {
-        $IPs[$IP] = true;
-?>
+          if ($DB->has_results()) {
+              $IPs[$IP] = true; ?>
         <strong>[Banned]</strong>
-<?
-      } else {
-        $IPs[$IP] = false;
-?>
+<?php
+          } else {
+              $IPs[$IP] = false; ?>
         <a id="<?=$counter?>" href="#" onclick="Ban('<?=$IP?>', '', '<?=$counter?>'); this.onclick = null; return false;" class="brackets">Ban</a>
-<?
+<?php
+          }
+          $counter++;
       }
-      $counter++;
-    }
-  }
-?>
+  } ?>
         <br />
         <?=Tools::get_host_by_ajax($IP)?>
-        <?=($HasDupe ? '<a href="#" onclick="ShowIPs('.$Index.'); return false;">('.count($UserIDs).')</a>' : '(0)')?>
+        <?=($HasDupe ? '<a href="#" onclick="ShowIPs(' . $Index . '); return false;">(' . count($UserIDs) . ')</a>' : '(0)')?>
       </td>
       <td><?=time_diff($StartTime)?></td>
       <td class="hidden"><?=$StartTime?></td>
@@ -241,14 +237,13 @@ foreach ($Results as $Index => $Result) {
       <td class="hidden"><?=$EndTime?></td>
       <td><?//time_diff(strtotime($StartTime), strtotime($EndTime)); ?></td>
     </tr>
-<?
+<?php
   if ($HasDupe) {
-    $HideMe = (count($UserIDs) > 10);
-    foreach ($UserIDs as $Key => $Val) {
-      if (!$UserEndTimes[$Key]) {
-        $UserEndTimes[$Key] = sqltime();
-      }
-?>
+      $HideMe = (count($UserIDs) > 10);
+      foreach ($UserIDs as $Key => $Val) {
+          if (!$UserEndTimes[$Key]) {
+              $UserEndTimes[$Key] = sqltime();
+          } ?>
     <tr class="row<?=($HideMe ? ' hidden' : '')?>" name="<?=$Index?>">
       <td>&nbsp;&nbsp;&#187;&nbsp;<?=Users::format_username($Val, true, true, true)?></td>
       <td><?=time_diff($UserStartTimes[$Key])?></td>
@@ -257,9 +252,8 @@ foreach ($Results as $Index => $Result) {
       <td class="hidden"><?=$UserEndTimes[$Key]?></td>
       <td><?//time_diff(strtotime($UserStartTimes[$Key]), strtotime($UserEndTimes[$Key])); ?></td>
     </tr>
-<?
-
-    }
+<?php
+      }
   }
 }
 ?>
@@ -268,5 +262,5 @@ foreach ($Results as $Index => $Result) {
     <?=$Pages?>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

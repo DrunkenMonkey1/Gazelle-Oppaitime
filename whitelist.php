@@ -1,2 +1,3 @@
-<? header('Location: rules.php?p=clients');
+<?php
 
+header('Location: rules.php?p=clients');

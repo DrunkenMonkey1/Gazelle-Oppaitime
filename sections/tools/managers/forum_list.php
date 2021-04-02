@@ -1,26 +1,27 @@
-<?
-function class_list($Selected = 0) {
-  global $Classes;
-  $Return = '';
-  foreach ($Classes as $ID => $Class) {
-    if ($Class['Secondary']) {
-      continue;
-    }
+<?php
+function class_list($Selected = 0)
+{
+    global $Classes;
+    $Return = '';
+    foreach ($Classes as $ID => $Class) {
+        if ($Class['Secondary']) {
+            continue;
+        }
 
-    $Name = $Class['Name'];
-    $Level = $Class['Level'];
-    $Return .= "<option value=\"$Level\"";
-    if ($Selected == $Level) {
-      $Return .= ' selected="selected"';
+        $Name = $Class['Name'];
+        $Level = $Class['Level'];
+        $Return .= "<option value=\"$Level\"";
+        if ($Selected == $Level) {
+            $Return .= ' selected="selected"';
+        }
+        $Return .= '>' . Format::cut_string($Name, 20, 1) . "</option>\n";
     }
-    $Return .= '>'.Format::cut_string($Name, 20, 1)."</option>\n";
-  }
-  reset($Classes);
-  return $Return;
+    reset($Classes);
+    return $Return;
 }
 
 if (!check_perms('admin_manage_forums')) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Forum Management');
@@ -33,15 +34,15 @@ $ForumArray = $DB->to_array(); // used for generating the 'parent' drop down lis
 // Replace the old hard-coded forum categories
 unset($ForumCats);
 $ForumCats = $Cache->get_value('forums_categories');
-if ($ForumCats === false) {
-  $DB->query('
+if (false === $ForumCats) {
+    $DB->query('
     SELECT ID, Name
     FROM forums_categories');
-  $ForumCats = [];
-  while (list($ID, $Name) = $DB->next_record()) {
-    $ForumCats[$ID] = $Name;
-  }
-  $Cache->cache_value('forums_categories', $ForumCats, 0); //Inf cache.
+    $ForumCats = [];
+    while ([$ID, $Name] = $DB->next_record()) {
+        $ForumCats[$ID] = $Name;
+    }
+    $Cache->cache_value('forums_categories', $ForumCats, 0); //Inf cache.
 }
 
 $DB->query('
@@ -72,9 +73,9 @@ $DB->query('
     <td>Min class create</td>
     <td>Submit</td>
   </tr>
-<?
-while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinClassWrite, $MinClassCreate) = $DB->next_record()) {
-?>
+<?php
+while ([$ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinClassWrite, $MinClassCreate] = $DB->next_record()) {
+    ?>
   <tr class="row">
     <form class="manage_form" name="forums" action="" method="post">
       <input type="hidden" name="id" value="<?=$ID?>" />
@@ -82,11 +83,14 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <td>
         <select name="categoryid">
-<?  reset($ForumCats);
-  foreach ($ForumCats as $CurCat => $CatName) {
-?>
-          <option value="<?=$CurCat?>"<? if ($CurCat == $CategoryID) { echo ' selected="selected"'; } ?>><?=$CatName?></option>
-<?  } ?>
+<?php  reset($ForumCats);
+    foreach ($ForumCats as $CurCat => $CatName) {
+        ?>
+          <option value="<?=$CurCat?>"<?php if ($CurCat == $CategoryID) {
+            echo ' selected="selected"';
+        } ?>><?=$CatName?></option>
+<?php
+    } ?>
         </select>
       </td>
       <td>
@@ -120,7 +124,7 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
 
     </form>
   </tr>
-<?
+<?php
 }
 ?>
   <tr class="colhead">
@@ -132,10 +136,12 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <td>
         <select name="categoryid">
-<?  reset($ForumCats);
-  foreach($ForumCats as $CurCat => $CatName) { ?>
-          <option value="<?=$CurCat?>"<? if ($CurCat == $CategoryID) { echo ' selected="selected"'; } ?>><?=$CatName?></option>
-<?  } ?>
+<?php  reset($ForumCats);
+  foreach ($ForumCats as $CurCat => $CatName) { ?>
+          <option value="<?=$CurCat?>"<?php if ($CurCat == $CategoryID) {
+      echo ' selected="selected"';
+  } ?>><?=$CatName?></option>
+<?php  } ?>
         </select>
       </td>
       <td>
@@ -169,4 +175,4 @@ while (list($ID, $CategoryID, $Sort, $Name, $Description, $MinClassRead, $MinCla
     </form>
   </tr>
 </table>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

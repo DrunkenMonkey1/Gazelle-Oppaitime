@@ -1,4 +1,4 @@
-<?
+<?php
 $Purchase = "1,000,000 bonus points";
 $UserID = $LoggedUser['ID'];
 
@@ -10,25 +10,25 @@ $DB->query("
   FROM users_main
   WHERE ID = $UserID");
 if ($DB->has_results()) {
-  list($Upload) = $DB->next_record();
+    [$Upload] = $DB->next_record();
 
-  if ($Upload >= $Cost) {
-    $DB->query("
+    if ($Upload >= $Cost) {
+        $DB->query("
       UPDATE users_main
       SET BonusPoints = BonusPoints + 1000000,
           Uploaded    = Uploaded - $Cost
       WHERE ID = $UserID");
-    $DB->query("
+        $DB->query("
       UPDATE users_info
-      SET AdminComment = CONCAT('".sqltime()." - Purchased 1,000,000 ".BONUS_POINTS."s from the store\n\n', AdminComment)
+      SET AdminComment = CONCAT('" . sqltime() . " - Purchased 1,000,000 " . BONUS_POINTS . "s from the store\n\n', AdminComment)
       WHERE UserID = $UserID");
-    $Cache->delete_value('user_info_heavy_'.$UserID);
-    $Cache->delete_value('user_stats_'.$UserID);
-    $Worked = true;
-  } else {
-    $Worked = false;
-    $ErrMessage = "Not enough upload";
-  }
+        $Cache->delete_value('user_info_heavy_' . $UserID);
+        $Cache->delete_value('user_stats_' . $UserID);
+        $Worked = true;
+    } else {
+        $Worked = false;
+        $ErrMessage = "Not enough upload";
+    }
 }
 
 View::show_header('Store'); ?>
@@ -39,4 +39,4 @@ View::show_header('Store'); ?>
     <p><a href="/store.php">Back to Store</a></p>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

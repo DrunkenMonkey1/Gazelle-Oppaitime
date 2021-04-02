@@ -1,4 +1,4 @@
-<?
+<?php
 
 $DB->query("
     SELECT
@@ -12,7 +12,7 @@ $Staff = $DB->to_array();
 $DB->query("
   SELECT COUNT(1)
   FROM user_questions");
-list($TotalQuestions) = $DB->next_record();
+[$TotalQuestions] = $DB->next_record();
 
 View::show_header("Ask the Staff");
 ?>
@@ -21,19 +21,19 @@ View::show_header("Ask the Staff");
     <h2>Staff Answers</h2>
   </div>
   <div class="linkbox">
-<?  if (check_perms("users_mod")) { ?>
+<?php  if (check_perms("users_mod")) { ?>
     <a class="brackets" href="questions.php">View questions</a>
-<?  } else { ?>
+<?php  } else { ?>
     <a class="brackets" href="questions.php">Ask question</a>
-<?  } ?>
+<?php  } ?>
     <a class="brackets" href="questions.php?action=popular_questions">Popular questions</a>
   </div>
-<?  foreach($Staff as $User) { ?>
+<?php  foreach ($Staff as $User) { ?>
     <h2>
       <a href="questions.php?action=view_answers&amp;userid=<?=$User['UserID']?>"><?=$User['Username']?></a>
       - (<?=$User['Answered']?> / <?=$TotalQuestions?>)
     </h2>
-<?  } ?>
+<?php  } ?>
 </div>
-<?
+<?php
 View::show_footer();

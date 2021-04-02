@@ -1,17 +1,18 @@
 <?php
+
 // We keep torrent groups cached. However, the peer counts change often, so our solutions are to not cache them for long, or to update them. Here is where we updated them.
 
-if ((!isset($argv[1]) || $argv[1]!=SCHEDULE_KEY) && !check_perms('admin_schedule')) { // authorization, Fix to allow people with perms hit this page.
-  error(403);
+if ((!isset($argv[1]) || SCHEDULE_KEY!=$argv[1]) && !check_perms('admin_schedule')) { // authorization, Fix to allow people with perms hit this page.
+    error(403);
 }
 
 if (check_perms('admin_schedule')) {
-  View::show_header();
-  echo '<pre>';
+    View::show_header();
+    echo '<pre>';
 }
 
 ignore_user_abort();
-ini_set('max_execution_time',300);
+ini_set('max_execution_time', 300);
 ob_end_flush();
 gc_enable();
 
@@ -49,47 +50,47 @@ $DB->query("
 $RowNum = 0;
 $LastGroupID = 0;
 $UpdatedKeys = $UncachedGroups = 0;
-list($TorrentID, $GroupID, $Seeders, $Leechers, $Snatches) = $DB->next_record(MYSQLI_NUM, false);
+[$TorrentID, $GroupID, $Seeders, $Leechers, $Snatches] = $DB->next_record(MYSQLI_NUM, false);
 while ($TorrentID) {
-  if ($LastGroupID != $GroupID) {
-    $CachedData = $Cache->get_value("torrent_group_$GroupID");
-    if ($CachedData !== false) {
-      if (isset($CachedData['ver']) && $CachedData['ver'] == Cache::GROUP_VERSION) {
-        $CachedStats = &$CachedData['d']['Torrents'];
-      }
-    } else {
-      $UncachedGroups++;
+    if ($LastGroupID != $GroupID) {
+        $CachedData = $Cache->get_value("torrent_group_$GroupID");
+        if (false !== $CachedData) {
+            if (isset($CachedData['ver']) && Cache::GROUP_VERSION == $CachedData['ver']) {
+                $CachedStats = &$CachedData['d']['Torrents'];
+            }
+        } else {
+            $UncachedGroups++;
+        }
+        $LastGroupID = $GroupID;
     }
-    $LastGroupID = $GroupID;
-  }
-  while ($LastGroupID == $GroupID) {
-    $RowNum++;
-    if (isset($CachedStats) && is_array($CachedStats[$TorrentID])) {
-      $OldValues = &$CachedStats[$TorrentID];
-      $OldValues['Seeders'] = $Seeders;
-      $OldValues['Leechers'] = $Leechers;
-      $OldValues['Snatched'] = $Snatches;
-      $Changed = true;
-      unset($OldValues);
-    }
-    if (!($RowNum % $StepSize)) {
-      $DB->query("
+    while ($LastGroupID == $GroupID) {
+        $RowNum++;
+        if (isset($CachedStats) && is_array($CachedStats[$TorrentID])) {
+            $OldValues = &$CachedStats[$TorrentID];
+            $OldValues['Seeders'] = $Seeders;
+            $OldValues['Leechers'] = $Leechers;
+            $OldValues['Snatched'] = $Snatches;
+            $Changed = true;
+            unset($OldValues);
+        }
+        if (!($RowNum % $StepSize)) {
+            $DB->query("
         SELECT *
         FROM tpc_temp
         WHERE GroupID > $GroupID
           OR (GroupID = $GroupID AND TorrentID > $TorrentID)
         ORDER BY GroupID ASC, TorrentID ASC
         LIMIT $StepSize");
+        }
+        $LastGroupID = $GroupID;
+        [$TorrentID, $GroupID, $Seeders, $Leechers, $Snatches] = $DB->next_record(MYSQLI_NUM, false);
     }
-    $LastGroupID = $GroupID;
-    list($TorrentID, $GroupID, $Seeders, $Leechers, $Snatches) = $DB->next_record(MYSQLI_NUM, false);
-  }
-  if ($Changed) {
-    $Cache->cache_value("torrent_group_$LastGroupID", $CachedData, 0);
-    unset($CachedStats);
-    $UpdatedKeys++;
-    $Changed = false;
-  }
+    if ($Changed) {
+        $Cache->cache_value("torrent_group_$LastGroupID", $CachedData, 0);
+        unset($CachedStats);
+        $UpdatedKeys++;
+        $Changed = false;
+    }
 }
 printf("Updated %d keys, skipped %d keys in %.6fs (%d kB memory)\n", $UpdatedKeys, $UncachedGroups, microtime(true) - $ScriptStartTime, memory_get_usage(true) >> 10);
 
@@ -100,7 +101,6 @@ $DB->query("
   FROM torrents_peerlists_compare");
 
 if (check_perms('admin_schedule')) {
-  echo '<pre>';
-  View::show_footer();
+    echo '<pre>';
+    View::show_footer();
 }
-?>

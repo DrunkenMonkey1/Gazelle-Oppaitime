@@ -1,6 +1,6 @@
-<?
+<?php
 if (!check_perms('site_debug')) {
-  error(403);
+    error(403);
 }
 View::show_header('PHP Processes');
 $PIDList = trim(`ps -C php-fpm -o pid --no-header`);
@@ -19,13 +19,12 @@ $Debug->log_var($PIDs, 'PIDs');
         <?=count($PIDs) . ' processes'?>
       </td>
     </tr>
-<?
+<?php
 foreach ($PIDs as $PID) {
-  $PID = trim($PID);
-  if (!$ProcessInfo = $Cache->get_value("php_$PID")) {
-    continue;
-  }
-?>
+    $PID = trim($PID);
+    if (!$ProcessInfo = $Cache->get_value("php_$PID")) {
+        continue;
+    } ?>
     <tr>
       <td>
         <?=$PID?>
@@ -34,8 +33,9 @@ foreach ($PIDs as $PID) {
         <pre><?print_r($ProcessInfo)?></pre>
       </td>
     </tr>
-<? } ?>
+<?php
+} ?>
   </table>
 </div>
-<?
+<?php
 View::show_footer();

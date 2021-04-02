@@ -1,12 +1,13 @@
-<?
-function display_perm($Key, $Title) {
-  global $Values;
-  $Perm = "<input type=\"checkbox\" name=\"perm_$Key\" id=\"$Key\" value=\"1\"";
-  if (!empty($Values[$Key])) {
-    $Perm .= ' checked="checked"';
-  }
-  $Perm .= " /> <label for=\"$Key\">$Title</label><br />";
-  echo "$Perm\n";
+<?php
+function display_perm($Key, $Title)
+{
+    global $Values;
+    $Perm = "<input type=\"checkbox\" name=\"perm_$Key\" id=\"$Key\" value=\"1\"";
+    if (!empty($Values[$Key])) {
+        $Perm .= ' checked="checked"';
+    }
+    $Perm .= " /> <label for=\"$Key\">$Title</label><br />";
+    echo "$Perm\n";
 }
 
 View::show_header('Manage Permissions', 'validate');
@@ -50,16 +51,16 @@ echo $Val->GenerateJS('permissionsform');
       <td class="label">Additional forums</td>
       <td><input type="text" size="30" name="forums" value="<?=display_str($Forums)?>" /></td>
     </tr>
-<? if (is_numeric($_REQUEST['id'])) { ?>
+<?php if (is_numeric($_REQUEST['id'])) { ?>
     <tr>
       <td class="label">Current users in this class</td>
       <td><?=number_format($UserCount)?></td>
     </tr>
-<? } ?>
+<?php } ?>
   </table>
-<?
-include(SERVER_ROOT."/classes/permissions_form.php");
+<?php
+include SERVER_ROOT . "/classes/permissions_form.php";
 permissions_form();
 ?>
 </form>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

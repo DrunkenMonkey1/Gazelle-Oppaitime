@@ -1,4 +1,5 @@
-<?
+<?php
+
 //------------- Give out invites! ---------------------------------------//
 
 /*
@@ -23,30 +24,30 @@ $DB->query("
     JOIN users_info AS ui ON ui.UserID = um.ID
   WHERE um.Enabled = '1'
     AND ui.DisableInvites = '0'
-    AND ((um.PermissionID = ".POWER."
+    AND ((um.PermissionID = " . POWER . "
         AND um.Invites < 2)
-      OR (um.PermissionID = ".ELITE."
+      OR (um.PermissionID = " . ELITE . "
         AND um.Invites < 3)
-      OR (um.PermissionID = ".TORRENT_MASTER."
+      OR (um.PermissionID = " . TORRENT_MASTER . "
         AND um.Invites < 4))");
 
 $UserIDs = $DB->collect('ID');
 if (count($UserIDs) > 0) {
-  foreach ($UserIDs as $UserID) {
-      $Cache->begin_transaction("user_info_heavy_$UserID");
-      $Cache->update_row(false, array('Invites' => '+1'));
-      $Cache->commit_transaction(0);
-  }
-  $DB->query('
+    foreach ($UserIDs as $UserID) {
+        $Cache->begin_transaction("user_info_heavy_$UserID");
+        $Cache->update_row(false, ['Invites' => '+1']);
+        $Cache->commit_transaction(0);
+    }
+    $DB->query('
     UPDATE users_main
     SET Invites = Invites + 1
-    WHERE ID IN ('.implode(',', $UserIDs).')');
+    WHERE ID IN (' . implode(',', $UserIDs) . ')');
 }
 
-$BonusReqs = array(
-  array(0.75, 2 * 1024 * 1024 * 1024),
-  array(2.0, 10 * 1024 * 1024 * 1024),
-  array(3.0, 20 * 1024 * 1024 * 1024));
+$BonusReqs = [
+    [0.75, 2 * 1024 * 1024 * 1024],
+    [2.0, 10 * 1024 * 1024 * 1024],
+    [3.0, 20 * 1024 * 1024 * 1024]];
 
 // Since MySQL doesn't like subselecting from the target table during an update, we must create a temporary table.
 
@@ -63,27 +64,27 @@ $DB->query("
     JOIN users_info AS ui ON ui.UserID = um.ID
     JOIN temp_sections_schedule_index AS u ON u.Inviter = um.ID
   WHERE u.Upload > 0.75
-    AND u.Upload / u.Download > ".(2*1024*1024*1024)."
+    AND u.Upload / u.Download > " . (2*1024*1024*1024) . "
     AND um.Enabled = '1'
     AND ui.DisableInvites = '0'
-    AND ((um.PermissionID = ".POWER."
+    AND ((um.PermissionID = " . POWER . "
         AND um.Invites < 2)
-       OR (um.PermissionID = ".ELITE."
+       OR (um.PermissionID = " . ELITE . "
         AND um.Invites < 3)
-       OR (um.PermissionID = ".TORRENT_MASTER."
+       OR (um.PermissionID = " . TORRENT_MASTER . "
         AND um.Invites < 4))");
 
 $UserIDs = $DB->collect('ID');
 if (count($UserIDs) > 0) {
-  foreach ($UserIDs as $UserID) {
-      $Cache->begin_transaction("user_info_heavy_$UserID");
-      $Cache->update_row(false, array('Invites' => '+1'));
-      $Cache->commit_transaction(0);
-  }
-  $DB->query('
+    foreach ($UserIDs as $UserID) {
+        $Cache->begin_transaction("user_info_heavy_$UserID");
+        $Cache->update_row(false, ['Invites' => '+1']);
+        $Cache->commit_transaction(0);
+    }
+    $DB->query('
     UPDATE users_main
     SET Invites = Invites + 1
-    WHERE ID IN ('.implode(',', $UserIDs).')');
+    WHERE ID IN (' . implode(',', $UserIDs) . ')');
 }
 
 $DB->query("
@@ -92,26 +93,26 @@ $DB->query("
     JOIN users_info AS ui ON ui.UserID = um.ID
     JOIN temp_sections_schedule_index AS u ON u.Inviter = um.ID
   WHERE u.Upload > 2.0
-    AND u.Upload / u.Download > ".(10*1024*1024*1024)."
+    AND u.Upload / u.Download > " . (10*1024*1024*1024) . "
     AND um.Enabled = '1'
     AND ui.DisableInvites = '0'
-    AND ((um.PermissionID = ".ELITE."
+    AND ((um.PermissionID = " . ELITE . "
         AND um.Invites < 3)
-      OR (um.PermissionID = ".TORRENT_MASTER."
+      OR (um.PermissionID = " . TORRENT_MASTER . "
         AND um.Invites < 4)
       )");
 
 $UserIDs = $DB->collect('ID');
 if (count($UserIDs) > 0) {
-  foreach ($UserIDs as $UserID) {
-      $Cache->begin_transaction("user_info_heavy_$UserID");
-      $Cache->update_row(false, array('Invites' => '+1'));
-      $Cache->commit_transaction(0);
-  }
-  $DB->query('
+    foreach ($UserIDs as $UserID) {
+        $Cache->begin_transaction("user_info_heavy_$UserID");
+        $Cache->update_row(false, ['Invites' => '+1']);
+        $Cache->commit_transaction(0);
+    }
+    $DB->query('
     UPDATE users_main
     SET Invites = Invites + 1
-    WHERE ID IN ('.implode(',', $UserIDs).')');
+    WHERE ID IN (' . implode(',', $UserIDs) . ')');
 }
 
 $DB->query("
@@ -120,22 +121,21 @@ $DB->query("
     JOIN users_info AS ui ON ui.UserID = um.ID
     JOIN temp_sections_schedule_index AS u ON u.Inviter = um.ID
   WHERE u.Upload > 3.0
-    AND u.Upload / u.Download > ".(20*1024*1024*1024)."
+    AND u.Upload / u.Download > " . (20*1024*1024*1024) . "
     AND um.Enabled = '1'
     AND ui.DisableInvites = '0'
-    AND (um.PermissionID = ".TORRENT_MASTER."
+    AND (um.PermissionID = " . TORRENT_MASTER . "
         AND um.Invites < 4)");
 
 $UserIDs = $DB->collect('ID');
 if (count($UserIDs) > 0) {
-  foreach ($UserIDs as $UserID) {
-      $Cache->begin_transaction("user_info_heavy_$UserID");
-      $Cache->update_row(false, array('Invites' => '+1'));
-      $Cache->commit_transaction(0);
-  }
-  $DB->query('
+    foreach ($UserIDs as $UserID) {
+        $Cache->begin_transaction("user_info_heavy_$UserID");
+        $Cache->update_row(false, ['Invites' => '+1']);
+        $Cache->commit_transaction(0);
+    }
+    $DB->query('
     UPDATE users_main
     SET Invites = Invites + 1
-    WHERE ID IN ('.implode(',', $UserIDs).')');
+    WHERE ID IN (' . implode(',', $UserIDs) . ')');
 }
-?>

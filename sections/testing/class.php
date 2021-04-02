@@ -1,11 +1,11 @@
-<?
+<?php
 if (!check_perms('users_mod')) {
-  error(404);
+    error(404);
 }
 
 $Class = $_GET['name'];
 if (!empty($Class) && !Testing::has_class($Class)) {
-  error("Missing class");
+    error("Missing class");
 }
 
 View::show_header("Tests", "testing");
@@ -20,7 +20,5 @@ View::show_header("Tests", "testing");
   <?=TestingView::render_functions(Testing::get_testable_methods($Class));?>
 </div>
 
-<?
+<?php
 View::show_footer();
-
-

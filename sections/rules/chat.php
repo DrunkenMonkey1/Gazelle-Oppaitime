@@ -1,4 +1,4 @@
-<?
+<?php
 //Include the header
 View::show_header('Chat Rules');
 ?>
@@ -10,7 +10,7 @@ View::show_header('Chat Rules');
   <br />
   <h3 id="forums">Forum Rules</h3>
   <div class="box pad rule_summary" style="padding: 10px 10px 10px 20px;">
-<?    Rules::display_forum_rules() ?>
+<?php    Rules::display_forum_rules() ?>
   </div>
 </div>
 <!-- END Forum Rules -->
@@ -19,10 +19,10 @@ View::show_header('Chat Rules');
 <div class="thin">
   <h3 id="irc">IRC Rules</h3>
   <div class="box pad rule_summary" style="padding: 10px 10px 10px 20px;">
-<?    Rules::display_irc_chat_rules() ?>
+<?php    Rules::display_irc_chat_rules() ?>
   </div>
-<? include('jump.php'); ?>
+<?php include 'jump.php'; ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

@@ -1,29 +1,29 @@
-<?
+<?php
 /************************************************************************
  ************************************************************************/
 if (!check_perms('admin_reports') && !check_perms('project_team') && !check_perms('site_moderate_forums')) {
-  error(404);
+    error(404);
 }
 
 // Number of reports per page
 define('REPORTS_PER_PAGE', '10');
 
-list($Page, $Limit) = Format::page_limit(REPORTS_PER_PAGE);
+[$Page, $Limit] = Format::page_limit(REPORTS_PER_PAGE);
 
-include(SERVER_ROOT . '/sections/reports/array.php');
+include SERVER_ROOT . '/sections/reports/array.php';
 
 // Header
 View::show_header('Reports', 'bbcode,reports');
 
 if (isset($_GET['id']) && $_GET['id'] && is_number($_GET['id'])) {
-  $View = 'Single report';
-  $Where = 'r.ID = ' . $_GET['id'];
+    $View = 'Single report';
+    $Where = 'r.ID = ' . $_GET['id'];
 } elseif (empty($_GET['view'])) {
-  $View = 'New';
-  $Where = "Status = 'New'";
+    $View = 'New';
+    $Where = "Status = 'New'";
 } else {
-  $View = $_GET['view'];
-  switch ($_GET['view']) {
+    $View = $_GET['view'];
+    switch ($_GET['view']) {
     case 'old':
       $Where = "Status = 'Resolved'";
       break;
@@ -34,13 +34,12 @@ if (isset($_GET['id']) && $_GET['id'] && is_number($_GET['id'])) {
 }
 
 if (!check_perms('admin_reports')) {
-  if (check_perms('project_team')) {
-    $Where .= " AND Type = 'request_update'";
-  }
-  if (check_perms('site_moderate_forums')) {
-    $Where .= " AND Type IN('comment', 'post', 'thread')";
-  }
-
+    if (check_perms('project_team')) {
+        $Where .= " AND Type = 'request_update'";
+    }
+    if (check_perms('site_moderate_forums')) {
+        $Where .= " AND Type IN('comment', 'post', 'thread')";
+    }
 }
 
 $Reports = $DB->query("
@@ -65,7 +64,7 @@ $Reports = $DB->query("
 
 // Number of results (for pagination)
 $DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
+[$Results] = $DB->next_record();
 
 // Done with the number of results. Move $DB back to the result set for the reports
 $DB->set_query_id($Reports);
@@ -82,17 +81,16 @@ $DB->set_query_id($Reports);
     </div>
   </div>
   <div class="linkbox">
-<?
+<?php
 // pagination
     $Pages = Format::get_pages($Page, $Results, REPORTS_PER_PAGE, 11);
     echo $Pages;
     ?>
   </div>
-<?
-  while (list($ReportID, $SnitchID, $SnitchName, $ThingID, $Short, $ReportedTime, $Reason, $Status, $ClaimerID, $Notes, $ResolverID) = $DB->next_record()) {
-    $Type = $Types[$Short];
-    $Reference = "reports.php?id=$ReportID#report$ReportID";
-?>
+<?php
+  while ([$ReportID, $SnitchID, $SnitchName, $ThingID, $Short, $ReportedTime, $Reason, $Status, $ClaimerID, $Notes, $ResolverID] = $DB->next_record()) {
+      $Type = $Types[$Short];
+      $Reference = "reports.php?id=$ReportID#report$ReportID"; ?>
     <div id="report_<?=$ReportID?>" style="margin-bottom: 1em;" class="pending_report_v1 box pad">
       <table cellpadding="5" id="report_<?=$ReportID?>">
         <tr>
@@ -105,17 +103,17 @@ $DB->set_query_id($Reports);
         <tr>
           <td class="center" colspan="2">
             <strong>
-<?              switch ($Short) {
+<?php              switch ($Short) {
                 case 'user':
                   $DB->query("
                     SELECT Username
                     FROM users_main
                     WHERE ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No user with the reported ID found';
+                      echo 'No user with the reported ID found';
                   } else {
-                    list($Username) = $DB->next_record();
-                    echo "<a href=\"user.php?id=$ThingID\">" . display_str($Username) . '</a>';
+                      [$Username] = $DB->next_record();
+                      echo "<a href=\"user.php?id=$ThingID\">" . display_str($Username) . '</a>';
                   }
                   break;
                 case 'request':
@@ -125,10 +123,10 @@ $DB->set_query_id($Reports);
                     FROM requests
                     WHERE ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No request with the reported ID found';
+                      echo 'No request with the reported ID found';
                   } else {
-                    list($Name) = $DB->next_record();
-                    echo "<a href=\"requests.php?action=view&amp;id=$ThingID\">" . display_str($Name) . '</a>';
+                      [$Name] = $DB->next_record();
+                      echo "<a href=\"requests.php?action=view&amp;id=$ThingID\">" . display_str($Name) . '</a>';
                   }
                   break;
                 case 'collage':
@@ -137,10 +135,10 @@ $DB->set_query_id($Reports);
                     FROM collages
                     WHERE ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No collage with the reported ID found';
+                      echo 'No collage with the reported ID found';
                   } else {
-                    list($Name) = $DB->next_record();
-                    echo "<a href=\"collages.php?id=$ThingID\">" . display_str($Name) . '</a>';
+                      [$Name] = $DB->next_record();
+                      echo "<a href=\"collages.php?id=$ThingID\">" . display_str($Name) . '</a>';
                   }
                   break;
                 case 'thread':
@@ -149,17 +147,17 @@ $DB->set_query_id($Reports);
                     FROM forums_topics
                     WHERE ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No forum thread with the reported ID found';
+                      echo 'No forum thread with the reported ID found';
                   } else {
-                    list($Title) = $DB->next_record();
-                    echo "<a href=\"forums.php?action=viewthread&amp;threadid=$ThingID\">" . display_str($Title) . '</a>';
+                      [$Title] = $DB->next_record();
+                      echo "<a href=\"forums.php?action=viewthread&amp;threadid=$ThingID\">" . display_str($Title) . '</a>';
                   }
                   break;
                 case 'post':
                   if (isset($LoggedUser['PostsPerPage'])) {
-                    $PerPage = $LoggedUser['PostsPerPage'];
+                      $PerPage = $LoggedUser['PostsPerPage'];
                   } else {
-                    $PerPage = POSTS_PER_PAGE;
+                      $PerPage = POSTS_PER_PAGE;
                   }
                   $DB->query("
                     SELECT
@@ -175,10 +173,10 @@ $DB->set_query_id($Reports);
                     FROM forums_posts AS p
                     WHERE p.ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No forum post with the reported ID found';
+                      echo 'No forum post with the reported ID found';
                   } else {
-                    list($PostID, $Body, $TopicID, $PostNum) = $DB->next_record();
-                    echo "<a href=\"forums.php?action=viewthread&amp;threadid=$TopicID&amp;post=$PostNum#post$PostID\">FORUM POST ID #$PostID</a>";
+                      [$PostID, $Body, $TopicID, $PostNum] = $DB->next_record();
+                      echo "<a href=\"forums.php?action=viewthread&amp;threadid=$TopicID&amp;post=$PostNum#post$PostID\">FORUM POST ID #$PostID</a>";
                   }
                   break;
                 case 'comment':
@@ -187,13 +185,12 @@ $DB->set_query_id($Reports);
                     FROM comments
                     WHERE ID = $ThingID");
                   if (!$DB->has_results()) {
-                    echo 'No comment with the reported ID found';
+                      echo 'No comment with the reported ID found';
                   } else {
-                    echo "<a href=\"comments.php?action=jump&amp;postid=$ThingID\">COMMENT</a>";
+                      echo "<a href=\"comments.php?action=jump&amp;postid=$ThingID\">COMMENT</a>";
                   }
                   break;
-              }
-              ?>
+              } ?>
             </strong>
           </td>
         </tr>
@@ -202,13 +199,13 @@ $DB->set_query_id($Reports);
         </tr>
         <tr>
           <td colspan="2">
-<?          if ($ClaimerID == $LoggedUser['ID']) { ?>
+<?php          if ($ClaimerID == $LoggedUser['ID']) { ?>
             <span id="claimed_<?=$ReportID?>">Claimed by <?=Users::format_username($ClaimerID, false, false, false, false)?> <a href="#" onclick="unClaim(<?=$ReportID?>); return false;" class="brackets">Unclaim</a></span>
-<?          } elseif ($ClaimerID) { ?>
+<?php          } elseif ($ClaimerID) { ?>
             <span id="claimed_<?=$ReportID?>">Claimed by <?=Users::format_username($ClaimerID, false, false, false, false)?></span>
-<?          } else { ?>
+<?php          } else { ?>
             <a href="#" id="claim_<?=$ReportID?>" onclick="claim(<?=$ReportID?>); return false;" class="brackets">Claim</a>
-<?          } ?>
+<?php          } ?>
             &nbsp;&nbsp;
             <a href="#" onclick="toggleNotes(<?=$ReportID?>); return false;" class="brackets">Toggle notes</a>
 
@@ -219,7 +216,7 @@ $DB->set_query_id($Reports);
             </div>
           </td>
         </tr>
-<?      if ($Status != 'Resolved') { ?>
+<?php      if ('Resolved' != $Status) { ?>
         <tr>
           <td class="center" colspan="2">
             <form id="report_form_<?=$ReportID?>" action="">
@@ -229,28 +226,28 @@ $DB->set_query_id($Reports);
             </form>
           </td>
         </tr>
-<?
+<?php
       } else {
-        $ResolverInfo = Users::user_info($ResolverID);
-?>
+          $ResolverInfo = Users::user_info($ResolverID); ?>
         <tr>
           <td colspan="2">
             Resolved by <a href="users.php?id=<?=$ResolverID?>"><?=$ResolverInfo['Username']?></a>
           </td>
         </tr>
-<?      } ?>
+<?php
+      } ?>
       </table>
     </div>
-<?
+<?php
     $DB->set_query_id($Reports);
   }
   ?>
   <div class="linkbox">
-<?
+<?php
     echo $Pages;
     ?>
   </div>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

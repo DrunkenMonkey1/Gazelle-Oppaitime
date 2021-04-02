@@ -1,8 +1,10 @@
-<?
+<?php
 
-class DonationsView {
-  public static function render_mod_donations($UserID) {
-?>
+class DonationsView
+{
+    public static function render_mod_donations($UserID)
+    {
+        ?>
     <table class="layout box" id="donation_box">
       <tr class="colhead">
         <td colspan="2">
@@ -55,24 +57,26 @@ class DonationsView {
         </td>
       </tr>
     </table>
-<?
-  }
+<?php
+    }
 
-  public static function render_donor_stats($UserID) {
-    $OwnProfile = G::$LoggedUser['ID'] == $UserID;
-    if (check_perms("users_mod") || $OwnProfile || Donations::is_visible($UserID)) {
-?>
+    public static function render_donor_stats($UserID)
+    {
+        $OwnProfile = G::$LoggedUser['ID'] == $UserID;
+        if (check_perms("users_mod") || $OwnProfile || Donations::is_visible($UserID)) {
+            ?>
       <div class="box box_info box_userinfo_donor_stats">
         <div class="head colhead_dark">Donor Statistics</div>
         <ul class="stats nobullet">
-<?
+<?php
       if (Donations::is_donor($UserID)) {
-        if (check_perms('users_mod') || $OwnProfile) {
-?>
+          if (check_perms('users_mod') || $OwnProfile) {
+              ?>
           <li>
             Total donor points: <?=Donations::get_total_rank($UserID)?>
           </li>
-<?        } ?>
+<?php
+          } ?>
           <li>
             Current donor rank: <?=self::render_rank(Donations::get_rank($UserID), Donations::get_special_rank($UserID), true)?>
           </li>
@@ -85,40 +89,42 @@ class DonationsView {
           <li>
             Rank expires: <?=(Donations::get_rank_expiration($UserID))?>
           </li>
-<?      } else { ?>
+<?php
+      } else { ?>
           <li>
             This user hasn't donated.
           </li>
-<?      } ?>
+<?php      } ?>
         </ul>
       </div>
-<?
+<?php
+        }
     }
-  }
 
-  public static function render_profile_rewards($EnabledRewards, $ProfileRewards) {
-    for ($i = 1; $i <= 4; $i++) {
-      if ($EnabledRewards['HasProfileInfo' . $i] && $ProfileRewards['ProfileInfo' . $i]) {
-?>
+    public static function render_profile_rewards($EnabledRewards, $ProfileRewards)
+    {
+        for ($i = 1; $i <= 4; $i++) {
+            if ($EnabledRewards['HasProfileInfo' . $i] && $ProfileRewards['ProfileInfo' . $i]) {
+                ?>
       <div class="box">
         <div class="head">
           <span><?=!empty($ProfileRewards['ProfileInfoTitle' . $i]) ? display_str($ProfileRewards['ProfileInfoTitle' . $i]) : "Extra Profile " . ($i + 1)?></span>
           <span class="float_right"><a data-toggle-target="#profilediv_<?=$i?>" data-toggle-replace="Show" class="brackets">Hide</a></span>
         </div>
         <div class="pad profileinfo" id="profilediv_<?=$i?>">
-<?          echo Text::full_format($ProfileRewards['ProfileInfo' . $i]); ?>
+<?php          echo Text::full_format($ProfileRewards['ProfileInfo' . $i]); ?>
         </div>
       </div>
-<?
-      }
+<?php
+            }
+        }
     }
-  }
 
-  public static function render_donation_history($DonationHistory) {
-    if (empty($DonationHistory)) {
-      return;
-    }
-?>
+    public static function render_donation_history($DonationHistory)
+    {
+        if (empty($DonationHistory)) {
+            return;
+        } ?>
     <div class="box box2" id="donation_history_box">
       <div class="head">
         Donation History <a data-toggle-target="#donation_history" class="brackets" style="float_right">Toggle</a>
@@ -149,7 +155,7 @@ class DonationsView {
               <strong>Reason</strong>
             </td>
           </tr>
-<?    foreach ($DonationHistory as $Donation) { ?>
+<?php    foreach ($DonationHistory as $Donation) { ?>
           <tr class="row">
             <td>
               <?=display_str($Donation['Source'])?> (<?=Users::format_username($Donation['AddedBy'])?>)
@@ -173,42 +179,41 @@ class DonationsView {
               <?=display_str($Donation['Reason'])?>
             </td>
           </tr>
-<?
-    }
-?>
+<?php
+    } ?>
           </tbody>
         </table>
       </div>
     </div>
-<?
-  }
-
-  public static function render_rank($Rank, $SpecialRank, $ShowOverflow = false) {
-    if ($SpecialRank == 3) {
-      $Display = '∞ [Diamond]';
-    } else {
-      $CurrentRank = $Rank >= MAX_RANK ? MAX_RANK : $Rank;
-      $Overflow = $Rank - $CurrentRank;
-      $Display = $CurrentRank;
-      if ($Display == 5 || $Display == 6) {
-        $Display--;
-      }
-      if ($ShowOverflow && $Overflow) {
-        $Display .= " (+$Overflow)";
-      }
-      if ($Rank >= 6) {
-        $Display .= ' [Gold]';
-      } elseif ($Rank >= 4) {
-        $Display .= ' [Silver]';
-      } elseif ($Rank >= 3) {
-        $Display .= ' [Bronze]';
-      } elseif ($Rank >= 2) {
-        $Display .= ' [Copper]';
-      } elseif ($Rank >= 1) {
-        $Display .= ' [Red]';
-      }
+<?php
     }
-    echo $Display;
-  }
 
+    public static function render_rank($Rank, $SpecialRank, $ShowOverflow = false)
+    {
+        if (3 == $SpecialRank) {
+            $Display = '∞ [Diamond]';
+        } else {
+            $CurrentRank = $Rank >= MAX_RANK ? MAX_RANK : $Rank;
+            $Overflow = $Rank - $CurrentRank;
+            $Display = $CurrentRank;
+            if (5 == $Display || 6 == $Display) {
+                $Display--;
+            }
+            if ($ShowOverflow && $Overflow) {
+                $Display .= " (+$Overflow)";
+            }
+            if ($Rank >= 6) {
+                $Display .= ' [Gold]';
+            } elseif ($Rank >= 4) {
+                $Display .= ' [Silver]';
+            } elseif ($Rank >= 3) {
+                $Display .= ' [Bronze]';
+            } elseif ($Rank >= 2) {
+                $Display .= ' [Copper]';
+            } elseif ($Rank >= 1) {
+                $Display .= ' [Red]';
+            }
+        }
+        echo $Display;
+    }
 }

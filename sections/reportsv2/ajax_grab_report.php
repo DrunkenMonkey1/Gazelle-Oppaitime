@@ -1,16 +1,16 @@
-<?
+<?php
 /*
  * This page simply assings a report to the person clicking on
  * the Claim / Claim all button.
  */
 if (!check_perms('admin_reports')) {
-  //error(403);
-  echo '403';
-  die();
+    //error(403);
+    echo '403';
+    die();
 }
 
 if (!is_number($_GET['id'])) {
-  die();
+    die();
 }
 
 $DB->query("
@@ -19,8 +19,8 @@ $DB->query("
     ResolverID = " . $LoggedUser['ID'] . "
   WHERE ID = " . $_GET['id']);
 
-if ($DB->affected_rows() == 0) {
-  echo '0';
+if (0 == $DB->affected_rows()) {
+    echo '0';
 } else {
-  echo '1';
+    echo '1';
 }

@@ -1,26 +1,26 @@
-<?
+<?php
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 
 if (isset($_GET['userid']) && is_number($_GET['userid'])) {
-  $UserHeavyInfo = Users::user_heavy_info($_GET['userid']);
-  if (isset($UserHeavyInfo['torrent_pass'])) {
-    $TorrentPass = $UserHeavyInfo['torrent_pass'];
-    $UserPeerStats = Tracker::user_peer_count($TorrentPass);
-    $UserInfo = Users::user_info($_GET['userid']);
-    $UserLevel = $Classes[$UserInfo['PermissionID']]['Level'];
-    if (!check_paranoia('leeching+', $UserInfo['Paranoia'], $UserLevel, $_GET['userid'])) {
-      $UserPeerStats[0] = false;
+    $UserHeavyInfo = Users::user_heavy_info($_GET['userid']);
+    if (isset($UserHeavyInfo['torrent_pass'])) {
+        $TorrentPass = $UserHeavyInfo['torrent_pass'];
+        $UserPeerStats = Tracker::user_peer_count($TorrentPass);
+        $UserInfo = Users::user_info($_GET['userid']);
+        $UserLevel = $Classes[$UserInfo['PermissionID']]['Level'];
+        if (!check_paranoia('leeching+', $UserInfo['Paranoia'], $UserLevel, $_GET['userid'])) {
+            $UserPeerStats[0] = false;
+        }
+        if (!check_paranoia('seeding+', $UserInfo['Paranoia'], $UserLevel, $_GET['userid'])) {
+            $UserPeerStats[1] = false;
+        }
+    } else {
+        $UserPeerStats = false;
     }
-    if (!check_paranoia('seeding+', $UserInfo['Paranoia'], $UserLevel, $_GET['userid'])) {
-      $UserPeerStats[1] = false;
-    }
-  } else {
-    $UserPeerStats = false;
-  }
 } else {
-  $MainStats = Tracker::info();
+    $MainStats = Tracker::info();
 }
 
 View::show_header('Tracker info');
@@ -49,44 +49,43 @@ View::show_header('Tracker info');
     <div class="box box2">
       <div class="head"><strong>Numbers and such</strong></div>
       <div class="pad">
-<?
+<?php
 if (!empty($UserPeerStats)) {
-?>
+    ?>
         User ID: <?=$_GET['userid']?><br />
-        Leeching: <?=$UserPeerStats[0] === false ? "hidden" : number_format($UserPeerStats[0])?><br />
-        Seeding: <?=$UserPeerStats[1] === false ? "hidden" : number_format($UserPeerStats[1])?><br />
-<?
+        Leeching: <?=false === $UserPeerStats[0] ? "hidden" : number_format($UserPeerStats[0])?><br />
+        Seeding: <?=false === $UserPeerStats[1] ? "hidden" : number_format($UserPeerStats[1])?><br />
+<?php
 } elseif (!empty($MainStats)) {
-  foreach ($MainStats as $Key => $Value) {
-    if (is_numeric($Value)) {
-      if (substr($Key, 0, 6) === "bytes ") {
-        $Value = Format::get_size($Value);
-        $Key = substr($Key, 6);
-      } else {
-        $Value = number_format($Value);
-      }
-    }
-?>
+        foreach ($MainStats as $Key => $Value) {
+            if (is_numeric($Value)) {
+                if ("bytes " === substr($Key, 0, 6)) {
+                    $Value = Format::get_size($Value);
+                    $Key = substr($Key, 6);
+                } else {
+                    $Value = number_format($Value);
+                }
+            } ?>
         <?="$Value $Key<br />\n"?>
-<?
-  }
-} elseif (isset($TorrentPass)) {
-?>
+<?php
+        }
+    } elseif (isset($TorrentPass)) {
+        ?>
         Failed to get stats for user <?=$_GET['userid']?>
-<?
-} elseif (isset($_GET['userid'])) {
-?>
+<?php
+    } elseif (isset($_GET['userid'])) {
+        ?>
         User <?=display_str($_GET['userid'])?> doesn't exist
-<?
-} else {
-?>
+<?php
+    } else {
+        ?>
         Failed to get tracker info
-<?
-}
+<?php
+    }
 ?>
       </div>
     </div>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

@@ -1,2 +1,5 @@
 classes/config.php
 .DS_Store
+vendor
+.idea
+.php_cs.cache

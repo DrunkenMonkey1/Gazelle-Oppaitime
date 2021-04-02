@@ -1,8 +1,8 @@
-<?
+<?php
 
 $Type = $_POST['type'];
 
-switch($Type) {
+switch ($Type) {
   case NotificationsManager::INBOX:
     NotificationsManager::clear_inbox();
     break;
@@ -34,6 +34,6 @@ switch($Type) {
     break;
 }
 
-if (strpos($Type, "oneread_") === 0) {
-  NotificationsManager::clear_one_read($Type);
+if (0 === strpos($Type, "oneread_")) {
+    NotificationsManager::clear_one_read($Type);
 }

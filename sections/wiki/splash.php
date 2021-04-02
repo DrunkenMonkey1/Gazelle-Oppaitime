@@ -42,4 +42,4 @@
     </span>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

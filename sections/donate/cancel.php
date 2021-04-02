@@ -1,4 +1,4 @@
-<?
+<?php
 enforce_login();
 View::show_header('Donation Canceled');
 ?>
@@ -10,4 +10,4 @@ View::show_header('Donation Canceled');
     <p>It's the thought that counts. Please reconsider donating in the future.</p>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

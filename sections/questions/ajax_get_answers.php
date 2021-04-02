@@ -1,13 +1,13 @@
-<?
+<?php
 $ID = (int)$_GET['id'];
 if (empty($ID)) {
-  die();
+    die();
 }
 Text::$TOC = true;
 $UserID = (int)$_GET['userid'];
 $UserIDSQL = "";
 if (!empty($UserID)) {
-  $UserIDSQL = " AND UserID != '$UserID' ";
+    $UserIDSQL = " AND UserID != '$UserID' ";
 }
 
 G::$DB->query("
@@ -18,8 +18,8 @@ G::$DB->query("
     ORDER BY DATE DESC");
 
 $Answers = G::$DB->to_array(false, MYSQLI_ASSOC);
-foreach($Answers as $Answer) {
-?>
+foreach ($Answers as $Answer) {
+    ?>
   <div class="box box2">
     <div class="head">
       <span>
@@ -30,6 +30,6 @@ foreach($Answers as $Answer) {
 <?=     Text::full_format($Answer['Answer'])?>
     </div>
   </div>
-<?
+<?php
 }
 ?>

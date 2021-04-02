@@ -1,4 +1,4 @@
-<?
+<?php
 /************************************************************************
 ||------------|| User email history page ||---------------------------||
 
@@ -12,7 +12,7 @@ user.
 
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
-  error(404);
+    error(404);
 }
 
 $DB->query("
@@ -23,10 +23,10 @@ $DB->query("
     JOIN users_info AS ui ON um.ID = ui.UserID
     JOIN permissions AS p ON p.ID = um.PermissionID
   WHERE um.ID = $UserID");
-list($Joined, $Class) = $DB->next_record();
+[$Joined, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_email', $Class)) {
-  error(403);
+    error(403);
 }
 
 // TODO: Is this even used?
@@ -36,11 +36,12 @@ $DB->query("
   SELECT Username
   FROM users_main
   WHERE ID = $UserID");
-list($Username) = $DB->next_record();
+[$Username] = $DB->next_record();
 View::show_header("Email history for $Username");
 
 // Get current email (and matches)
-$DB->query("
+$DB->query(
+    "
   SELECT
     m.Email,
     NOW() AS Time,
@@ -63,7 +64,8 @@ $DB->query("
 $CurrentEmail = ($DB->to_array())[0]; // Only variables should be passed by reference
 
 // Get historic emails (and matches)
-$DB->query("
+$DB->query(
+    "
   SELECT
     h2.Email,
     h2.Time,
@@ -92,75 +94,74 @@ $Current['CurrentIP'] = $CurrentEmail['IP'];
 $Current['IP'] = $History[(count($History) - 1)]['IP'];
 
 // Matches for current email
-if ($CurrentEmail['Usernames'] != '') {
-  $UserIDs = explode('|', $CurrentEmail['UserIDs']);
-  $Usernames = explode('|', $CurrentEmail['Usernames']);
-  $UsersEnabled = explode('|', $CurrentEmail['UsersEnabled']);
-  $UsersDonor = explode('|', $CurrentEmail['UsersDonor']);
-  $UsersWarned = explode('|', $CurrentEmail['UsersWarned']);
-  $UserSetTimes = explode('|', $CurrentEmail['UserSetTimes']);
-  $UserIPs = explode('|', $CurrentEmail['UserIPs']);
+if ('' != $CurrentEmail['Usernames']) {
+    $UserIDs = explode('|', $CurrentEmail['UserIDs']);
+    $Usernames = explode('|', $CurrentEmail['Usernames']);
+    $UsersEnabled = explode('|', $CurrentEmail['UsersEnabled']);
+    $UsersDonor = explode('|', $CurrentEmail['UsersDonor']);
+    $UsersWarned = explode('|', $CurrentEmail['UsersWarned']);
+    $UserSetTimes = explode('|', $CurrentEmail['UserSetTimes']);
+    $UserIPs = explode('|', $CurrentEmail['UserIPs']);
 
-  foreach ($UserIDs as $Key => $Val) {
-    $CurrentMatches[$Key]['Username'] = '&nbsp;&nbsp;&#187;&nbsp;'.Users::format_username($Val, true, true, true);
-    $CurrentMatches[$Key]['IP'] = $UserIPs[$Key];
-    $CurrentMatches[$Key]['EndTime'] = $UserSetTimes[$Key];
-  }
+    foreach ($UserIDs as $Key => $Val) {
+        $CurrentMatches[$Key]['Username'] = '&nbsp;&nbsp;&#187;&nbsp;' . Users::format_username($Val, true, true, true);
+        $CurrentMatches[$Key]['IP'] = $UserIPs[$Key];
+        $CurrentMatches[$Key]['EndTime'] = $UserSetTimes[$Key];
+    }
 }
 
 // Email history records
-if (count($History) === 1) {
-  $Invite['Email'] = $History[0]['Email'];
-  $Invite['EndTime'] = $Joined;
-  $Invite['AccountAge'] = date(time() + time() - strtotime($Joined)); // Same as EndTime but without ' ago'
-  $Invite['IP'] = $History[0]['IP'];
-  if (!$Current['StartTime']) {
-    $Current['StartTime'] = $Joined;
-  }
+if (1 === count($History)) {
+    $Invite['Email'] = $History[0]['Email'];
+    $Invite['EndTime'] = $Joined;
+    $Invite['AccountAge'] = date(time() + time() - strtotime($Joined)); // Same as EndTime but without ' ago'
+    $Invite['IP'] = $History[0]['IP'];
+    if (!$Current['StartTime']) {
+        $Current['StartTime'] = $Joined;
+    }
 } else {
-  foreach ($History as $Key => $Val) {
-    if (isset($History[$Key + 1]) && !$History[$Key + 1]['Time'] && !$Val['Time']) {
-      // Invited email
-      $Invite['Email'] = $Val['Email'];
-      $Invite['EndTime'] = $Joined;
-      $Invite['AccountAge'] = date(time() + time() - strtotime($Joined)); // Same as EndTime but without ' ago'
-      $Invite['IP'] = $Val['IP'];
+    foreach ($History as $Key => $Val) {
+        if (isset($History[$Key + 1]) && !$History[$Key + 1]['Time'] && !$Val['Time']) {
+            // Invited email
+            $Invite['Email'] = $Val['Email'];
+            $Invite['EndTime'] = $Joined;
+            $Invite['AccountAge'] = date(time() + time() - strtotime($Joined)); // Same as EndTime but without ' ago'
+            $Invite['IP'] = $Val['IP'];
+        } elseif (isset($History[$Key - 1]) && $History[$Key - 1]['Email'] != $Val['Email'] && $Val['Time']) {
+            // Old email
+            $i = 1;
+            while ($Val['Email'] == $History[$Key + $i]['Email']) {
+                $i++;
+            }
+            $Old[$Key]['StartTime'] = (isset($History[$Key + $i]) && $History[$Key + $i]['Time']) ? $History[$Key + $i]['Time'] : $Joined;
+            $Old[$Key]['EndTime'] = $Val['Time'];
+            $Old[$Key]['IP'] = $Val['IP'];
+            $Old[$Key]['ElapsedTime'] = date(time() + strtotime($Old[$Key]['EndTime']) - strtotime($Old[$Key]['StartTime']));
+            $Old[$Key]['Email'] = $Val['Email'];
+        }
 
-    } elseif (isset($History[$Key - 1]) && $History[$Key - 1]['Email'] != $Val['Email'] && $Val['Time']) {
-      // Old email
-      $i = 1;
-      while ($Val['Email'] == $History[$Key + $i]['Email']) {
-        $i++;
-      }
-      $Old[$Key]['StartTime'] = (isset($History[$Key + $i]) && $History[$Key + $i]['Time']) ? $History[$Key + $i]['Time'] : $Joined;
-      $Old[$Key]['EndTime'] = $Val['Time'];
-      $Old[$Key]['IP'] = $Val['IP'];
-      $Old[$Key]['ElapsedTime'] = date(time() + strtotime($Old[$Key]['EndTime']) - strtotime($Old[$Key]['StartTime']));
-      $Old[$Key]['Email'] = $Val['Email'];
+        if ('' != $Val['Usernames']) {
+            // Match with old email
+            $OldMatches[$Key]['Email'] = $Val['Email'];
+            $OldMatches[$Key]['Username'] = '&nbsp;&nbsp;&#187;&nbsp;' . Users::format_username($Val['UserIDs'], true, true, true);
+            $OldMatches[$Key]['EndTime'] = $Val['UserSetTimes'];
+            $OldMatches[$Key]['IP'] = $Val['UserIPs'];
+        }
     }
-
-    if ($Val['Usernames'] != '') {
-      // Match with old email
-      $OldMatches[$Key]['Email'] = $Val['Email'];
-      $OldMatches[$Key]['Username'] = '&nbsp;&nbsp;&#187;&nbsp;'.Users::format_username($Val['UserIDs'], true, true, true);
-      $OldMatches[$Key]['EndTime'] = $Val['UserSetTimes'];
-      $OldMatches[$Key]['IP'] = $Val['UserIPs'];
-    }
-  }
 }
 
 // Clean up arrays
 if ($Old ?? false) {
-  $Old = array_reverse(array_reverse($Old));
-  $LastOld = count($Old) - 1;
-  if ($Old[$LastOld]['StartTime'] != $Invite['EndTime']) {
-    // Make sure the timeline is intact (invite email was used as email for the account in the beginning)
-    $Old[$LastOld + 1]['Email'] = $Invite['Email'];
-    $Old[$LastOld + 1]['StartTime'] = $Invite['EndTime'];
-    $Old[$LastOld + 1]['EndTime'] = $Old[$LastOld]['StartTime'];
-    $Old[$LastOld + 1]['ElapsedTime'] = date(time() + strtotime($Old[$LastOld + 1]['EndTime'] ) - strtotime($Old[$LastOld + 1]['StartTime']));
-    $Old[$LastOld + 1]['IP'] = $Invite['IP'];
-  }
+    $Old = array_reverse(array_reverse($Old));
+    $LastOld = count($Old) - 1;
+    if ($Old[$LastOld]['StartTime'] != $Invite['EndTime']) {
+        // Make sure the timeline is intact (invite email was used as email for the account in the beginning)
+        $Old[$LastOld + 1]['Email'] = $Invite['Email'];
+        $Old[$LastOld + 1]['StartTime'] = $Invite['EndTime'];
+        $Old[$LastOld + 1]['EndTime'] = $Old[$LastOld]['StartTime'];
+        $Old[$LastOld + 1]['ElapsedTime'] = date(time() + strtotime($Old[$LastOld + 1]['EndTime']) - strtotime($Old[$LastOld + 1]['StartTime']));
+        $Old[$LastOld + 1]['IP'] = $Invite['IP'];
+    }
 }
 
 // Start page with current email
@@ -181,7 +182,7 @@ if ($Old ?? false) {
       <td>Current IP <a href="userhistory.php?action=ips&amp;userid=<?=$UserID ?>" class="brackets">H</a></td>
       <td>Set from IP</td>
     </tr>
-<?
+<?php
 $Current['Email'] = apcu_exists('DBKEY') ? Crypto::decrypt($Current['Email']) : '[Encrypted]';
 $Current['CurrentIP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Current['CurrentIP']) : '[Encrypted]';
 $Current['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Current['IP']) : '[Encrypted]';
@@ -207,12 +208,11 @@ $Current['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Current['IP']) : '[Encr
         <?=Tools::get_host_by_ajax($Current['IP'])?>
       </td>
     </tr>
-<?
+<?php
 if ($CurrentMatches ?? false) {
-  // Match on the current email
-  foreach ($CurrentMatches as $Match) {
-    $Match['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Match['IP']) : '[Encrypted]';
-?>
+    // Match on the current email
+    foreach ($CurrentMatches as $Match) {
+        $Match['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Match['IP']) : '[Encrypted]'; ?>
     <tr class="row">
       <td><?=$Match['Username']?></td>
       <td></td>
@@ -227,12 +227,12 @@ if ($CurrentMatches ?? false) {
         <?=Tools::get_host_by_ajax($Match['IP'])?>
       </td>
     </tr>
-<?
-  }
+<?php
+    }
 }
 // Old emails
 if ($Old ?? false) {
-?>
+    ?>
     <tr class="colhead">
       <td>Old emails</td>
       <td>Start</td>
@@ -240,20 +240,20 @@ if ($Old ?? false) {
       <td>Elapsed</td>
       <td>Set from IP</td>
     </tr>
-<?
+<?php
   $j = 0;
-  // Old email
-  foreach ($Old as $Record) {
-    ++$j;
+    // Old email
+    foreach ($Old as $Record) {
+        ++$j;
 
-    // Matches on old email
-    ob_start();
-    $i = 0;
-    if ($OldMatches ?? false) {
-      foreach ($OldMatches as $Match) {
-        if ($Match['Email'] == $Record['Email']) {
-          ++$i;
-          // Email matches
+        // Matches on old email
+        ob_start();
+        $i = 0;
+        if ($OldMatches ?? false) {
+            foreach ($OldMatches as $Match) {
+                if ($Match['Email'] == $Record['Email']) {
+                    ++$i;
+                    // Email matches
   ?>
       <tr class="row hidden" id="matches_<?=$j?>">
         <td><?=$Match['Username']?></td>
@@ -269,21 +269,20 @@ if ($Old ?? false) {
           <?=Tools::get_host_by_ajax($Match['IP'])?>
         </td>
       </tr>
-  <?
+  <?php
+                }
+            }
         }
-      }
-    }
 
-    // Save matches to variable
-    $MatchCount = $i;
-    $Matches = ob_get_contents();
-    ob_end_clean();
+        // Save matches to variable
+        $MatchCount = $i;
+        $Matches = ob_get_contents();
+        ob_end_clean();
 
-    $Record['Email'] = apcu_exists('DBKEY') ? Crypto::decrypt($Record['Email']) : '[Encrypted]';
-    $Record['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Record['IP']) : '[Encrypted]';
-?>
+        $Record['Email'] = apcu_exists('DBKEY') ? Crypto::decrypt($Record['Email']) : '[Encrypted]';
+        $Record['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Record['IP']) : '[Encrypted]'; ?>
     <tr class="row">
-      <td><?=display_str($Record['Email'])?><?=(($MatchCount > 0) ? ' <a data-toggle-target="#matches_'.$j.'">('.$MatchCount.')</a>' : '')?></td>
+      <td><?=display_str($Record['Email'])?><?=(($MatchCount > 0) ? ' <a data-toggle-target="#matches_' . $j . '">(' . $MatchCount . ')</a>' : '')?></td>
       <td><?=time_diff($Record['StartTime'])?></td>
       <td><?=time_diff($Record['EndTime'])?></td>
       <td><?=time_diff($Record['ElapsedTime'])?></td>
@@ -296,15 +295,15 @@ if ($Old ?? false) {
         <?=Tools::get_host_by_ajax($Record['IP'])?>
       </td>
     </tr>
-<?
+<?php
     if ($MatchCount > 0) {
-      if (isset($Matches)) {
-        echo $Matches;
-        unset($Matches);
-        unset($MatchCount);
-      }
+        if (isset($Matches)) {
+            echo $Matches;
+            unset($Matches);
+            unset($MatchCount);
+        }
     }
-  }
+    }
 }
 // Invite email (always there)
 ?>
@@ -315,18 +314,17 @@ if ($Old ?? false) {
       <td>Age of account</td>
       <td>Registration IP address</td>
     </tr>
-<?
+<?php
 // Matches on invite email
 $i = 0;
 ob_start();
 if ($OldMatches ?? false) {
-  foreach ($OldMatches as $Match) {
-    if ($Match['Email'] == $Invite['Email']) {
-      ++$i;
-      // Match email is the same as the invite email
+    foreach ($OldMatches as $Match) {
+        if ($Match['Email'] == $Invite['Email']) {
+            ++$i;
+            // Match email is the same as the invite email
 
-      $Match['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Match['IP']) : '[Encrypted]';
-?>
+            $Match['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Match['IP']) : '[Encrypted]'; ?>
     <tr class="row hidden" id="matches_invite">
       <td><?=$Match['Username']?></td>
       <td></td>
@@ -341,9 +339,9 @@ if ($OldMatches ?? false) {
         <?=Tools::get_host_by_ajax($Match['IP'])?>
       </td>
     </tr>
-<?
+<?php
+        }
     }
-  }
 }
 $MatchCount = $i;
 $Matches = ob_get_contents();
@@ -353,7 +351,7 @@ $Invite['Email'] = apcu_exists('DBKEY') ? Crypto::decrypt($Invite['Email']) : '[
 $Invite['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Invite['IP']) : '[Encrypted]';
 ?>
     <tr class="row">
-      <td><?=display_str($Invite['Email'])?><?=(($MatchCount > 0) ? ' <a data-toggle-target="#matches_invite">('.$MatchCount.')</a>' : '')?></td>
+      <td><?=display_str($Invite['Email'])?><?=(($MatchCount > 0) ? ' <a data-toggle-target="#matches_invite">(' . $MatchCount . ')</a>' : '')?></td>
       <td>Never</td>
       <td><?=time_diff($Invite['EndTime'])?></td>
       <td><?=time_diff($Invite['AccountAge'])?></td>
@@ -366,13 +364,13 @@ $Invite['IP'] = apcu_exists('DBKEY') ? Crypto::decrypt($Invite['IP']) : '[Encryp
         <?=Tools::get_host_by_ajax($Invite['IP'])?>
       </td>
     </tr>
-<?
+<?php
 
 if ($Matches) {
-  echo $Matches;
+    echo $Matches;
 }
 
 ?>
   </table>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

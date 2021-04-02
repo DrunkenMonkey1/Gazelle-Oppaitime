@@ -1,11 +1,11 @@
-<?
+<?php
 /***************************************************************
 * Temp handler for changing the category for a single torrent.
 ****************************************************************/
 
 authorize();
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 
 $OldGroupID = $_POST['oldgroupid'];
@@ -14,7 +14,7 @@ $Title = db_string(trim($_POST['title']));
 $OldCategoryID = $_POST['oldcategoryid'];
 $NewCategoryID = $_POST['newcategoryid'];
 if (!is_number($OldGroupID) || !is_number($TorrentID) || !$OldGroupID || !$TorrentID || empty($Title)) {
-  error(0);
+    error(0);
 }
 
 switch ($Categories[$NewCategoryID-1]) {
@@ -23,27 +23,27 @@ switch ($Categories[$NewCategoryID-1]) {
     $Year = trim($_POST['year']);
     $ReleaseType = trim($_POST['releasetype']);
     if (empty($Year) || empty($ArtistName) || !is_number($Year) || empty($ReleaseType) || !is_number($ReleaseType)) {
-      error(0);
+        error(0);
     }
     $DB->query("
       SELECT ArtistID, AliasID, Redirect, Name
       FROM artists_alias
       WHERE Name LIKE '$ArtistName'");
     if (!$DB->has_results()) {
-      $Redirect = 0;
-      $DB->query("
+        $Redirect = 0;
+        $DB->query("
         INSERT INTO artists_group (Name)
         VALUES ('$ArtistName')");
-      $ArtistID = $DB->inserted_id();
-      $DB->query("
+        $ArtistID = $DB->inserted_id();
+        $DB->query("
         INSERT INTO artists_alias (ArtistID, Name)
         VALUES ('$ArtistID', '$ArtistName')");
-      $AliasID = $DB->inserted_id();
+        $AliasID = $DB->inserted_id();
     } else {
-      list($ArtistID, $AliasID, $Redirect, $ArtistName) = $DB->next_record();
-      if ($Redirect) {
-        $AliasID = $ArtistID;
-      }
+        [$ArtistID, $AliasID, $Redirect, $ArtistName] = $DB->next_record();
+        if ($Redirect) {
+            $AliasID = $ArtistID;
+        }
     }
 
     $DB->query("
@@ -63,7 +63,7 @@ switch ($Categories[$NewCategoryID-1]) {
   case 'Comedy':
     $Year = trim($_POST['year']);
     if (empty($Year) || !is_number($Year)) {
-      error(0);
+        error(0);
     }
     $DB->query("
       INSERT INTO torrents_group
@@ -96,15 +96,15 @@ $DB->query("
   FROM torrents
   WHERE GroupID = '$OldGroupID'");
 if (!$DB->has_results()) {
-  $DB->query("
+    $DB->query("
     UPDATE comments
     SET PageID = '$GroupID'
     WHERE Page = 'torrents'
       AND PageID = '$OldGroupID'");
-  Torrents::delete_group($OldGroupID);
-  $Cache->delete_value("torrent_comments_{$GroupID}_catalogue_0");
+    Torrents::delete_group($OldGroupID);
+    $Cache->delete_value("torrent_comments_{$GroupID}_catalogue_0");
 } else {
-  Torrents::update_hash($OldGroupID);
+    Torrents::update_hash($OldGroupID);
 }
 
 Torrents::update_hash($GroupID);
@@ -119,4 +119,3 @@ $DB->query("
   WHERE GroupID = $OldGroupID");
 
 header("Location: torrents.php?id=$GroupID");
-?>

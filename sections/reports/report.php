@@ -1,13 +1,13 @@
-<?
+<?php
 
-include(SERVER_ROOT.'/sections/reports/array.php');
+include SERVER_ROOT . '/sections/reports/array.php';
 
 if (empty($_GET['type']) || empty($_GET['id']) || !is_number($_GET['id'])) {
-  error(404);
+    error(404);
 }
 
 if (!array_key_exists($_GET['type'], $Types)) {
-  error(403);
+    error(403);
 }
 $Short = $_GET['type'];
 $Type = $Types[$Short];
@@ -21,9 +21,9 @@ switch ($Short) {
       FROM users_main
       WHERE ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Username) = $DB->next_record();
+    [$Username] = $DB->next_record();
     break;
 
   case 'request_update':
@@ -33,11 +33,11 @@ switch ($Short) {
       FROM requests
       WHERE ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Name, $Desc, $Filled, $CategoryID, $Year) = $DB->next_record();
-    if ($Filled || ($CategoryID != 0 && ($Categories[$CategoryID - 1] != 'Music' || $Year != 0))) {
-      error(403);
+    [$Name, $Desc, $Filled, $CategoryID, $Year] = $DB->next_record();
+    if ($Filled || (0 != $CategoryID && ('Music' != $Categories[$CategoryID - 1] || 0 != $Year))) {
+        error(403);
     }
     break;
 
@@ -47,9 +47,9 @@ switch ($Short) {
       FROM requests
       WHERE ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Name, $Desc, $Filled) = $DB->next_record();
+    [$Name, $Desc, $Filled] = $DB->next_record();
     break;
 
   case 'collage':
@@ -58,9 +58,9 @@ switch ($Short) {
       FROM collages
       WHERE ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Name, $Desc) = $DB->next_record();
+    [$Name, $Desc] = $DB->next_record();
     break;
 
   case 'thread':
@@ -70,18 +70,18 @@ switch ($Short) {
         JOIN users_main AS um ON um.ID = ft.AuthorID
       WHERE ft.ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Title, $ForumID, $Username) = $DB->next_record();
+    [$Title, $ForumID, $Username] = $DB->next_record();
     $DB->query("
       SELECT MinClassRead
       FROM forums
       WHERE ID = $ForumID");
-    list($MinClassRead) = $DB->next_record();
+    [$MinClassRead] = $DB->next_record();
     if (!empty($LoggedUser['DisableForums'])
-        || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || $LoggedUser['CustomForums'][$ForumID] == 0))
-        || (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] == 0)) {
-      error(403);
+        || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || 0 == $LoggedUser['CustomForums'][$ForumID]))
+        || (isset($LoggedUser['CustomForums'][$ForumID]) && 0 == $LoggedUser['CustomForums'][$ForumID])) {
+        error(403);
     }
     break;
 
@@ -92,23 +92,23 @@ switch ($Short) {
         JOIN users_main AS um ON um.ID = fp.AuthorID
       WHERE fp.ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Body, $TopicID, $Username) = $DB->next_record();
+    [$Body, $TopicID, $Username] = $DB->next_record();
     $DB->query("
       SELECT ForumID
       FROM forums_topics
       WHERE ID = $TopicID");
-    list($ForumID) = $DB->next_record();
+    [$ForumID] = $DB->next_record();
     $DB->query("
       SELECT MinClassRead
       FROM forums
       WHERE ID = $ForumID");
-    list($MinClassRead) = $DB->next_record();
+    [$MinClassRead] = $DB->next_record();
     if (!empty($LoggedUser['DisableForums'])
-        || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || $LoggedUser['CustomForums'][$ForumID] == 0))
-        || (isset($LoggedUser['CustomForums'][$ForumID]) && $LoggedUser['CustomForums'][$ForumID] == 0)) {
-      error(403);
+        || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || 0 == $LoggedUser['CustomForums'][$ForumID]))
+        || (isset($LoggedUser['CustomForums'][$ForumID]) && 0 == $LoggedUser['CustomForums'][$ForumID])) {
+        error(403);
     }
     break;
 
@@ -119,13 +119,13 @@ switch ($Short) {
         JOIN users_main AS um ON um.ID = c.AuthorID
       WHERE c.ID = $ID");
     if (!$DB->has_results()) {
-      error(404);
+        error(404);
     }
-    list($Body, $Username) = $DB->next_record();
+    [$Body, $Username] = $DB->next_record();
     break;
 }
 
-View::show_header('Report a '.$Type['title'], 'bbcode,jquery.validate,form_validate');
+View::show_header('Report a ' . $Type['title'], 'bbcode,jquery.validate,form_validate');
 ?>
 <div class="thin">
   <div class="header">
@@ -135,19 +135,19 @@ View::show_header('Report a '.$Type['title'], 'bbcode,jquery.validate,form_valid
   <div class="box pad">
     <p>Following these guidelines will help the moderators deal with your report in a timely fashion. </p>
     <ul>
-<?  foreach ($Type['guidelines'] as $Guideline) { ?>
+<?php  foreach ($Type['guidelines'] as $Guideline) { ?>
       <li><?=$Guideline?></li>
-<?  } ?>
+<?php  } ?>
     </ul>
     <p>In short, please include as much detail as possible when reporting. Thank you. </p>
   </div>
-<?
+<?php
 
 switch ($Short) {
   case 'user':
 ?>
   <p>You are reporting the user <strong><?=display_str($Username)?></strong></p>
-<?
+<?php
     break;
   case 'request_update':
 ?>
@@ -161,7 +161,7 @@ switch ($Short) {
     <tr>
       <td><?=display_str($Name)?></td>
       <td><?=Text::full_format($Desc)?></td>
-      <td><strong><?=($Filled == 0 ? 'No' : 'Yes')?></strong></td>
+      <td><strong><?=(0 == $Filled ? 'No' : 'Yes')?></strong></td>
     </tr>
   </table>
   <br />
@@ -185,9 +185,9 @@ switch ($Short) {
           <td>
             <select id="releasetype" name="releasetype">
               <option value="0">---</option>
-<?    foreach ($ReleaseTypes as $Key => $Val) { ?>
+<?php    foreach ($ReleaseTypes as $Key => $Val) { ?>
               <option value="<?=$Key?>"<?=(!empty($ReleaseType) ? ($Key == $ReleaseType ? ' selected="selected"' : '') : '')?>><?=$Val?></option>
-<?    } ?>
+<?php    } ?>
             </select>
           </td>
         </tr>
@@ -203,7 +203,7 @@ switch ($Short) {
       <input type="submit" value="Submit report" />
     </form>
   </div>
-<?
+<?php
     break;
   case 'request':
 ?>
@@ -217,10 +217,10 @@ switch ($Short) {
     <tr>
       <td><?=display_str($Name)?></td>
       <td><?=Text::full_format($Desc)?></td>
-      <td><strong><?=($Filled == 0 ? 'No' : 'Yes')?></strong></td>
+      <td><strong><?=(0 == $Filled ? 'No' : 'Yes')?></strong></td>
     </tr>
   </table>
-<?
+<?php
     break;
   case 'collage':
 ?>
@@ -235,7 +235,7 @@ switch ($Short) {
       <td><?=Text::full_format($Desc)?></td>
     </tr>
   </table>
-<?
+<?php
     break;
   case 'thread':
 ?>
@@ -250,7 +250,7 @@ switch ($Short) {
       <td><?=display_str($Title)?></td>
     </tr>
   </table>
-<?
+<?php
     break;
   case 'post':
 ?>
@@ -265,7 +265,7 @@ switch ($Short) {
       <td><?=Text::full_format($Body)?></td>
     </tr>
   </table>
-<?
+<?php
     break;
   case 'comment':
 ?>
@@ -280,11 +280,11 @@ switch ($Short) {
       <td><?=Text::full_format($Body)?></td>
     </tr>
   </table>
-<?
+<?php
   break;
 }
 if (empty($NoReason)) {
-?>
+    ?>
   <h3>Reason</h3>
   <div class="box pad center">
     <form class="create_form" name="report" id="report_form" action="" method="post">
@@ -296,10 +296,10 @@ if (empty($NoReason)) {
       <input type="submit" value="Submit report" />
     </form>
   </div>
-<?
+<?php
 }
-// close <div class="thin"> ?>
+// close <div class="thin">?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

@@ -1,4 +1,4 @@
-<? require 'classes/config.php'; ?>
+<?php require 'classes/config.php'; ?>
 {
   "name": "<?=SITE_NAME?>",
   "short_name": "<?=SITE_NAME?>",

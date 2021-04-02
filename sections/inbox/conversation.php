@@ -1,7 +1,7 @@
-<?
+<?php
 $ConvID = $_GET['id'];
 if (!$ConvID || !is_number($ConvID)) {
-  error(404);
+    error(404);
 }
 
 
@@ -12,15 +12,14 @@ $DB->query("
   WHERE UserID = '$UserID'
     AND ConvID = '$ConvID'");
 if (!$DB->has_results()) {
-  error(403);
+    error(403);
 }
-list($InInbox, $InSentbox) = $DB->next_record();
+[$InInbox, $InSentbox] = $DB->next_record();
 
 
 
 if (!$InInbox && !$InSentbox) {
-
-  error(404);
+    error(404);
 }
 
 // Get information on the conversation
@@ -34,7 +33,7 @@ $DB->query("
     JOIN pm_conversations_users AS cu ON c.ID = cu.ConvID
   WHERE c.ID = '$ConvID'
     AND UserID = '$UserID'");
-list($Subject, $Sticky, $UnRead, $ForwardedID) = $DB->next_record();
+[$Subject, $Sticky, $UnRead, $ForwardedID] = $DB->next_record();
 
 
 $DB->query("
@@ -46,24 +45,23 @@ $DB->query("
 $ConverstionParticipants = $DB->to_array();
 
 foreach ($ConverstionParticipants as $Participant) {
-  $PMUserID = (int)$Participant['ID'];
-  $Users[$PMUserID]['UserStr'] = Users::format_username($PMUserID, true, true, true, true);
-  $Users[$PMUserID]['Username'] = $Participant['Username'];
+    $PMUserID = (int)$Participant['ID'];
+    $Users[$PMUserID]['UserStr'] = Users::format_username($PMUserID, true, true, true, true);
+    $Users[$PMUserID]['Username'] = $Participant['Username'];
 }
 
 $Users[0]['UserStr'] = 'System'; // in case it's a message from the system
 $Users[0]['Username'] = 'System';
 
 
-if ($UnRead == '1') {
-
-  $DB->query("
+if ('1' == $UnRead) {
+    $DB->query("
     UPDATE pm_conversations_users
     SET UnRead = '0'
     WHERE ConvID = '$ConvID'
       AND UserID = '$UserID'");
-  // Clear the caches of the inbox and sentbox
-  $Cache->decrement("inbox_new_$UserID");
+    // Clear the caches of the inbox and sentbox
+    $Cache->decrement("inbox_new_$UserID");
 }
 
 View::show_header("View conversation $Subject", 'comments,inbox,bbcode,jquery.validate,form_validate');
@@ -76,15 +74,14 @@ $DB->query("
   ORDER BY ID");
 ?>
 <div class="thin">
-  <h2><?=$Subject.($ForwardedID > 0 ? " (Forwarded to $ForwardedName)" : '')?></h2>
+  <h2><?=$Subject . ($ForwardedID > 0 ? " (Forwarded to $ForwardedName)" : '')?></h2>
   <div class="linkbox">
     <a href="<?=Inbox::get_inbox_link(); ?>" class="brackets">Back to inbox</a>
   </div>
-<?
+<?php
 
-while (list($SentDate, $SenderID, $Body, $MessageID) = $DB->next_record()) {
-  $Body = apcu_exists('DBKEY') ? Crypto::decrypt($Body) : '[url=https://'.SITE_DOMAIN.'/wiki.php?action=article&name=databaseencryption][Encrypted][/url]';
-?>
+while ([$SentDate, $SenderID, $Body, $MessageID] = $DB->next_record()) {
+    $Body = apcu_exists('DBKEY') ? Crypto::decrypt($Body) : '[url=https://' . SITE_DOMAIN . '/wiki.php?action=article&name=databaseencryption][Encrypted][/url]'; ?>
   <div class="box vertical_space">
     <div class="head" style="overflow: hidden;">
       <div class="float_left">
@@ -96,7 +93,7 @@ while (list($SentDate, $SenderID, $Body, $MessageID) = $DB->next_record()) {
       <?=Text::full_format($Body)?>
     </div>
   </div>
-<?
+<?php
 }
 $DB->query("
   SELECT UserID
@@ -108,7 +105,7 @@ $ReceiverIDs = $DB->collect('UserID');
 
 
 if (!empty($ReceiverIDs) && (empty($LoggedUser['DisablePM']) || array_intersect($ReceiverIDs, array_keys($StaffIDs)))) {
-?>
+    ?>
   <h3>Reply</h3>
   <form class="send_form" name="reply" action="inbox.php" method="post" id="messageform">
     <div class="box pad">
@@ -116,14 +113,14 @@ if (!empty($ReceiverIDs) && (empty($LoggedUser['DisablePM']) || array_intersect(
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <input type="hidden" name="toid" value="<?=implode(',', $ReceiverIDs)?>" />
       <input type="hidden" name="convid" value="<?=$ConvID?>" />
-<?    $Reply = new TEXTAREA_PREVIEW('body', 'quickpost', '', 90, 10, true, false); ?>
+<?php    $Reply = new TEXTAREA_PREVIEW('body', 'quickpost', '', 90, 10, true, false); ?>
       <div id="buttons" class="center">
         <input type="button" value="Preview" class="hidden button_preview_<?=$Reply->getID()?>">
         <input type="submit" value="Send message">
       </div>
     </div>
   </form>
-<?
+<?php
 }
 ?>
   <h3>Manage conversation</h3>
@@ -137,7 +134,9 @@ if (!empty($ReceiverIDs) && (empty($LoggedUser['DisablePM']) || array_intersect(
         <tr>
           <td class="label"><label for="sticky">Sticky</label></td>
           <td>
-            <input type="checkbox" id="sticky" name="sticky"<? if ($Sticky) { echo ' checked="checked"'; } ?> />
+            <input type="checkbox" id="sticky" name="sticky"<?php if ($Sticky) {
+    echo ' checked="checked"';
+} ?> />
           </td>
           <td class="label"><label for="mark_unread">Mark as unread</label></td>
           <td>
@@ -155,14 +154,14 @@ if (!empty($ReceiverIDs) && (empty($LoggedUser['DisablePM']) || array_intersect(
       </table>
     </div>
   </form>
-<?
+<?php
 $DB->query("
   SELECT SupportFor
   FROM users_info
-  WHERE UserID = ".$LoggedUser['ID']);
-list($FLS) = $DB->next_record();
-if ((check_perms('users_mod') || $FLS != '') && (!$ForwardedID || $ForwardedID == $LoggedUser['ID'])) {
-?>
+  WHERE UserID = " . $LoggedUser['ID']);
+[$FLS] = $DB->next_record();
+if ((check_perms('users_mod') || '' != $FLS) && (!$ForwardedID || $ForwardedID == $LoggedUser['ID'])) {
+    ?>
   <h3>Forward conversation</h3>
   <form class="send_form" name="forward" action="inbox.php" method="post">
     <div class="box pad">
@@ -171,26 +170,24 @@ if ((check_perms('users_mod') || $FLS != '') && (!$ForwardedID || $ForwardedID =
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <label for="receiverid">Forward to</label>
       <select id="receiverid" name="receiverid">
-<?
+<?php
   foreach ($StaffIDs as $StaffID => $StaffName) {
-    if ($StaffID == $LoggedUser['ID'] || in_array($StaffID, $ReceiverIDs)) {
-      continue;
-    }
-?>
+      if ($StaffID == $LoggedUser['ID'] || in_array($StaffID, $ReceiverIDs, true)) {
+          continue;
+      } ?>
         <option value="<?=$StaffID?>"><?=$StaffName?></option>
-<?
-  }
-?>
+<?php
+  } ?>
       </select>
       <input type="submit" value="Forward" />
     </div>
   </form>
-<?
+<?php
 }
 
 //And we're done!
 ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

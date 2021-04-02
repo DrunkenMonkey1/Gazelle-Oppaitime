@@ -1,4 +1,4 @@
-<?
+<?php
 /*****************************************************************
 User history switch center
 
@@ -14,67 +14,67 @@ non members.
 enforce_login();
 
 if ($_GET['action']) {
-  switch ($_GET['action']) {
+    switch ($_GET['action']) {
     case 'ips':
       //Load IP history page
-      include('ip_history.php');
+      include 'ip_history.php';
       break;
     case 'tracker_ips':
-      include('ip_tracker_history.php');
+      include 'ip_tracker_history.php';
       break;
     case 'passwords':
       //Load Password history page
-      include('password_history.php');
+      include 'password_history.php';
       break;
     case 'email':
       //Load email history page
-      include('email_history.php');
+      include 'email_history.php';
       break;
     case 'email2':
       //Load email history page
-      include('email_history2.php');
+      include 'email_history2.php';
       break;
     case 'useremail':
-      include('email_history_userview.php');
+      include 'email_history_userview.php';
       break;
     case 'userip':
-      include('ip_history_userview.php');
+      include 'ip_history_userview.php';
       break;
     case 'passkeys':
       //Load passkey history page
-      include('passkey_history.php');
+      include 'passkey_history.php';
       break;
     case 'posts':
       //Load ratio history page
-      include('post_history.php');
+      include 'post_history.php';
       break;
     case 'subscriptions':
       // View subscriptions
-      require('subscriptions.php');
+      require 'subscriptions.php';
       break;
     case 'thread_subscribe':
-      require('thread_subscribe.php');
+      require 'thread_subscribe.php';
       break;
     case 'comments_subscribe':
-      require('comments_subscribe.php');
+      require 'comments_subscribe.php';
       break;
     case 'catchup':
-      require('catchup.php');
+      require 'catchup.php';
       break;
     case 'collage_subscribe':
-      require('collage_subscribe.php');
+      require 'collage_subscribe.php';
       break;
     case 'subscribed_collages':
-      require('subscribed_collages.php');
+      require 'subscribed_collages.php';
       break;
     case 'catchup_collages':
-      require('catchup_collages.php');
+      require 'catchup_collages.php';
       break;
     case 'token_history':
-      require('token_history.php');
+      require 'token_history.php';
       break;
     case 'quote_notifications':
-      require('quote_notifications.php');
+      require 'quote_notifications.php';
       break;
     default:
       //You trying to mess with me query string? To the home page with you!
@@ -123,4 +123,3 @@ users_history_stats:
   timestamp
 
 */
-?>

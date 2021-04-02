@@ -1,4 +1,4 @@
-<?
+<?php
 
 $Skip = [];
 $Skip[] = db_string($_GET['skip']);

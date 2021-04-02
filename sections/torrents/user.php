@@ -5,138 +5,139 @@ $Orders = ['Time', 'Name', 'Seeders', 'Leechers', 'Snatched', 'Size'];
 $Ways = ['DESC' => 'Descending', 'ASC' => 'Ascending'];
 
 // The "order by x" links on columns headers
-function header_link($SortKey, $DefaultWay = 'DESC') {
-  global $Order, $Way;
-  if ($SortKey == $Order) {
-    if ($Way == 'DESC') {
-      $NewWay = 'ASC';
+function header_link($SortKey, $DefaultWay = 'DESC')
+{
+    global $Order, $Way;
+    if ($SortKey == $Order) {
+        if ('DESC' == $Way) {
+            $NewWay = 'ASC';
+        } else {
+            $NewWay = 'DESC';
+        }
     } else {
-      $NewWay = 'DESC';
+        $NewWay = $DefaultWay;
     }
-  } else {
-    $NewWay = $DefaultWay;
-  }
 
-  return "torrents.php?way=$NewWay&amp;order=$SortKey&amp;" . Format::get_url(array('way','order'));
+    return "torrents.php?way=$NewWay&amp;order=$SortKey&amp;" . Format::get_url(['way', 'order']);
 }
 
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
-  error(0);
+    error(0);
 }
 
 if (!empty($_GET['page']) && is_number($_GET['page']) && $_GET['page'] > 0) {
-  $Page = $_GET['page'];
-  $Limit = ($Page - 1) * TORRENTS_PER_PAGE.', '.TORRENTS_PER_PAGE;
+    $Page = $_GET['page'];
+    $Limit = ($Page - 1) * TORRENTS_PER_PAGE . ', ' . TORRENTS_PER_PAGE;
 } else {
-  $Page = 1;
-  $Limit = TORRENTS_PER_PAGE;
+    $Page = 1;
+    $Limit = TORRENTS_PER_PAGE;
 }
 
-if (!empty($_GET['order']) && in_array($_GET['order'], $Orders)) {
-  $Order = $_GET['order'];
+if (!empty($_GET['order']) && in_array($_GET['order'], $Orders, true)) {
+    $Order = $_GET['order'];
 } else {
-  $Order = 'Time';
+    $Order = 'Time';
 }
 
 if (!empty($_GET['way']) && array_key_exists($_GET['way'], $Ways)) {
-  $Way = $_GET['way'];
+    $Way = $_GET['way'];
 } else {
-  $Way = 'DESC';
+    $Way = 'DESC';
 }
 
 $SearchWhere = [];
 if (!empty($_GET['format'])) {
-  if (in_array($_GET['format'], $Formats)) {
-    $SearchWhere[] = "t.Format = '".db_string($_GET['format'])."'";
-  } elseif ($_GET['format'] == 'perfectflac') {
-    $_GET['filter'] = 'perfectflac';
-  }
+    if (in_array($_GET['format'], $Formats, true)) {
+        $SearchWhere[] = "t.Format = '" . db_string($_GET['format']) . "'";
+    } elseif ('perfectflac' == $_GET['format']) {
+        $_GET['filter'] = 'perfectflac';
+    }
 }
 
-if (isset($_GET['container']) && in_array($_GET['container'], array_unique(array_merge($Containers, $ContainersGames)))) {
-  $SearchWhere[] = "t.Container = '".db_string($_GET['container'])."'";
+if (isset($_GET['container']) && in_array($_GET['container'], array_unique(array_merge($Containers, $ContainersGames)), true)) {
+    $SearchWhere[] = "t.Container = '" . db_string($_GET['container']) . "'";
 }
 
-if (isset($_GET['bitrate']) && in_array($_GET['bitrate'], $Bitrates)) {
-  $SearchWhere[] = "t.Encoding = '".db_string($_GET['bitrate'])."'";
+if (isset($_GET['bitrate']) && in_array($_GET['bitrate'], $Bitrates, true)) {
+    $SearchWhere[] = "t.Encoding = '" . db_string($_GET['bitrate']) . "'";
 }
 
-if (isset($_GET['media']) && in_array($_GET['media'], array_unique(array_merge($Media, $MediaManga)))) {
-  $SearchWhere[] = "t.Media = '".db_string($_GET['media'])."'";
+if (isset($_GET['media']) && in_array($_GET['media'], array_unique(array_merge($Media, $MediaManga)), true)) {
+    $SearchWhere[] = "t.Media = '" . db_string($_GET['media']) . "'";
 }
 
-if (isset($_GET['codec']) && in_array($_GET['codec'], $Codecs)) {
-  $SearchWhere[] = "t.Codec = '".db_string($_GET['codec'])."'";
+if (isset($_GET['codec']) && in_array($_GET['codec'], $Codecs, true)) {
+    $SearchWhere[] = "t.Codec = '" . db_string($_GET['codec']) . "'";
 }
 
-if (isset($_GET['audioformat']) && in_array($_GET['audioformat'], $AudioFormats)) {
-  $SearchWhere[] = "t.AudioFormat = '".db_string($_GET['audioformat'])."'";
+if (isset($_GET['audioformat']) && in_array($_GET['audioformat'], $AudioFormats, true)) {
+    $SearchWhere[] = "t.AudioFormat = '" . db_string($_GET['audioformat']) . "'";
 }
 
-if (isset($_GET['resolution']) && in_array($_GET['resolution'], $Resolutions)) {
-  $SearchWhere[] = "t.Resolution = '".db_string($_GET['resolution'])."'";
+if (isset($_GET['resolution']) && in_array($_GET['resolution'], $Resolutions, true)) {
+    $SearchWhere[] = "t.Resolution = '" . db_string($_GET['resolution']) . "'";
 }
 
-if (isset($_GET['language']) && in_array($_GET['language'], $Languages)) {
-  $SearchWhere[] = "t.Language = '".db_string($_GET['language'])."'";
+if (isset($_GET['language']) && in_array($_GET['language'], $Languages, true)) {
+    $SearchWhere[] = "t.Language = '" . db_string($_GET['language']) . "'";
 }
 
-if (isset($_GET['subbing']) && in_array($_GET['subbing'], $Subbing)) {
-  $SearchWhere[] = "t.Subbing = '".db_string($_GET['subbing'])."'";
+if (isset($_GET['subbing']) && in_array($_GET['subbing'], $Subbing, true)) {
+    $SearchWhere[] = "t.Subbing = '" . db_string($_GET['subbing']) . "'";
 }
 
-if (isset($_GET['censored']) && in_array($_GET['censored'], array(1, 0))) {
-  $SearchWhere[] = "t.Censored = '".db_string($_GET['censored'])."'";
+if (isset($_GET['censored']) && in_array($_GET['censored'], [1, 0], true)) {
+    $SearchWhere[] = "t.Censored = '" . db_string($_GET['censored']) . "'";
 }
 
 if (!empty($_GET['categories'])) {
-  $Cats = [];
-  foreach (array_keys($_GET['categories']) as $Cat) {
-    if (!is_number($Cat)) {
-      error(0);
+    $Cats = [];
+    foreach (array_keys($_GET['categories']) as $Cat) {
+        if (!is_number($Cat)) {
+            error(0);
+        }
+        $Cats[] = "tg.CategoryID = '" . db_string($Cat) . "'";
     }
-    $Cats[] = "tg.CategoryID = '".db_string($Cat)."'";
-  }
-  $SearchWhere[] = '('.implode(' OR ', $Cats).')';
+    $SearchWhere[] = '(' . implode(' OR ', $Cats) . ')';
 }
 
 if (!isset($_GET['tags_type'])) {
-  $_GET['tags_type'] = '1';
+    $_GET['tags_type'] = '1';
 }
 
 if (!empty($_GET['tags'])) {
-  $Tags = explode(',', $_GET['tags']);
-  $TagList = [];
-  foreach ($Tags as $Tag) {
-    $Tag = trim(str_replace('.', '_', $Tag));
-    if (empty($Tag)) {
-      continue;
+    $Tags = explode(',', $_GET['tags']);
+    $TagList = [];
+    foreach ($Tags as $Tag) {
+        $Tag = trim(str_replace('.', '_', $Tag));
+        if (empty($Tag)) {
+            continue;
+        }
+        if ('!' == $Tag[0]) {
+            $Tag = ltrim(substr($Tag, 1));
+            if (empty($Tag)) {
+                continue;
+            }
+            $TagList[] = "tg.TagList NOT RLIKE '[[:<:]]" . db_string($Tag) . "(:[^ ]+)?[[:>:]]'";
+        } else {
+            $TagList[] = "tg.TagList RLIKE '[[:<:]]" . db_string($Tag) . "(:[^ ]+)?[[:>:]]'";
+        }
     }
-    if ($Tag[0] == '!') {
-      $Tag = ltrim(substr($Tag, 1));
-      if (empty($Tag)) {
-        continue;
-      }
-      $TagList[] = "tg.TagList NOT RLIKE '[[:<:]]".db_string($Tag)."(:[^ ]+)?[[:>:]]'";
-    } else {
-      $TagList[] = "tg.TagList RLIKE '[[:<:]]".db_string($Tag)."(:[^ ]+)?[[:>:]]'";
+    if (!empty($TagList)) {
+        if (isset($_GET['tags_type']) && '1' !== $_GET['tags_type']) {
+            $_GET['tags_type'] = '0';
+            $SearchWhere[] = '(' . implode(' OR ', $TagList) . ')';
+        } else {
+            $_GET['tags_type'] = '1';
+            $SearchWhere[] = '(' . implode(' AND ', $TagList) . ')';
+        }
     }
-  }
-  if (!empty($TagList)) {
-    if (isset($_GET['tags_type']) && $_GET['tags_type'] !== '1') {
-      $_GET['tags_type'] = '0';
-      $SearchWhere[] = '('.implode(' OR ', $TagList).')';
-    } else {
-      $_GET['tags_type'] = '1';
-      $SearchWhere[] = '('.implode(' AND ', $TagList).')';
-    }
-  }
 }
 
 $SearchWhere = implode(' AND ', $SearchWhere);
 if (!empty($SearchWhere)) {
-  $SearchWhere = " AND $SearchWhere";
+    $SearchWhere = " AND $SearchWhere";
 }
 
 $User = Users::user_info($UserID);
@@ -146,7 +147,7 @@ $UserClass = $Perms['Class'];
 switch ($_GET['type']) {
   case 'snatched':
     if (!check_paranoia('snatched', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
+        error(403);
     }
     $Time = 'xs.tstamp';
     $UserField = 'xs.uid';
@@ -157,7 +158,7 @@ switch ($_GET['type']) {
     break;
   case 'seeding':
     if (!check_paranoia('seeding', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
+        error(403);
     }
     $Time = '(xfu.mtime - xfu.timespent)';
     $UserField = 'xfu.uid';
@@ -181,7 +182,7 @@ switch ($_GET['type']) {
     break;
   case 'leeching':
     if (!check_paranoia('leeching', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
+        error(403);
     }
     $Time = '(xfu.mtime - xfu.timespent)';
     $UserField = 'xfu.uid';
@@ -193,8 +194,8 @@ switch ($_GET['type']) {
         JOIN torrents AS t ON t.ID = xfu.fid";
     break;
   case 'uploaded':
-    if ((empty($_GET['filter']) || $_GET['filter'] !== 'perfectflac') && !check_paranoia('uploads', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
+    if ((empty($_GET['filter']) || 'perfectflac' !== $_GET['filter']) && !check_paranoia('uploads', $User['Paranoia'], $UserClass, $UserID)) {
+        error(403);
     }
     $Time = 'unix_timestamp(t.Time)';
     $UserField = 't.UserID';
@@ -203,7 +204,7 @@ switch ($_GET['type']) {
     break;
   case 'downloaded':
     if (!check_perms('site_view_torrent_snatchlist')) {
-      error(403);
+        error(403);
     }
     $Time = 'unix_timestamp(ud.Time)';
     $UserField = 'ud.UserID';
@@ -217,35 +218,35 @@ switch ($_GET['type']) {
 }
 
 if (!empty($_GET['filter'])) {
-  if ($_GET['filter'] === 'perfectflac') {
-    if (!check_paranoia('perfectflacs', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
-    }
-    $ExtraWhere .= " AND t.Format = 'FLAC'";
-    if (empty($_GET['media'])) {
-      $ExtraWhere .= "
+    if ('perfectflac' === $_GET['filter']) {
+        if (!check_paranoia('perfectflacs', $User['Paranoia'], $UserClass, $UserID)) {
+            error(403);
+        }
+        $ExtraWhere .= " AND t.Format = 'FLAC'";
+        if (empty($_GET['media'])) {
+            $ExtraWhere .= "
         AND (
           t.LogScore = 100 OR
           t.Media IN ('Vinyl', 'WEB', 'DVD', 'Soundboard', 'Cassette', 'SACD', 'Blu-ray', 'DAT')
           )";
-    } elseif (strtoupper($_GET['media']) === 'CD' && empty($_GET['log'])) {
-      $ExtraWhere .= "
+        } elseif ('CD' === strtoupper($_GET['media']) && empty($_GET['log'])) {
+            $ExtraWhere .= "
         AND t.LogScore = 100";
+        }
+    } elseif ('uniquegroup' === $_GET['filter']) {
+        if (!check_paranoia('uniquegroups', $User['Paranoia'], $UserClass, $UserID)) {
+            error(403);
+        }
+        $GroupBy = 'tg.ID';
     }
-  } elseif ($_GET['filter'] === 'uniquegroup') {
-    if (!check_paranoia('uniquegroups', $User['Paranoia'], $UserClass, $UserID)) {
-      error(403);
-    }
-    $GroupBy = 'tg.ID';
-  }
 }
 
 if (empty($GroupBy)) {
-  $GroupBy = 't.ID';
+    $GroupBy = 't.ID';
 }
 
-if ((empty($_GET['search']) || trim($_GET['search']) === '')) {//&& $Order != 'Name') {
-  $SQL = "
+if ((empty($_GET['search']) || '' === trim($_GET['search']))) {//&& $Order != 'Name') {
+    $SQL = "
     SELECT
       SQL_CALC_FOUND_ROWS
       t.GroupID,
@@ -262,7 +263,7 @@ if ((empty($_GET['search']) || trim($_GET['search']) === '')) {//&& $Order != 'N
     ORDER BY $Order $Way
     LIMIT $Limit";
 } else {
-  $DB->query("
+    $DB->query("
     CREATE TEMPORARY TABLE temp_sections_torrents_user (
       GroupID int(10) unsigned not null,
       TorrentID int(10) unsigned not null,
@@ -274,7 +275,7 @@ if ((empty($_GET['search']) || trim($_GET['search']) === '')) {//&& $Order != 'N
       Name mediumtext,
       Size bigint(12) unsigned,
     PRIMARY KEY (TorrentID)) CHARSET=utf8");
-  $DB->query("
+    $DB->query("
     INSERT IGNORE INTO temp_sections_torrents_user
       SELECT
         t.GroupID,
@@ -295,11 +296,11 @@ if ((empty($_GET['search']) || trim($_GET['search']) === '')) {//&& $Order != 'N
         $SearchWhere
       GROUP BY TorrentID, Time");
 
-  if (!empty($_GET['search']) && trim($_GET['search']) !== '') {
-    $Words = array_unique(explode(' ', db_string($_GET['search'])));
-  }
+    if (!empty($_GET['search']) && '' !== trim($_GET['search'])) {
+        $Words = array_unique(explode(' ', db_string($_GET['search'])));
+    }
 
-  $SQL = "
+    $SQL = "
     SELECT
       SQL_CALC_FOUND_ROWS
       GroupID,
@@ -307,11 +308,11 @@ if ((empty($_GET['search']) || trim($_GET['search']) === '')) {//&& $Order != 'N
       Time,
       CategoryID
     FROM temp_sections_torrents_user";
-  if (!empty($Words)) {
+    if (!empty($Words)) {
+        $SQL .= "
+    WHERE Name LIKE '%" . implode("%' AND Name LIKE '%", $Words) . "%'";
+    }
     $SQL .= "
-    WHERE Name LIKE '%".implode("%' AND Name LIKE '%", $Words)."%'";
-  }
-  $SQL .= "
     ORDER BY $Order $Way
     LIMIT $Limit";
 }
@@ -321,14 +322,14 @@ $GroupIDs = $DB->collect('GroupID');
 $TorrentsInfo = $DB->to_array('TorrentID', MYSQLI_ASSOC);
 
 $DB->query('SELECT FOUND_ROWS()');
-list($TorrentCount) = $DB->next_record();
+[$TorrentCount] = $DB->next_record();
 
 $Results = Torrents::get_groups($GroupIDs);
 
 $Action = display_str($_GET['type']);
 $User = Users::user_info($UserID);
 
-View::show_header($User['Username']."'s $Action torrents", 'browse');
+View::show_header($User['Username'] . "'s $Action torrents", 'browse');
 
 $Pages = Format::get_pages($Page, $TorrentCount, TORRENTS_PER_PAGE);
 
@@ -354,48 +355,48 @@ $Pages = Format::get_pages($Page, $TorrentCount, TORRENTS_PER_PAGE);
           <td class="nobr" colspan="3">
             <select id="container" name="container" class="ft_container">
               <option value="">Container</option>
-<?  foreach ($Containers as $ContainerName) { ?>
+<?php  foreach ($Containers as $ContainerName) { ?>
               <option value="<?=display_str($ContainerName); ?>"<?Format::selected('container', $ContainerName)?>><?=display_str($ContainerName); ?></option>
-<?  } ?>
-<?  foreach ($ContainersGames as $ContainerName) { ?>
+<?php  } ?>
+<?php  foreach ($ContainersGames as $ContainerName) { ?>
               <option value="<?=display_str($ContainerName); ?>"<?Format::selected('container', $ContainerName)?>><?=display_str($ContainerName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select id="codec" name="codec" class="ft_codec">
               <option value="">Codec</option>
-<?  foreach ($Codecs as $CodecName) { ?>
+<?php  foreach ($Codecs as $CodecName) { ?>
               <option value="<?=display_str($CodecName); ?>"<?Format::selected('codec', $CodecName)?>><?=display_str($CodecName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select id="audioformat" name="audioformat" class="ft_audioformat">
               <option value="">AudioFormat</option>
-<?  foreach ($AudioFormats as $AudioFormatName) { ?>
+<?php  foreach ($AudioFormats as $AudioFormatName) { ?>
               <option value="<?=display_str($AudioFormatName); ?>"<?Format::selected('audioformat', $AudioFormatName)?>><?=display_str($AudioFormatName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select id="resolution" name="resolution" class="ft_resolution">
               <option value="">Resolution</option>
-<?  foreach ($Resolutions as $ResolutionName) { ?>
+<?php  foreach ($Resolutions as $ResolutionName) { ?>
               <option value="<?=display_str($ResolutionName); ?>"<?Format::selected('resolution', $ResolutionName)?>><?=display_str($ResolutionName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select id="language" name="language" class="ft_language">
               <option value="">Language</option>
-<?  foreach ($Languages as $LanguageName) { ?>
+<?php  foreach ($Languages as $LanguageName) { ?>
               <option value="<?=display_str($LanguageName); ?>"<?Format::selected('language', $LanguageName)?>><?=display_str($LanguageName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select id="subbing" name="subbing" class="ft_subbing">
               <option value="">Subs</option>
-<?  foreach ($Subbing as $SubbingName) { ?>
+<?php  foreach ($Subbing as $SubbingName) { ?>
               <option value="<?=display_str($SubbingName); ?>"<?Format::selected('subbing', $SubbingName)?>><?=display_str($SubbingName); ?></option>
-<?  } ?>
+<?php  } ?>
             </select>
             <select name="media" class="ft_media">
               <option value="">Media</option>
-<?  foreach ($Media as $MediaName) { ?>
+<?php  foreach ($Media as $MediaName) { ?>
               <option value="<?=display_str($MediaName); ?>"<?Format::selected('media',$MediaName)?>><?=display_str($MediaName); ?></option>
-<?  } ?>
+<?php  } ?>
               <option value="Scan"<?Format::selected('media', 'Scan')?>>Scan</option>
             </select>
           </td>
@@ -423,39 +424,39 @@ $Pages = Format::get_pages($Page, $TorrentCount, TORRENTS_PER_PAGE);
           <td class="label"><strong>Order by</strong></td>
           <td>
             <select name="order" class="ft_order_by">
-<?  foreach ($Orders as $OrderText) { ?>
+<?php  foreach ($Orders as $OrderText) { ?>
               <option value="<?=$OrderText?>"<?Format::selected('order', $OrderText)?>><?=$OrderText?></option>
-<?  } ?>
+<?php  } ?>
             </select>&nbsp;
             <select name="way" class="ft_order_way">
-<?  foreach ($Ways as $WayKey=>$WayText) { ?>
+<?php  foreach ($Ways as $WayKey=>$WayText) { ?>
               <option value="<?=$WayKey?>"<?Format::selected('way', $WayKey)?>><?=$WayText?></option>
-<?  } ?>
+<?php  } ?>
             </select>
           </td>
         </tr>
       </table>
 
       <table class="layout cat_list">
-<?
+<?php
 $x = 0;
 reset($Categories);
 foreach ($Categories as $CatKey => $CatName) {
-  if ($x % 7 === 0) {
-    if ($x > 0) {
-?>
+    if (0 === $x % 7) {
+        if ($x > 0) {
+            ?>
         </tr>
-<?    } ?>
+<?php
+        } ?>
         <tr>
-<?
-  }
-  $x++;
-?>
+<?php
+    }
+    $x++; ?>
           <td>
-            <input type="checkbox" name="categories[<?=($CatKey+1)?>]" id="cat_<?=($CatKey+1)?>" value="1"<? if (isset($_GET['categories'][$CatKey + 1])) { ?> checked="checked"<? } ?> />
+            <input type="checkbox" name="categories[<?=($CatKey+1)?>]" id="cat_<?=($CatKey+1)?>" value="1"<?php if (isset($_GET['categories'][$CatKey + 1])) { ?> checked="checked"<?php } ?> />
             <label for="cat_<?=($CatKey + 1)?>"><?=$CatName?></label>
           </td>
-<?
+<?php
 }
 ?>
         </tr>
@@ -466,11 +467,11 @@ foreach ($Categories as $CatKey => $CatName) {
       </div>
     </form>
   </div>
-<?  if (count($GroupIDs) === 0) { ?>
+<?php  if (0 === count($GroupIDs)) { ?>
   <div class="center">
     Nothing found!
   </div>
-<?  } else { ?>
+<?php  } else { ?>
   <div class="linkbox"><?=$Pages?></div>
   <div class="box">
   <table class="torrent_table cats" width="100%">
@@ -495,41 +496,40 @@ foreach ($Categories as $CatKey => $CatName) {
         </a>
       </td>
     </tr>
-<?
+<?php
   $PageSize = 0;
   foreach ($TorrentsInfo as $TorrentID => $Info) {
-    list($GroupID, , $Time) = array_values($Info);
+      [$GroupID, , $Time] = array_values($Info);
 
-    extract(Torrents::array_group($Results[$GroupID]));
-    $Torrent = $Torrents[$TorrentID];
+      extract(Torrents::array_group($Results[$GroupID]));
+      $Torrent = $Torrents[$TorrentID];
 
 
-    $TorrentTags = new Tags($TagList);
+      $TorrentTags = new Tags($TagList);
 
-    $DisplayName = Artists::display_artists($Artists);
-    $DisplayName .= '<a href="torrents.php?id='.$GroupID.'&amp;torrentid='.$TorrentID.'" ';
-    if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
-      $DisplayName .= 'data-cover="'.ImageTools::process($WikiImage, 'thumb').'" ';
-    }
-    $GroupName = empty($GroupName) ? (empty($GroupNameRJ) ? $GroupNameJP : $GroupNameRJ) : $GroupName;
-    $DisplayName .= 'dir="ltr">'.$GroupName.'</a>';
-    if ($GroupYear) {
-      $DisplayName .= " [$GroupYear]";
-    }
-    if ($GroupStudio) {
-      $DisplayName .= " [$GroupStudio]";
-    }
-    if ($GroupCatalogueNumber) {
-      $DisplayName .= " [$GroupCatalogueNumber]";
-    }
-    if ($GroupDLSiteID) {
-      $DisplayName .= " [$GroupDLSiteID]";
-    }
-    $ExtraInfo = Torrents::torrent_info($Torrent);
-    if ($ExtraInfo) {
-      $DisplayName .= " - $ExtraInfo";
-    }
-?>
+      $DisplayName = Artists::display_artists($Artists);
+      $DisplayName .= '<a href="torrents.php?id=' . $GroupID . '&amp;torrentid=' . $TorrentID . '" ';
+      if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
+          $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage, 'thumb') . '" ';
+      }
+      $GroupName = empty($GroupName) ? (empty($GroupNameRJ) ? $GroupNameJP : $GroupNameRJ) : $GroupName;
+      $DisplayName .= 'dir="ltr">' . $GroupName . '</a>';
+      if ($GroupYear) {
+          $DisplayName .= " [$GroupYear]";
+      }
+      if ($GroupStudio) {
+          $DisplayName .= " [$GroupStudio]";
+      }
+      if ($GroupCatalogueNumber) {
+          $DisplayName .= " [$GroupCatalogueNumber]";
+      }
+      if ($GroupDLSiteID) {
+          $DisplayName .= " [$GroupDLSiteID]";
+      }
+      $ExtraInfo = Torrents::torrent_info($Torrent);
+      if ($ExtraInfo) {
+          $DisplayName .= " - $ExtraInfo";
+      } ?>
     <tr class="torrent torrent_row<?=($Torrent['IsSnatched'] ? ' snatched_torrent' : '') . ($GroupFlags['IsSnatched'] ? ' snatched_group' : '')?>">
       <td class="center cats_col">
         <div title="<?=Format::pretty_category($GroupCategoryID)?>" class="tooltip <?=Format::css_category($GroupCategoryID)?>"></div>
@@ -540,20 +540,21 @@ foreach ($Categories as $CatKey => $CatName) {
             [ <a href="torrents.php?action=download&amp;id=<?=$TorrentID?>&amp;authkey=<?=$LoggedUser['AuthKey']?>&amp;torrent_pass=<?=$LoggedUser['torrent_pass']?>" class="tooltip" title="Download">DL</a>
             | <a href="reportsv2.php?action=report&amp;id=<?=$TorrentID?>" class="tooltip" title="Report">RP</a> ]
           </span>
-          <? echo "$DisplayName\n"; ?>
-          <div class="tags"><?=$TorrentTags->format('torrents.php?type='.$Action.'&amp;userid='.$UserID.'&amp;tags=')?></div>
+          <?php echo "$DisplayName\n"; ?>
+          <div class="tags"><?=$TorrentTags->format('torrents.php?type=' . $Action . '&amp;userid=' . $UserID . '&amp;tags=')?></div>
         </div>
       </td>
       <td class="nobr"><?=time_diff($Time, 1)?></td>
       <td class="number_column nobr"><?=Format::get_size($Torrent['Size'])?></td>
       <td class="number_column"><?=number_format($Torrent['Snatched'])?></td>
-      <td class="number_column<?=(($Torrent['Seeders'] == 0) ? ' r00' : '')?>"><?=number_format($Torrent['Seeders'])?></td>
+      <td class="number_column<?=((0 == $Torrent['Seeders']) ? ' r00' : '')?>"><?=number_format($Torrent['Seeders'])?></td>
       <td class="number_column"><?=number_format($Torrent['Leechers'])?></td>
     </tr>
-<?    }?>
+<?php
+  }?>
   </table>
   </div>
-<?  } ?>
+<?php  } ?>
   <div class="linkbox"><?=$Pages?></div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

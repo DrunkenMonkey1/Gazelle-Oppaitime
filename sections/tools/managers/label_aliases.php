@@ -6,12 +6,12 @@ if (!check_perms('torrents_edit') || $LoggedUser['DisableWiki']) {
 */
 
 if (!check_perms('users_mod') && !$LoggedUser['ExtraClasses'][DELTA_TEAM]) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Label Aliases');
 
-$OrderBy = $_GET['order'] === 'BadLabels' ? 'BadLabel' : 'AliasLabel';
+$OrderBy = 'BadLabels' === $_GET['order'] ? 'BadLabel' : 'AliasLabel';
 /*
 $LabelID = (int)$_GET['id'];
 $LabelNameSQL = '';
@@ -29,30 +29,30 @@ if (!empty($LabelID)) {
 */
 
 if (isset($_POST['newalias'])) {
-  $BadLabel = db_string($_POST['BadLabel']);
-  $AliasLabel = db_string($_POST['AliasLabel']);
+    $BadLabel = db_string($_POST['BadLabel']);
+    $AliasLabel = db_string($_POST['AliasLabel']);
 
-  $DB->query("
+    $DB->query("
     INSERT INTO label_aliases (BadLabel, AliasLabel)
     VALUES ('$BadLabel', '$AliasLabel')");
 }
 
 if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
-  $AliasID = $_POST['aliasid'];
-  $BadLabel = db_string($_POST['BadLabel']);
-  $AliasLabel = db_string($_POST['AliasLabel']);
+    $AliasID = $_POST['aliasid'];
+    $BadLabel = db_string($_POST['BadLabel']);
+    $AliasLabel = db_string($_POST['AliasLabel']);
 
-  if ($_POST['save']) {
-    $DB->query("
+    if ($_POST['save']) {
+        $DB->query("
       UPDATE label_aliases
       SET BadLabel = '$BadLabel', AliasLabel = '$AliasLabel'
       WHERE ID = '$AliasID' ");
-  }
-  if ($_POST['delete']) {
-    $DB->query("
+    }
+    if ($_POST['delete']) {
+        $DB->query("
       DELETE FROM label_aliases
       WHERE ID = '$AliasID'");
-  }
+    }
 }
 ?>
 <div class="header">
@@ -83,14 +83,14 @@ if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
       </td>
     </form>
   </tr>
-<?
+<?php
 $DB->query("
   SELECT ID, BadLabel, AliasLabel
   FROM label_aliases
   $LabelNameSQL
   ORDER BY $OrderBy");
-while (list($ID, $BadLabel, $AliasLabel) = $DB->next_record()) {
-?>
+while ([$ID, $BadLabel, $AliasLabel] = $DB->next_record()) {
+    ?>
   <tr>
     <form method="post" action="">
       <input type="hidden" name="changealias" value="1" />
@@ -107,8 +107,8 @@ while (list($ID, $BadLabel, $AliasLabel) = $DB->next_record()) {
       </td>
     </form>
   </tr>
-<?
+<?php
 }
 ?>
 </table>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

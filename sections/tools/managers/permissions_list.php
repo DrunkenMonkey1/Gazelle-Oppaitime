@@ -1,4 +1,4 @@
-<?
+<?php
 View::show_header('Manage Permissions');
 ?>
 <script type="text/javascript">//<![CDATA[
@@ -17,7 +17,7 @@ function confirmDelete(id) {
       <a href="tools.php" class="brackets">Back to tools</a>
     </div>
   </div>
-<?
+<?php
 $DB->query("
   SELECT
     p.ID,
@@ -31,7 +31,7 @@ $DB->query("
   GROUP BY p.ID
   ORDER BY p.Secondary ASC, p.Level ASC");
 if ($DB->has_results()) {
-?>
+    ?>
   <div class="box">
   <table width="100%">
     <tr class="colhead">
@@ -40,7 +40,7 @@ if ($DB->has_results()) {
       <td>User count</td>
       <td class="center">Actions</td>
     </tr>
-<?  while (list($ID, $Name, $Level, $Secondary, $UserCount) = $DB->next_record()) { ?>
+<?php  while ([$ID, $Name, $Level, $Secondary, $UserCount] = $DB->next_record()) { ?>
     <tr>
       <td><?=display_str($Name); ?></td>
       <td><?=($Secondary ? 'Secondary' : $Level) ?></td>
@@ -50,15 +50,15 @@ if ($DB->has_results()) {
         <a href="#" onclick="return confirmDelete(<?=$ID?>);" class="brackets">Remove</a>
       </td>
     </tr>
-<?  } ?>
+<?php  } ?>
   </table>
   </div>
-<?
+<?php
 } else { ?>
   <h2 align="center">There are no permission classes.</h2>
-<?
+<?php
 } ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

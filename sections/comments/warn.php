@@ -1,8 +1,8 @@
 <?php
 if (!check_perms('users_warn')) {
-  error(404);
+    error(404);
 }
-Misc::assert_isset_request($_POST, array('postid'));
+Misc::assert_isset_request($_POST, ['postid']);
 
 $PostID = (int)$_POST['postid'];
 $DB->query("
@@ -10,9 +10,9 @@ $DB->query("
   FROM comments
   WHERE ID = $PostID");
 if (!$DB->has_results()) {
-  error(404);
+    error(404);
 }
-list($PostBody, $AuthorID) = $DB->next_record();
+[$PostBody, $AuthorID] = $DB->next_record();
 $UserInfo = Users::user_info($AuthorID);
 
 View::show_header('Warn User');
@@ -41,9 +41,9 @@ View::show_header('Warn User');
               <option value="1">1 week</option>
               <option value="2">2 weeks</option>
               <option value="4">4 weeks</option>
-  <?          if (check_perms('users_mod')) { ?>
+  <?php          if (check_perms('users_mod')) { ?>
               <option value="8">8 weeks</option>
-  <?          } ?>
+  <?php          } ?>
             </select></td>
         </tr>
         <tr>
@@ -64,4 +64,4 @@ View::show_header('Warn User');
     </form>
   </div>
 </div>
-<? View::show_footer();
+<?php View::show_footer();

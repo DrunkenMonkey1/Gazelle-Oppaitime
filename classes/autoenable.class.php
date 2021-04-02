@@ -1,7 +1,7 @@
-<?
+<?php
 
-class AutoEnable {
-
+class AutoEnable
+{
     // Constants for database values
     const APPROVED = 1;
     const DENIED = 2;
@@ -19,11 +19,12 @@ class AutoEnable {
     /**
      * Handle a new enable request
      *
-     * @param string $Username The user's username
-     * @param string $Email The user's email address
+     * @param  string $Username The user's username
+     * @param  string $Email    The user's email address
      * @return string The output
      */
-    public static function new_request($Username, $Email) {
+    public static function new_request($Username, $Email)
+    {
         if (empty($Username)) {
             header("Location: login.php");
             die();
@@ -39,7 +40,7 @@ class AutoEnable {
 
         if (G::$DB->has_results()) {
             // Make sure the user can make another request
-            list($UserID, $BanReason) = G::$DB->next_record();
+            [$UserID, $BanReason] = G::$DB->next_record();
             G::$DB->query("
             SELECT 1 FROM users_enable_requests
             WHERE UserID = '$UserID'
@@ -52,7 +53,7 @@ class AutoEnable {
                     (
                       Timestamp > NOW() - INTERVAL 2 MONTH
                       AND
-                      Outcome = '".self::DENIED."'
+                      Outcome = '" . self::DENIED . "'
                     )
                   )");
         }
@@ -69,11 +70,16 @@ class AutoEnable {
             // New disable activation request
             $UserAgent = db_string($_SERVER['HTTP_USER_AGENT']);
 
-            G::$DB->query("
+            G::$DB->query(
+                "
                 INSERT INTO users_enable_requests
                 (UserID, Email, IP, UserAgent, Timestamp)
                 VALUES (?, ?, ?, ?, NOW())",
-                $UserID, Crypto::encrypt($Email), Crypto::encrypt($IP), $UserAgent);
+                $UserID,
+                Crypto::encrypt($Email),
+                Crypto::encrypt($IP),
+                $UserAgent
+            );
             $RequestID = G::$DB->inserted_id();
 
             // Cache the number of requests for the modbar
@@ -81,8 +87,8 @@ class AutoEnable {
             setcookie('username', '', time() - 60 * 60, '/', '', false);
             $Output = self::RECEIVED_MESSAGE;
             Tools::update_user_notes($UserID, sqltime() . " - Enable request " . G::$DB->inserted_id() . " received from $IP\n\n");
-            if ($BanReason == 3) {
-              //self::handle_requests([$RequestID], self::APPROVED, "Automatically approved (inactivity)");
+            if (3 == $BanReason) {
+                //self::handle_requests([$RequestID], self::APPROVED, "Automatically approved (inactivity)");
             }
         }
 
@@ -96,15 +102,16 @@ class AutoEnable {
      * @param int $Status The status to mark the requests as
      * @param string $Comment The staff member comment
      */
-    public static function handle_requests($IDs, $Status, $Comment) {
-        if ($Status != self::APPROVED && $Status != self::DENIED && $Status != self::DISCARDED) {
+    public static function handle_requests($IDs, $Status, $Comment)
+    {
+        if (self::APPROVED != $Status && self::DENIED != $Status && self::DISCARDED != $Status) {
             error(404);
         }
 
         $UserInfo = [];
         $IDs = (!is_array($IDs)) ? [$IDs] : $IDs;
 
-        if (count($IDs) == 0) {
+        if (0 == count($IDs)) {
             error(404);
         }
 
@@ -116,15 +123,15 @@ class AutoEnable {
 
         G::$DB->query("SELECT Email, ID, UserID
                 FROM users_enable_requests
-                WHERE ID IN (".implode(',', $IDs).")
+                WHERE ID IN (" . implode(',', $IDs) . ")
                     AND Outcome IS NULL");
         $Results = G::$DB->to_array(false, MYSQLI_NUM);
 
-        if ($Status != self::DISCARDED) {
+        if (self::DISCARDED != $Status) {
             // Prepare email
-            require_once(SERVER_ROOT . '/classes/templates.class.php');
-            $TPL = NEW TEMPLATE;
-            if ($Status == self::APPROVED) {
+            require_once SERVER_ROOT . '/classes/templates.class.php';
+            $TPL = new TEMPLATE();
+            if (self::APPROVED == $Status) {
                 $TPL->open(SERVER_ROOT . '/templates/enable_request_accepted.tpl');
                 $TPL->set('SITE_DOMAIN', SITE_DOMAIN);
             } else {
@@ -134,11 +141,11 @@ class AutoEnable {
             $TPL->set('SITE_NAME', SITE_NAME);
 
             foreach ($Results as $Result) {
-                list($Email, $ID, $UserID) = $Result;
+                [$Email, $ID, $UserID] = $Result;
                 $Email = Crypto::decrypt($Email);
-                $UserInfo[] = array($ID, $UserID);
+                $UserInfo[] = [$ID, $UserID];
 
-                if ($Status == self::APPROVED) {
+                if (self::APPROVED == $Status) {
                     // Generate token
                     $Token = db_string(Users::make_secret());
                     G::$DB->query("
@@ -150,14 +157,14 @@ class AutoEnable {
 
                 // Send email
                 $Subject = "Your enable request for " . SITE_NAME . " has been ";
-                $Subject .= ($Status == self::APPROVED) ? 'approved' : 'denied';
+                $Subject .= (self::APPROVED == $Status) ? 'approved' : 'denied';
 
                 Misc::send_email($Email, $Subject, $TPL->get(), 'noreply');
             }
         } else {
             foreach ($Results as $Result) {
-                list(, $ID, $UserID) = $Result;
-                $UserInfo[] = array($ID, $UserID);
+                [, $ID, $UserID] = $Result;
+                $UserInfo[] = [$ID, $UserID];
             }
         }
 
@@ -168,15 +175,15 @@ class AutoEnable {
             FROM users_main
             WHERE ID = ?", $StaffID);
         if (G::$DB->has_results()) {
-          list($StaffUser) = G::$DB->next_record();
+            [$StaffUser] = G::$DB->next_record();
         } else {
-          $StaffUser = "System";
-          $StaffID = 0;
+            $StaffUser = "System";
+            $StaffID = 0;
         }
 
         foreach ($UserInfo as $User) {
-            list($ID, $UserID) = $User;
-            $BaseComment = sqltime() . " - Enable request $ID " . strtolower(self::get_outcome_string($Status)) . ' by [user]'.$StaffUser.'[/user]';
+            [$ID, $UserID] = $User;
+            $BaseComment = sqltime() . " - Enable request $ID " . strtolower(self::get_outcome_string($Status)) . ' by [user]' . $StaffUser . '[/user]';
             $BaseComment .= (!empty($Comment)) ? "\nReason: $Comment\n\n" : "\n\n";
             Tools::update_user_notes($UserID, $BaseComment);
         }
@@ -187,7 +194,7 @@ class AutoEnable {
                 SET HandledTimestamp = NOW(),
                     CheckedBy = ?,
                     Outcome = ?
-                WHERE ID IN (".implode(',', $IDs).")", $StaffID, $Status);
+                WHERE ID IN (" . implode(',', $IDs) . ")", $StaffID, $Status);
         G::$Cache->decrement_value(self::CACHE_KEY_NAME, count($IDs));
     }
 
@@ -196,7 +203,8 @@ class AutoEnable {
      *
      * @param int $ID The request ID
      */
-    public static function unresolve_request($ID) {
+    public static function unresolve_request($ID)
+    {
         $ID = (int) $ID;
 
         if (empty($ID)) {
@@ -212,14 +220,14 @@ class AutoEnable {
         if (!G::$DB->has_results()) {
             error(404);
         } else {
-            list($UserID) = G::$DB->next_record();
+            [$UserID] = G::$DB->next_record();
         }
 
         G::$DB->query("
             SELECT Username
             FROM users_main
             WHERE ID = '" . G::$LoggedUser['ID'] . "'");
-        list($StaffUser) = G::$DB->next_record();
+        [$StaffUser] = G::$DB->next_record();
 
         Tools::update_user_notes($UserID, sqltime() . " - Enable request $ID unresolved by [user]" . $StaffUser . '[/user]' . "\n\n");
         G::$DB->query("
@@ -232,15 +240,16 @@ class AutoEnable {
     /**
      * Get the corresponding outcome string for a numerical value
      *
-     * @param int $Outcome The outcome integer
+     * @param  int    $Outcome The outcome integer
      * @return string The formatted output string
      */
-    public static function get_outcome_string($Outcome) {
-        if ($Outcome == self::APPROVED) {
+    public static function get_outcome_string($Outcome)
+    {
+        if (self::APPROVED == $Outcome) {
             $String = "Approved";
-        } else if ($Outcome == self::DENIED) {
+        } elseif (self::DENIED == $Outcome) {
             $String = "Rejected";
-        } else if ($Outcome == self::DISCARDED) {
+        } elseif (self::DISCARDED == $Outcome) {
             $String = "Discarded";
         } else {
             $String = "---";
@@ -252,10 +261,11 @@ class AutoEnable {
     /**
      * Handle a user's request to enable an account
      *
-     * @param string $Token The token
+     * @param  string $Token The token
      * @return string The error output, or an empty string
      */
-    public static function handle_token($Token) {
+    public static function handle_token($Token)
+    {
         $Token = db_string($Token);
         G::$DB->query("
             SELECT uer.UserID, uer.HandledTimestamp, um.torrent_pass, um.Visible, um.IP
@@ -264,20 +274,20 @@ class AutoEnable {
             WHERE Token = '$Token'");
 
         if (G::$DB->has_results()) {
-            list($UserID, $Timestamp, $TorrentPass, $Visible, $IP) = G::$DB->next_record();
+            [$UserID, $Timestamp, $TorrentPass, $Visible, $IP] = G::$DB->next_record();
             G::$DB->query("UPDATE users_enable_requests SET Token = NULL WHERE Token = '$Token'");
             if ($Timestamp < time_minus(3600 * 48)) {
                 // Old request
-                Tools::update_user_notes($UserID, sqltime() . " - Tried to use an expired enable token from ".$_SERVER['REMOTE_ADDR']."\n\n");
-                $Err = "Token has expired. Please visit ".BOT_DISABLED_CHAN." on ".BOT_SERVER." to discuss this with staff.";
+                Tools::update_user_notes($UserID, sqltime() . " - Tried to use an expired enable token from " . $_SERVER['REMOTE_ADDR'] . "\n\n");
+                $Err = "Token has expired. Please visit " . BOT_DISABLED_CHAN . " on " . BOT_SERVER . " to discuss this with staff.";
             } else {
                 // Good request, decrement cache value and enable account
                 G::$Cache->decrement_value(AutoEnable::CACHE_KEY_NAME);
-                $VisibleTrIP = ($Visible && Crypto::decrypt($IP) != '127.0.0.1') ? '1' : '0';
-                Tracker::update_tracker('add_user', array('id' => $UserID, 'passkey' => $TorrentPass, 'visible' => $VisibleTrIP));
+                $VisibleTrIP = ($Visible && '127.0.0.1' != Crypto::decrypt($IP)) ? '1' : '0';
+                Tracker::update_tracker('add_user', ['id' => $UserID, 'passkey' => $TorrentPass, 'visible' => $VisibleTrIP]);
                 G::$DB->query("UPDATE users_main SET Enabled = '1', can_leech = '1' WHERE ID = '$UserID'");
                 G::$DB->query("UPDATE users_info SET BanReason = '0' WHERE UserID = '$UserID'");
-                G::$Cache->delete_value('user_info_'.$UserID);
+                G::$Cache->delete_value('user_info_' . $UserID);
                 $Err = "Your account has been enabled. You may now log in.";
             }
         } else {
@@ -290,16 +300,17 @@ class AutoEnable {
     /**
      * Build the search query, from the searchbox inputs
      *
-     * @param int $UserID The user ID
-     * @param string $IP The IP
-     * @param string $SubmittedTimestamp The timestamp representing when the request was submitted
-     * @param int $HandledUserID The ID of the user that handled the request
-     * @param string $HandledTimestamp The timestamp representing when the request was handled
-     * @param int $OutcomeSearch The outcome of the request
-     * @param boolean $Checked Should checked requests be included?
-     * @return array The WHERE conditions for the query
+     * @param  int    $UserID             The user ID
+     * @param  string $IP                 The IP
+     * @param  string $SubmittedTimestamp The timestamp representing when the request was submitted
+     * @param  int    $HandledUserID      The ID of the user that handled the request
+     * @param  string $HandledTimestamp   The timestamp representing when the request was handled
+     * @param  int    $OutcomeSearch      The outcome of the request
+     * @param  bool   $Checked            Should checked requests be included?
+     * @return array  The WHERE conditions for the query
      */
-    public static function build_search_query($Username, $IP, $SubmittedBetween, $SubmittedTimestamp1, $SubmittedTimestamp2, $HandledUsername, $HandledBetween, $HandledTimestamp1, $HandledTimestamp2, $OutcomeSearch, $Checked) {
+    public static function build_search_query($Username, $IP, $SubmittedBetween, $SubmittedTimestamp1, $SubmittedTimestamp2, $HandledUsername, $HandledBetween, $HandledTimestamp1, $HandledTimestamp2, $OutcomeSearch, $Checked)
+    {
         $Where = [];
 
         if (!empty($Username)) {
@@ -312,7 +323,7 @@ class AutoEnable {
         }
 
         if (!empty($SubmittedTimestamp1)) {
-            switch($SubmittedBetween) {
+            switch ($SubmittedBetween) {
                 case 'on':
                     $Where[] = "DATE(uer.Timestamp) = DATE('$SubmittedTimestamp1')";
                     break;
@@ -333,7 +344,7 @@ class AutoEnable {
         }
 
         if (!empty($HandledTimestamp1)) {
-            switch($HandledBetween) {
+            switch ($HandledBetween) {
                 case 'on':
                     $Where[] = "DATE(uer.HandledTimestamp) = DATE('$HandledTimestamp1')";
                     break;

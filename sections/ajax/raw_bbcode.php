@@ -1,9 +1,9 @@
-<?
+<?php
 
 $PostID = (int)$_POST['postid'];
 
 if (empty($PostID)) {
-  json_die("error", "empty postid");
+    json_die("error", "empty postid");
 }
 
 $DB->query("
@@ -13,14 +13,12 @@ $DB->query("
   WHERE p.ID = '$PostID'");
 
 if (!$DB->has_results()) {
-  json_die("error", "no results");
+    json_die("error", "no results");
 }
 
-list($ForumID, $Body) = $DB->next_record();
+[$ForumID, $Body] = $DB->next_record();
 if (!Forums::check_forumperm($ForumID)) {
-  json_die("error", "assholes");
+    json_die("error", "assholes");
 }
 
-json_die("success", array("body" => nl2br($Body)));
-
-?>
+json_die("success", ["body" => nl2br($Body)]);

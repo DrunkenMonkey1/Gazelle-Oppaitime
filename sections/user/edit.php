@@ -1,8 +1,8 @@
-<?
-require_once(SERVER_ROOT.'/classes/twofa.class.php');
+<?php
+require_once SERVER_ROOT . '/classes/twofa.class.php';
 $UserID = $_REQUEST['userid'];
 if (!is_number($UserID)) {
-  error(404);
+    error(404);
 }
 
 $DB->query("
@@ -25,41 +25,44 @@ $DB->query("
     JOIN users_info AS i ON i.UserID = m.ID
     LEFT JOIN permissions AS p ON p.ID = m.PermissionID
   WHERE m.ID = ?", $UserID);
-list($Username, $TwoFactor, $PublicKey, $Email, $IRCKey, $Paranoia, $Info, $Avatar, $StyleID, $StyleURL, $SiteOptions, $UnseededAlerts, $Class, $InfoTitle) = $DB->next_record(MYSQLI_NUM, [5, 10]);
+[$Username, $TwoFactor, $PublicKey, $Email, $IRCKey, $Paranoia, $Info, $Avatar, $StyleID, $StyleURL, $SiteOptions, $UnseededAlerts, $Class, $InfoTitle] = $DB->next_record(MYSQLI_NUM, [5, 10]);
 
 $TwoFA = new TwoFactorAuth();
 
 $Email = apcu_exists('DBKEY') ? Crypto::decrypt($Email) : '[Encrypted]';
 
 if ($UserID != $LoggedUser['ID'] && !check_perms('users_edit_profiles', $Class)) {
-  error(403);
+    error(403);
 }
 
 $Paranoia = json_decode($Paranoia, true);
 if (!is_array($Paranoia)) {
-  $Paranoia = [];
+    $Paranoia = [];
 }
 
-function paranoia_level($Setting) {
-  global $Paranoia;
-  // 0: very paranoid; 1: stats allowed, list disallowed; 2: not paranoid
-  return (in_array($Setting . '+', $Paranoia)) ? 0 : (in_array($Setting, $Paranoia) ? 1 : 2);
+function paranoia_level($Setting)
+{
+    global $Paranoia;
+    // 0: very paranoid; 1: stats allowed, list disallowed; 2: not paranoid
+    return (in_array($Setting . '+', $Paranoia, true)) ? 0 : (in_array($Setting, $Paranoia, true) ? 1 : 2);
 }
 
-function display_paranoia($FieldName) {
-  $Level = paranoia_level($FieldName);
-  print "\t\t\t\t\t<label><input type=\"checkbox\" name=\"p_{$FieldName}_c\"".checked($Level >= 1).' onchange="AlterParanoia()" /> Show count</label>'."&nbsp;&nbsp;\n";
-  print "\t\t\t\t\t<label><input type=\"checkbox\" name=\"p_{$FieldName}_l\"".checked($Level >= 2).' onchange="AlterParanoia()" /> Show list</label>'."\n";
+function display_paranoia($FieldName)
+{
+    $Level = paranoia_level($FieldName);
+    print "\t\t\t\t\t<label><input type=\"checkbox\" name=\"p_{$FieldName}_c\"" . checked($Level >= 1) . ' onchange="AlterParanoia()" /> Show count</label>' . "&nbsp;&nbsp;\n";
+    print "\t\t\t\t\t<label><input type=\"checkbox\" name=\"p_{$FieldName}_l\"" . checked($Level >= 2) . ' onchange="AlterParanoia()" /> Show list</label>' . "\n";
 }
 
-function checked($Checked) {
-  return ($Checked ? ' checked="checked"' : '');
+function checked($Checked)
+{
+    return ($Checked ? ' checked="checked"' : '');
 }
 
 if ($SiteOptions) {
-  $SiteOptions = json_decode($SiteOptions, true) ?? [];
+    $SiteOptions = json_decode($SiteOptions, true) ?? [];
 } else {
-  $SiteOptions = [];
+    $SiteOptions = [];
 }
 
 View::show_header("$Username &gt; Settings", 'user,password_validate,validate,cssgallery,preview_paranoia,bbcode,user_settings,donor_titles');
@@ -69,8 +72,8 @@ View::show_header("$Username &gt; Settings", 'user,password_validate,validate,cs
 $DonorRank = Donations::get_rank($UserID);
 $DonorIsVisible = Donations::is_visible($UserID);
 
-if ($DonorIsVisible === null) {
-  $DonorIsVisible = true;
+if (null === $DonorIsVisible) {
+    $DonorIsVisible = true;
 }
 
 extract(Donations::get_enabled_rewards($UserID));
@@ -140,40 +143,38 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="Selecting a stylesheet will change <?=SITE_NAME?>'s visual appearance."><strong>Stylesheet</strong></td>
         <td>
           <select name="stylesheet" id="stylesheet">
-<?  foreach ($Stylesheets as $Style) { ?>
+<?php  foreach ($Stylesheets as $Style) { ?>
             <option value="<?=($Style['ID'])?>"<?=$Style['ID'] == $StyleID ? ' selected="selected"' : ''?>><?=($Style['ProperName'])?></option>
-<?  } ?>
+<?php  } ?>
           </select>&nbsp;&nbsp;
           <a data-toggle-target="#css_gallery" class="brackets">Show gallery</a>
           <div id="css_gallery" class="hidden">
-<?  foreach ($Stylesheets as $Style) { ?>
+<?php  foreach ($Stylesheets as $Style) { ?>
             <div class="preview_wrapper">
               <div class="preview_image" name="<?=($Style['Name'])?>">
-                <img src="<?=STATIC_SERVER.'stylespreview/thumb_'.$Style['Name'].'.png'?>" alt="<?=$Style['Name']?>" />
+                <img src="<?=STATIC_SERVER . 'stylespreview/thumb_' . $Style['Name'] . '.png'?>" alt="<?=$Style['Name']?>" />
                 <p class="preview_name">
                   <label><input type="radio" name="stylesheet_gallery" value="<?=($Style['ID'])?>" /> <?=($Style['ProperName'])?></label>
                 </p>
               </div>
             </div>
-<?  } ?>
+<?php  } ?>
           </div>
         </td>
       </tr>
       <tr id="style_additions_tr" class="<?=($Stylesheets[$LoggedUser['StyleID']]['Additions'][0] ?? false)?'':'hidden'?>">
         <td class="label tooltip" title="Select changes that you want made to your chosen stylesheet"><strong>Stylesheet additions</strong></td>
-        <td> <?
-          foreach($Stylesheets as $Style) {
-            $StyleAdditions = explode('|', $Style['Additions']);
-            ?> <ul class="nobullet style_addition<?=$Style['ID']==$Stylesheets[$LoggedUser['StyleID']]['ID']?'':' hidden'?>" id="style_addition_<?=$Style['Name']?>"> <?
-            foreach($StyleAdditions as $i => $Addition) {
-              if ($Addition) { ?>
+        <td> <?php
+          foreach ($Stylesheets as $Style) {
+              $StyleAdditions = explode('|', $Style['Additions']); ?> <ul class="nobullet style_addition<?=$Style['ID']==$Stylesheets[$LoggedUser['StyleID']]['ID']?'':' hidden'?>" id="style_addition_<?=$Style['Name']?>"> <?php
+            foreach ($StyleAdditions as $i => $Addition) {
+                if ($Addition) { ?>
                 <li>
-                <input type="checkbox" name="style_additions[]" value="<?=$Addition?>" id="addition_<?=$Addition?>"<?=(in_array($Addition, $SiteOptions['StyleAdditions']??[])?' checked="checked"':'')?>>
+                <input type="checkbox" name="style_additions[]" value="<?=$Addition?>" id="addition_<?=$Addition?>"<?=(in_array($Addition, $SiteOptions['StyleAdditions']??[], true)?' checked="checked"':'')?>>
                   <label for="addition_<?=$Addition?>"><?=explode('|', $Style['ProperAdditions'])[$i]?></label>
                 </li>
-           <? }
-            }
-            ?> </ul> <?
+           <?php }
+            } ?> </ul> <?php
           }
         ?> </td>
       </tr>
@@ -183,7 +184,7 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="40" name="styleurl" id="styleurl" value="<?=display_str($StyleURL)?>" />
         </td>
       </tr>
-<?  if (check_perms('users_mod')) { ?>
+<?php  if (check_perms('users_mod')) { ?>
       <tr id="site_autostats_tr">
         <td class="label tooltip" title="This is a staff-only feature to bypass the &quot;Show stats&quot; button for seeding, leeching, snatched, and downloaded stats on profile pages."><strong>Profile stats</strong></td>
         <td>
@@ -193,7 +194,7 @@ echo $Val->GenerateJS('userform');
           </label>
         </td>
       </tr>
-<?  } ?>
+<?php  } ?>
     </table>
     <table cellpadding="6" cellspacing="1" border="0" width="100%" class="layout border user_options" id="torrent_settings">
       <tr class="colhead_dark">
@@ -201,28 +202,28 @@ echo $Val->GenerateJS('userform');
           <strong>Torrent Settings</strong>
         </td>
       </tr>
-<?  if (check_perms('site_advanced_search')) { ?>
+<?php  if (check_perms('site_advanced_search')) { ?>
       <tr id="tor_searchtype_tr">
         <td class="label tooltip" title="This option allows you to choose whether the default torrent search menu will be basic (fewer options) or advanced (more options)."><strong>Default search type</strong></td>
         <td>
           <ul class="options_list nobullet">
             <li>
-              <input type="radio" name="searchtype" id="search_type_simple" value="0"<?=$SiteOptions['SearchType'] == 0 ? ' checked="checked"' : ''?> />
+              <input type="radio" name="searchtype" id="search_type_simple" value="0"<?=0 == $SiteOptions['SearchType'] ? ' checked="checked"' : ''?> />
               <label for="search_type_simple">Simple</label>
             </li>
             <li>
-              <input type="radio" name="searchtype" id="search_type_advanced" value="1"<?=$SiteOptions['SearchType'] == 1 ? ' checked="checked"' : ''?> />
+              <input type="radio" name="searchtype" id="search_type_advanced" value="1"<?=1 == $SiteOptions['SearchType'] ? ' checked="checked"' : ''?> />
               <label for="search_type_advanced">Advanced</label>
             </li>
           </ul>
         </td>
       </tr>
-<?  } ?>
+<?php  } ?>
       <tr id="tor_group_tr">
         <td class="label tooltip" title="Enabling torrent grouping will place multiple formats of the same torrent group together beneath a common header."><strong>Torrent grouping</strong></td>
         <td>
           <div class="option_group">
-            <input type="checkbox" name="disablegrouping" id="disablegrouping"<?=$SiteOptions['DisableGrouping2'] == 0 ? ' checked="checked"' : ''?> />
+            <input type="checkbox" name="disablegrouping" id="disablegrouping"<?=0 == $SiteOptions['DisableGrouping2'] ? ' checked="checked"' : ''?> />
             <label for="disablegrouping">Enable torrent grouping</label>
           </div>
         </td>
@@ -233,11 +234,11 @@ echo $Val->GenerateJS('userform');
           <div class="option_group">
             <ul class="options_list nobullet">
               <li>
-                <input type="radio" name="torrentgrouping" id="torrent_grouping_open" value="0"<?=$SiteOptions['TorrentGrouping'] == 0 ? ' checked="checked"' : ''?> />
+                <input type="radio" name="torrentgrouping" id="torrent_grouping_open" value="0"<?=0 == $SiteOptions['TorrentGrouping'] ? ' checked="checked"' : ''?> />
                 <label for="torrent_grouping_open">Open</label>
               </li>
               <li>
-                <input type="radio" name="torrentgrouping" id="torrent_grouping_closed" value="1"<?=$SiteOptions['TorrentGrouping'] == 1 ? ' checked="checked"' : ''?> />
+                <input type="radio" name="torrentgrouping" id="torrent_grouping_closed" value="1"<?=1 == $SiteOptions['TorrentGrouping'] ? ' checked="checked"' : ''?> />
                 <label for="torrent_grouping_closed">Closed</label>
               </li>
             </ul>
@@ -258,7 +259,7 @@ echo $Val->GenerateJS('userform');
           <label for="showmagnets">Show magnet links</label>
         </td>
       </tr>
-<? /* ?>
+<?php /* ?>
       <tr>
         <td class="label"><strong>Collage album art view</strong></td>
         <td>
@@ -289,12 +290,12 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="This option allows you to change the number of album covers to display within a single collection page."><strong>Cover art (collections)</strong></td>
         <td>
           <select name="collagecovers" id="collagecovers">
-            <option value="10"<?=$SiteOptions['CollageCovers'] == 10 ? ' selected="selected"' : ''?>>10</option>
-            <option value="25"<?=($SiteOptions['CollageCovers'] == 25 || !isset($SiteOptions['CollageCovers'])) ? ' selected="selected"' : ''?>>25 (default)</option>
-            <option value="50"<?=$SiteOptions['CollageCovers'] == 50 ? ' selected="selected"' : ''?>>50</option>
-            <option value="100"<?=$SiteOptions['CollageCovers'] == 100 ? ' selected="selected"' : ''?>>100</option>
-            <option value="1000000"<?=$SiteOptions['CollageCovers'] == 1000000 ? ' selected="selected"' : ''?>>All</option>
-            <option value="0"<?=($SiteOptions['CollageCovers'] === 0 || (!isset($SiteOptions['CollageCovers']) && $SiteOptions['HideCollage'])) ? ' selected="selected"' : ''?>>None</option>
+            <option value="10"<?=10 == $SiteOptions['CollageCovers'] ? ' selected="selected"' : ''?>>10</option>
+            <option value="25"<?=(25 == $SiteOptions['CollageCovers'] || !isset($SiteOptions['CollageCovers'])) ? ' selected="selected"' : ''?>>25 (default)</option>
+            <option value="50"<?=50 == $SiteOptions['CollageCovers'] ? ' selected="selected"' : ''?>>50</option>
+            <option value="100"<?=100 == $SiteOptions['CollageCovers'] ? ' selected="selected"' : ''?>>100</option>
+            <option value="1000000"<?=1000000 == $SiteOptions['CollageCovers'] ? ' selected="selected"' : ''?>>All</option>
+            <option value="0"<?=(0 === $SiteOptions['CollageCovers'] || (!isset($SiteOptions['CollageCovers']) && $SiteOptions['HideCollage'])) ? ' selected="selected"' : ''?>>None</option>
           </select>
           covers per page
         </td>
@@ -308,7 +309,7 @@ echo $Val->GenerateJS('userform');
               <label for="showtfilter">Display filter controls</label>
             </li>
             <li>
-              <input type="checkbox" name="showtags" id="showtags"<? Format::selected('ShowTags', 1, 'checked', $SiteOptions); ?> />
+              <input type="checkbox" name="showtags" id="showtags"<?php Format::selected('ShowTags', 1, 'checked', $SiteOptions); ?> />
               <label for="showtags">Display official tag filters</label>
             </li>
           </ul>
@@ -319,8 +320,8 @@ echo $Val->GenerateJS('userform');
         <td>
           <select name="autocomplete">
             <option value="0"<?=empty($SiteOptions['AutoComplete']) ? ' selected="selected"' : ''?>>Everywhere</option>
-            <option value="2"<?=$SiteOptions['AutoComplete'] === 2 ? ' selected="selected"' : ''?>>Searches only</option>
-            <option value="1"<?=$SiteOptions['AutoComplete'] === 1 ? ' selected="selected"' : ''?>>Disable</option>
+            <option value="2"<?=2 === $SiteOptions['AutoComplete'] ? ' selected="selected"' : ''?>>Searches only</option>
+            <option value="1"<?=1 === $SiteOptions['AutoComplete'] ? ' selected="selected"' : ''?>>Disable</option>
           </select>
         </td>
       </tr>
@@ -354,9 +355,9 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="This option allows you to set the desired number of displayed posts per page within forum threads."><strong>Posts per page (forums)</strong></td>
         <td>
           <select name="postsperpage" id="postsperpage">
-            <option value="25"<?=$SiteOptions['PostsPerPage'] == 25 ? ' selected="selected"' : ''?>>25 (default)</option>
-            <option value="50"<?=$SiteOptions['PostsPerPage'] == 50 ? ' selected="selected"' : ''?>>50</option>
-            <option value="100"<?=$SiteOptions['PostsPerPage'] == 100 ? ' selected="selected"' : ''?>>100</option>
+            <option value="25"<?=25 == $SiteOptions['PostsPerPage'] ? ' selected="selected"' : ''?>>25 (default)</option>
+            <option value="50"<?=50 == $SiteOptions['PostsPerPage'] ? ' selected="selected"' : ''?>>50</option>
+            <option value="100"<?=100 == $SiteOptions['PostsPerPage'] ? ' selected="selected"' : ''?>>100</option>
           </select>
           posts per page
         </td>
@@ -379,8 +380,8 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="This option allows you to disable all avatars or show all avatars with a placeholder for users without avatars." data-title-plain="This option allows you to disable all avatars or show all avatars with a placeholder for users without avatars."><strong>Avatar display (posts)</strong></td>
         <td>
           <select name="disableavatars" id="disableavatars">
-            <option value="1"<?=$SiteOptions['DisableAvatars'] == 1 ? ' selected="selected"' : ''?>>Disable avatars</option>
-            <option value="0"<?=$SiteOptions['DisableAvatars'] == 0 ? ' selected="selected"' : ''?>>Show avatars</option>
+            <option value="1"<?=1 == $SiteOptions['DisableAvatars'] ? ' selected="selected"' : ''?>>Disable avatars</option>
+            <option value="0"<?=0 == $SiteOptions['DisableAvatars'] ? ' selected="selected"' : ''?>>Show avatars</option>
           </select>
         </td>
       </tr>
@@ -394,16 +395,16 @@ echo $Val->GenerateJS('userform');
       <tr id="comm_badge_tr">
         <td class="label tooltip" title="Select up to 5 badges to display next to your username."><strong>Displayed Badges</strong></td>
         <td>
-<?  $Badges = Badges::get_badges($UserID);
+<?php  $Badges = Badges::get_badges($UserID);
     if (empty($Badges)) {
-      ?><span>You have no badges :(</span><?
+        ?><span>You have no badges :(</span><?php
     } else {
-      $Count = 0;
-      foreach ($Badges as $BadgeID => $Displayed) {
-        ?><input type="checkbox" name="badges[]" class="badge_checkbox" value="<?=$BadgeID?>" <?=($Displayed)?"checked ":""?>/><?=Badges::display_badge($BadgeID, true)?><?
+        $Count = 0;
+        foreach ($Badges as $BadgeID => $Displayed) {
+            ?><input type="checkbox" name="badges[]" class="badge_checkbox" value="<?=$BadgeID?>" <?=($Displayed)?"checked ":""?>/><?=Badges::display_badge($BadgeID, true)?><?php
         $Count++;
-        echo ($Count % 8) ? '' : '<br>';
-      }
+            echo ($Count % 8) ? '' : '<br>';
+        }
     }
 ?>
         </td>
@@ -429,7 +430,7 @@ echo $Val->GenerateJS('userform');
           <label for="unseededalerts">Enable unseeded torrent alerts</label>
         </td>
       </tr>
-      <? NotificationsManagerView::render_settings(NotificationsManager::get_settings($UserID)); ?>
+      <?php NotificationsManagerView::render_settings(NotificationsManager::get_settings($UserID)); ?>
     </table>
     <table cellpadding="6" cellspacing="1" border="0" width="100%" class="layout border user_options" id="personal_settings">
       <tr class="colhead_dark">
@@ -443,14 +444,14 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="50" name="avatar" id="avatar" value="<?=display_str($Avatar)?>" />
         </td>
       </tr>
-<?  if ($HasSecondAvatar) { ?>
+<?php  if ($HasSecondAvatar) { ?>
       <tr id="pers_avatar2_tr">
         <td class="label tooltip_interactive" title="Congratulations! You've unlocked this option by reaching Special Rank #2. Thanks for donating. Your normal avatar will &quot;flip&quot; to this one when someone runs their mouse over the image. Please link to an avatar which follows the &lt;a href=&quot;rules.php&quot;&gt;site rules&lt;/a&gt;. The avatar width should be 150 pixels and will be resized if necessary." data-title-plain="Congratulations! You've unlocked this option by reaching Special Rank #2. Thanks for donating. Your normal avatar will &quot;flip&quot; to this one when someone runs their mouse over the image. Please link to an avatar which follows the site rules. The avatar width should be 150 pixels and will be resized if necessary."><strong>Second avatar URL</strong></td>
         <td>
           <input type="text" size="50" name="second_avatar" id="second_avatar" value="<?=$Rewards['SecondAvatar']?>" />
         </td>
       </tr>
-<?  }
+<?php  }
   if ($HasAvatarMouseOverText) { ?>
       <tr id="pers_avatarhover_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #3. Thanks for donating. Text you enter in this field will appear when someone mouses over your avatar. All text should follow site rules. 200 character limit."><strong>Avatar mouseover text</strong></td>
@@ -458,7 +459,7 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="50" name="avatar_mouse_over_text" id="avatar_mouse_over_text" value="<?=$Rewards['AvatarMouseOverText']?>" />
         </td>
       </tr>
-<?  }
+<?php  }
   if ($HasDonorIconMouseOverText) { ?>
       <tr id="pers_donorhover_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #2. Thanks for donating. Text you enter in this field will appear when someone mouses over your donor icon. All text should follow site rules. 200 character limit."><strong>Donor icon mouseover text</strong></td>
@@ -466,7 +467,7 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="50" name="donor_icon_mouse_over_text" id="donor_icon_mouse_over_text" value="<?=$Rewards['IconMouseOverText']?>" />
         </td>
       </tr>
-<?  }
+<?php  }
   if ($HasDonorIconLink) { ?>
       <tr id="pers_donorlink_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #4. Thanks for donating. Links you enter in this field will be accessible when your donor icon is clicked. All links should follow site rules."><strong>Donor icon link</strong></td>
@@ -474,7 +475,7 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="50" name="donor_icon_link" id="donor_icon_link" value="<?=$Rewards['CustomIconLink']?>" />
         </td>
       </tr>
-<?  }
+<?php  }
   if ($HasCustomDonorIcon) { ?>
       <tr id="pers_donoricon_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #5. Thanks for donating. Please link to an icon which you'd like to replace your default donor icon with. Icons must be 15 pixels wide by 13 pixels tall. Icons of any other size will be automatically resized."><strong>Custom donor icon URL</strong></td>
@@ -482,7 +483,7 @@ echo $Val->GenerateJS('userform');
           <input type="text" size="50" name="donor_icon_custom_url" id="donor_icon_custom_url" value="<?=$Rewards['CustomIcon']?>" />
         </td>
       </tr>
-<?  }
+<?php  }
   if ($HasDonorForum) { ?>
       <tr id="pers_donorforum_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #5. Thanks for donating. You may select a prefix and suffix which will be used in the Donor Forum you now have access to."><strong>Donor forum honorific</strong></td>
@@ -499,7 +500,7 @@ echo $Val->GenerateJS('userform');
           <strong>Preview:</strong> <span id="donor_title_prefix_preview"></span><?=$Username?><span id="donor_title_comma_preview">, </span><span id="donor_title_suffix_preview"></span>
         </td>
       </tr>
-<?  } ?>
+<?php  } ?>
       <tr id="pers_proftitle_tr">
         <td class="label tooltip" title="You can customize your profile information with text and BBCode. Entering a title will label your profile information section. Unlock additional profile info boxes via Donor Ranks."><strong>Profile title 1</strong></td>
         <td><input type="text" size="50" name="profile_title" id="profile_title" value="<?=display_str($InfoTitle)?>" />
@@ -510,7 +511,7 @@ echo $Val->GenerateJS('userform');
         <td><?php $textarea = new TEXTAREA_PREVIEW('info', 'info', display_str($Info), 40, 8); ?></td>
       </tr>
       <!-- Excuse this numbering confusion, we start numbering our profile info/titles at 1 in the donor_rewards table -->
-<?  if ($HasProfileInfo1) { ?>
+<?php  if ($HasProfileInfo1) { ?>
       <tr id="pers_proftitle2_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #2. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile title 2</strong></td>
         <td><input type="text" size="50" name="profile_title_1" id="profile_title_1" value="<?=display_str($ProfileRewards['ProfileInfoTitle1'])?>" />
@@ -520,7 +521,7 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #2. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile info 2</strong></td>
         <td><?php $textarea = new TEXTAREA_PREVIEW('profile_info_1', 'profile_info_1', display_str($ProfileRewards['ProfileInfo1']), 40, 8); ?></td>
       </tr>
-<?  }
+<?php  }
   if ($HasProfileInfo2) { ?>
       <tr id="pers_proftitle3_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #3. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile title 3</strong></td>
@@ -531,7 +532,7 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #3. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile info 3</strong></td>
         <td><?php $textarea = new TEXTAREA_PREVIEW('profile_info_2', 'profile_info_2', display_str($ProfileRewards['ProfileInfo2']), 40, 8); ?></td>
       </tr>
-<?  }
+<?php  }
   if ($HasProfileInfo3) { ?>
       <tr id="pers_proftitle4_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #4. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile title 4</strong></td>
@@ -542,7 +543,7 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #4. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile info 4</strong></td>
         <td><?php $textarea = new TEXTAREA_PREVIEW('profile_info_3', 'profile_info_3', display_str($ProfileRewards['ProfileInfo3']), 40, 8); ?></td>
       </tr>
-<?  }
+<?php  }
   if ($HasProfileInfo4) { ?>
       <tr id="pers_proftitle5_tr">
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #5. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile title 5</strong></td>
@@ -553,7 +554,7 @@ echo $Val->GenerateJS('userform');
         <td class="label tooltip" title="Congratulations! You've unlocked this option by reaching Donor Rank #5. Thanks for donating. You can customize your profile information with text and BBCode. Entering a title will label your profile information section."><strong>Profile info 5</strong></td>
         <td><?php $textarea = new TEXTAREA_PREVIEW('profile_info_4', 'profile_info_4', display_str($ProfileRewards['ProfileInfo4']), 40, 8); ?></td>
       </tr>
-<?  } ?>
+<?php  } ?>
     </table>
     <table cellpadding="6" cellspacing="1" border="0" width="100%" class="layout border user_options" id="paranoia_settings">
       <tr class="colhead_dark">
@@ -572,7 +573,7 @@ echo $Val->GenerateJS('userform');
       <tr id="para_lastseen_tr">
         <td class="label tooltip" title="Enable this to allow others to see when your most recent site activity occurred."><strong>Recent activity</strong></td>
         <td>
-          <label><input type="checkbox" name="p_lastseen"<?=checked(!in_array('lastseen', $Paranoia))?> /> Last seen</label>
+          <label><input type="checkbox" name="p_lastseen"<?=checked(!in_array('lastseen', $Paranoia, true))?> /> Last seen</label>
         </td>
       </tr>
       <tr id="para_presets_tr">
@@ -588,17 +589,17 @@ echo $Val->GenerateJS('userform');
         <td>
           <input type="checkbox" id="p_donor_stats" name="p_donor_stats" onchange="AlterParanoia();"<?=$DonorIsVisible ? ' checked="checked"' : ''?> />
           <label for="p_donor_stats">Show donor stats</label>
-          <input type="checkbox" id="p_donor_heart" name="p_donor_heart" onchange="AlterParanoia();"<?=checked(!in_array('hide_donor_heart', $Paranoia))?> />
+          <input type="checkbox" id="p_donor_heart" name="p_donor_heart" onchange="AlterParanoia();"<?=checked(!in_array('hide_donor_heart', $Paranoia, true))?> />
           <label for="p_donor_heart">Show donor heart</label>
         </td>
       </tr>
       <tr id="para_stats_tr">
         <td class="label tooltip" title="These settings control the display of your uploaded data amount, downloaded data amount, and ratio."><strong>Statistics</strong></td>
         <td>
-<?
-$UploadChecked = checked(!in_array('uploaded', $Paranoia));
-$DownloadChecked = checked(!in_array('downloaded', $Paranoia));
-$RatioChecked = checked(!in_array('ratio', $Paranoia));
+<?php
+$UploadChecked = checked(!in_array('uploaded', $Paranoia, true));
+$DownloadChecked = checked(!in_array('downloaded', $Paranoia, true));
+$RatioChecked = checked(!in_array('ratio', $Paranoia, true));
 ?>
           <label><input type="checkbox" name="p_uploaded" onchange="AlterParanoia();"<?=$UploadChecked?> /> Uploaded</label>&nbsp;&nbsp;
           <label><input type="checkbox" name="p_downloaded" onchange="AlterParanoia();"<?=$DownloadChecked?> /> Downloaded</label>&nbsp;&nbsp;
@@ -608,34 +609,34 @@ $RatioChecked = checked(!in_array('ratio', $Paranoia));
       <tr id="para_reqratio_tr">
         <td class="label"><strong>Required Ratio</strong></td>
         <td>
-          <label><input type="checkbox" name="p_requiredratio"<?=checked(!in_array('requiredratio', $Paranoia))?> /> Required Ratio</label>
+          <label><input type="checkbox" name="p_requiredratio"<?=checked(!in_array('requiredratio', $Paranoia, true))?> /> Required Ratio</label>
         </td>
       </tr>
       <tr id="para_comments_tr">
         <td class="label"><strong>Comments (torrents)</strong></td>
         <td>
-<? display_paranoia('torrentcomments'); ?>
+<?php display_paranoia('torrentcomments'); ?>
         </td>
       </tr>
       <tr id="para_collstart_tr">
         <td class="label"><strong>Collections (started)</strong></td>
         <td>
-<? display_paranoia('collages'); ?>
+<?php display_paranoia('collages'); ?>
         </td>
       </tr>
       <tr id="para_collcontr_tr">
         <td class="label"><strong>Collections (contributed to)</strong></td>
         <td>
-<? display_paranoia('collagecontribs'); ?>
+<?php display_paranoia('collagecontribs'); ?>
         </td>
       </tr>
       <tr id="para_reqfill_tr">
         <td class="label"><strong>Requests (filled)</strong></td>
         <td>
-<?
-$RequestsFilledCountChecked = checked(!in_array('requestsfilled_count', $Paranoia));
-$RequestsFilledBountyChecked = checked(!in_array('requestsfilled_bounty', $Paranoia));
-$RequestsFilledListChecked = checked(!in_array('requestsfilled_list', $Paranoia));
+<?php
+$RequestsFilledCountChecked = checked(!in_array('requestsfilled_count', $Paranoia, true));
+$RequestsFilledBountyChecked = checked(!in_array('requestsfilled_bounty', $Paranoia, true));
+$RequestsFilledListChecked = checked(!in_array('requestsfilled_list', $Paranoia, true));
 ?>
           <label><input type="checkbox" name="p_requestsfilled_count" onchange="AlterParanoia();"<?=$RequestsFilledCountChecked?> /> Show count</label>&nbsp;&nbsp;
           <label><input type="checkbox" name="p_requestsfilled_bounty" onchange="AlterParanoia();"<?=$RequestsFilledBountyChecked?> /> Show bounty</label>&nbsp;&nbsp;
@@ -645,10 +646,10 @@ $RequestsFilledListChecked = checked(!in_array('requestsfilled_list', $Paranoia)
       <tr id="para_reqvote_tr">
         <td class="label"><strong>Requests (voted for)</strong></td>
         <td>
-<?
-$RequestsVotedCountChecked = checked(!in_array('requestsvoted_count', $Paranoia));
-$RequestsVotedBountyChecked = checked(!in_array('requestsvoted_bounty', $Paranoia));
-$RequestsVotedListChecked = checked(!in_array('requestsvoted_list', $Paranoia));
+<?php
+$RequestsVotedCountChecked = checked(!in_array('requestsvoted_count', $Paranoia, true));
+$RequestsVotedBountyChecked = checked(!in_array('requestsvoted_bounty', $Paranoia, true));
+$RequestsVotedListChecked = checked(!in_array('requestsvoted_list', $Paranoia, true));
 ?>
           <label><input type="checkbox" name="p_requestsvoted_count" onchange="AlterParanoia();"<?=$RequestsVotedCountChecked?> /> Show count</label>&nbsp;&nbsp;
           <label><input type="checkbox" name="p_requestsvoted_bounty" onchange="AlterParanoia();"<?=$RequestsVotedBountyChecked?> /> Show bounty</label>&nbsp;&nbsp;
@@ -658,63 +659,63 @@ $RequestsVotedListChecked = checked(!in_array('requestsvoted_list', $Paranoia));
       <tr id="para_upltor_tr">
         <td class="label"><strong>Uploaded torrents</strong></td>
         <td>
-<? display_paranoia('uploads'); ?>
+<?php display_paranoia('uploads'); ?>
         </td>
       </tr>
       <tr id="para_uplunique_tr">
         <td class="label"><strong>Uploaded torrents (unique groups)</strong></td>
         <td>
-<? display_paranoia('uniquegroups'); ?>
+<?php display_paranoia('uniquegroups'); ?>
         </td>
       </tr>
       <tr id="para_torseed_tr">
         <td class="label"><strong>Torrents (seeding)</strong></td>
         <td>
-<? display_paranoia('seeding'); ?>
+<?php display_paranoia('seeding'); ?>
         </td>
       </tr>
       <tr id="para_torleech_tr">
         <td class="label"><strong>Torrents (leeching)</strong></td>
         <td>
-<? display_paranoia('leeching'); ?>
+<?php display_paranoia('leeching'); ?>
         </td>
       </tr>
       <tr id="para_torsnatch_tr">
         <td class="label"><strong>Torrents (snatched)</strong></td>
         <td>
-<? display_paranoia('snatched'); ?>
+<?php display_paranoia('snatched'); ?>
         </td>
       </tr>
       <tr id="para_torsubscr_tr">
         <td class="label tooltip" title="This option allows other users to subscribe to your torrent uploads."><strong>Torrents (upload subscriptions)</strong></td>
         <td>
-          <label><input type="checkbox" name="p_notifications"<?=checked(!in_array('notifications', $Paranoia))?> /> Allow torrent upload subscriptions</label>
+          <label><input type="checkbox" name="p_notifications"<?=checked(!in_array('notifications', $Paranoia, true))?> /> Allow torrent upload subscriptions</label>
         </td>
       </tr>
-<?
+<?php
 $DB->query("
   SELECT COUNT(UserID)
   FROM users_info
   WHERE Inviter = ?", $UserID);
-list($Invited) = $DB->next_record();
+[$Invited] = $DB->next_record();
 ?>
       <tr id="para_invited_tr">
         <td class="label tooltip" title="This option controls the display of your <?=SITE_NAME?> invitees."><strong>Invitees</strong></td>
         <td>
-          <label><input type="checkbox" name="p_invitedcount"<?=checked(!in_array('invitedcount', $Paranoia))?> /> Show count</label>
+          <label><input type="checkbox" name="p_invitedcount"<?=checked(!in_array('invitedcount', $Paranoia, true))?> /> Show count</label>
         </td>
       </tr>
-<?
+<?php
 $DB->query("
   SELECT COUNT(ArtistID)
   FROM torrents_artists
   WHERE UserID = ?", $UserID);
-list($ArtistsAdded) = $DB->next_record();
+[$ArtistsAdded] = $DB->next_record();
 ?>
       <tr id="para_artistsadded_tr">
         <td class="label tooltip" title="This option controls the display of the artists you have added to torrent groups on the site. This number includes artists added via the torrent upload form, as well as artists added via the &quot;Add artists&quot; box on torrent group pages."><strong>Artists added</strong></td>
         <td>
-          <label><input type="checkbox" name="p_artistsadded"<?=checked(!in_array('artistsadded', $Paranoia))?> /> Show count</label>
+          <label><input type="checkbox" name="p_artistsadded"<?=checked(!in_array('artistsadded', $Paranoia, true))?> /> Show count</label>
         </td>
       </tr>
       <tr id="para_preview_tr">
@@ -797,4 +798,4 @@ list($ArtistsAdded) = $DB->next_record();
   </div>
   </form>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

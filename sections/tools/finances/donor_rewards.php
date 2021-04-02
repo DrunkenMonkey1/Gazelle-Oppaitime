@@ -1,15 +1,15 @@
-<?
+<?php
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 
 define('USERS_PER_PAGE', 50);
-list ($Page, $Limit) = Format::page_limit(USERS_PER_PAGE);
+[$Page, $Limit] = Format::page_limit(USERS_PER_PAGE);
 
 $SearchQuery = '';
 if ($_GET['username']) {
-  $SearchString = db_string($_GET['username']);
-  $SearchQuery = " WHERE Username LIKE '%$SearchString%' ";
+    $SearchString = db_string($_GET['username']);
+    $SearchQuery = " WHERE Username LIKE '%$SearchString%' ";
 }
 
 $Title = "Donor Rewards";
@@ -36,7 +36,7 @@ $DB->query("
 
 $Users = $DB->to_array();
 $DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
+[$Results] = $DB->next_record();
 $Pages = Format::get_pages($Page, $Results, USERS_PER_PAGE, 9);
 
 View::show_header($Title);
@@ -65,11 +65,10 @@ View::show_header($Title);
       <td>Avatar Text</td>
       <td>Second Avatar</td>
     </tr>
-<?
+<?php
   foreach ($Users as $User) {
-    $UserInfo = Users::user_info($User['UserID']);
-    $Username = $UserInfo['Username'];
-?>
+      $UserInfo = Users::user_info($User['UserID']);
+      $Username = $UserInfo['Username']; ?>
     <tr class="row">
       <td><?=Users::format_username($User['UserID'], false, true, true, false, false, true)?></td>
       <td><?=$User['Rank']?></td>
@@ -79,9 +78,9 @@ View::show_header($Title);
         <?=$User['IconMouseOverText']?>
       </td>
       <td style="word-wrap: break-word;">
-<?    if (!empty($User['CustomIcon'])) { ?>
+<?php    if (!empty($User['CustomIcon'])) { ?>
         <img src="<?=ImageTools::process($User['CustomIcon'])?>" width="15" height="13" alt="" />
-<?    } ?>
+<?php    } ?>
       </td>
       <td style="word-wrap: break-word;">
         <?=$User['CustomIconLink']?>
@@ -93,10 +92,10 @@ View::show_header($Title);
         <?=$User['SecondAvatar']?>
       </td>
     </tr>
-<?
+<?php
   } // foreach
 ?>
   </table>
   <div class="linkbox"><?=$Pages?></div>
-<?
+<?php
 View::show_footer();

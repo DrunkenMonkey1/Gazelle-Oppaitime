@@ -1,4 +1,4 @@
-<?
+<?php
 enforce_login();
 View::show_header('IRC');
 
@@ -6,10 +6,10 @@ $DB->query("
   SELECT IRCKey
   FROM users_main
   WHERE ID = $LoggedUser[ID]");
-list($IRCKey) = $DB->next_record();
+[$IRCKey] = $DB->next_record();
 
 if (false && empty($IRCKey)) {
-?>
+    ?>
 <div class="thin">
   <div class="header">
     <h3 id="irc">IRC Rules - Please read these carefully!</h3>
@@ -20,33 +20,32 @@ if (false && empty($IRCKey)) {
     </p>
   </div>
 </div>
-<?
+<?php
 } else {
-  if (!isset($_POST['accept'])) {
-?>
+        if (!isset($_POST['accept'])) {
+            ?>
 <div class="thin">
   <div class="header">
     <h3 id="irc">IRC Rules - Please read these carefully!</h3>
   </div>
   <div class="box pad" style="padding: 10px 10px 10px 20px;">
-<?    Rules::display_irc_chat_rules() ?>
+<?php    Rules::display_irc_chat_rules() ?>
     <form class="confirm_form center" name="chat" method="post" action="chat.php">
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <input type="submit" name="accept" value="I agree to these rules" />
     </form>
   </div>
 </div>
-<?
-  } else {
-    $nick = $LoggedUser['Username'];
-    if (strlen($nick) == 0) {
-      $nick = SITE_NAME.'Guest????';
-    } else {
-      if (is_numeric(substr($nick, 0, 1))) {
-        $nick = '_' . $nick;
-      }
-    }
-?>
+<?php
+        } else {
+            $nick = $LoggedUser['Username'];
+            if (0 == strlen($nick)) {
+                $nick = SITE_NAME . 'Guest????';
+            } else {
+                if (is_numeric(substr($nick, 0, 1))) {
+                    $nick = '_' . $nick;
+                }
+            } ?>
 <div class="thin">
   <div class="header">
     <h3 id="general">IRC</h3>
@@ -59,9 +58,9 @@ if (false && empty($IRCKey)) {
     </iframe>
   </div>
 </div>
-<?
-  }
-}
+<?php
+        }
+    }
 
 View::show_footer();
 ?>

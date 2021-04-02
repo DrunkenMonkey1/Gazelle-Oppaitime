@@ -1,6 +1,6 @@
-<?
+<?php
 if (!($ContestSettings = $Cache->get_value("contest_settings"))) {
-  $DB->query("
+    $DB->query("
   SELECT
     First,
     Second
@@ -9,23 +9,23 @@ if (!($ContestSettings = $Cache->get_value("contest_settings"))) {
     Name='ContestRules'
     OR Name='ContestTimes'
     OR Name='ContestRewards'");
-  if ($DB->has_results()) {
-    list($QueryPart, $Rules)   = $DB->next_record();
-    list($StartTime, $EndTime) = $DB->next_record();
-    list($Amount, $Currency)   = $DB->next_record();
-  }
-  $ContestSettings = array(
-    'query'  => html_entity_decode($QueryPart ?? '1=2', ENT_QUOTES),
-    'rules'  => $Rules,
-    'start'  => $StartTime ?? 0,
-    'end'    => $EndTime ?? 0,
-    'reward' => ($Amount.' '.$Currency.'/torrent')
-  );
-  $Cache->cache_value('contest_settings', $ContestSettings);
+    if ($DB->has_results()) {
+        [$QueryPart, $Rules]   = $DB->next_record();
+        [$StartTime, $EndTime] = $DB->next_record();
+        [$Amount, $Currency]   = $DB->next_record();
+    }
+    $ContestSettings = [
+        'query'  => html_entity_decode($QueryPart ?? '1=2', ENT_QUOTES),
+        'rules'  => $Rules,
+        'start'  => $StartTime ?? 0,
+        'end'    => $EndTime ?? 0,
+        'reward' => ($Amount . ' ' . $Currency . '/torrent')
+    ];
+    $Cache->cache_value('contest_settings', $ContestSettings);
 }
 
 if (!($Scores = $Cache->get_value("contest_scores"))) {
-  $DB->query("
+    $DB->query("
   SELECT
     u.Username,
     u.ID,
@@ -41,27 +41,26 @@ if (!($Scores = $Cache->get_value("contest_scores"))) {
   ORDER BY Uploads DESC
   LIMIT 50");
 
-  $Scores = $DB->to_array();
-  $Cache->cache_value('contest_scores', $Scores);
+    $Scores = $DB->to_array();
+    $Cache->cache_value('contest_scores', $Scores);
 }
 
 View::show_header('Contest');
 
 if (!$ContestSettings['start'] || !$ContestSettings['end']) {
-  print '<h2>No Contests</h2>';
+    print '<h2>No Contests</h2>';
 } else {
-  if (time() < $ContestSettings['start']) {
-    print '<h2>Future Contest (Starts in '.time_diff($ContestSettings['start'],2,false).')</h2>';
-  } else if (time() > $ContestSettings['end']) {
-    print '<h2>Finished Contest</h2>';
-  } else {
-    print '<h2>Ongoing Contest! ('.time_diff($ContestSettings['end'],2,false).' remaining)</h2>';
-  }
-  ?>
+    if (time() < $ContestSettings['start']) {
+        print '<h2>Future Contest (Starts in ' . time_diff($ContestSettings['start'], 2, false) . ')</h2>';
+    } elseif (time() > $ContestSettings['end']) {
+        print '<h2>Finished Contest</h2>';
+    } else {
+        print '<h2>Ongoing Contest! (' . time_diff($ContestSettings['end'], 2, false) . ' remaining)</h2>';
+    } ?>
 
   <div class="thin flex">
     <div class="box pad grow">
-  <? if ($Scores) { ?>
+  <?php if ($Scores) { ?>
       <h2 id="general">Scoreboard</h2>
       <table width="100%" class="contest_scoreboard">
         <tr class="colhead">
@@ -69,24 +68,24 @@ if (!$ContestSettings['start'] || !$ContestSettings['end']) {
           <td>User</td>
           <td>Score</td>
         </tr>
-  <?   foreach ($Scores as $Place => $Score) { ?>
+  <?php   foreach ($Scores as $Place => $Score) { ?>
     <tr class="row">
       <td><?=($Place+1)?></td>
       <td><a href="/user.php?id=<?=$Score['ID']?>"><?=$Score['Username']?></a></td>
       <td><?=$Score['Uploads']?></td>
     </tr>
-  <?   } ?>
+  <?php   } ?>
       </table>
-  <? } else { ?>
+  <?php } else { ?>
       <h2>No Scores Yet</h2>
-  <? } ?>
+  <?php } ?>
     </div>
     <div class="shrink flex" style="margin-left: 1em; flex-direction: column;">
       <div class="box pad">
         <h2>Qualifications</h2>
         <ul>
-  <?
-    print '<li>'.str_replace('\n', '</li><li>', $ContestSettings['rules']).'</li>'
+  <?php
+    print '<li>' . str_replace('\n', '</li><li>', $ContestSettings['rules']) . '</li>'
   ?>
         </ul>
       </div>
@@ -99,5 +98,6 @@ if (!$ContestSettings['start'] || !$ContestSettings['end']) {
     </div>
   </div>
 
-<? }
+<?php
+}
  View::show_footer(); ?>

@@ -1,10 +1,10 @@
-<?
+<?php
 $Title = 'Browse wiki articles';
 if (!empty($_GET['letter'])) {
-  $Letter = strtoupper(substr($_GET['letter'], 0, 1));
-  if ($Letter !== '1') {
-    $Title .= ' ('.$Letter.')';
-  }
+    $Letter = strtoupper(substr($_GET['letter'], 0, 1));
+    if ('1' !== $Letter) {
+        $Title .= ' (' . $Letter . ')';
+    }
 }
 
 View::show_header($Title);
@@ -17,11 +17,11 @@ $sql = "
     Date,
     Author
   FROM wiki_articles
-  WHERE MinClassRead <= '".$LoggedUser['EffectiveClass']."'";
-if ($Letter !== '1') {
-  $sql .= " AND LEFT(Title,1) = '".db_string($Letter)."'";
+  WHERE MinClassRead <= '" . $LoggedUser['EffectiveClass'] . "'";
+if ('1' !== $Letter) {
+    $sql .= " AND LEFT(Title,1) = '" . db_string($Letter) . "'";
 } else {
-  $Letter = 'All';
+    $Letter = 'All';
 }
 $sql .= " ORDER BY Title";
 
@@ -29,7 +29,7 @@ $DB->query($sql);
 
 ?>
 <div class="thin">
-<?  if ($Letter) { ?>
+<?php  if ($Letter) { ?>
   <div class="header">
     <h2><?=$Title?></h2>
   </div>
@@ -40,16 +40,16 @@ $DB->query($sql);
       <td>Last updated on</td>
       <td>Last edited by</td>
     </tr>
-<?    while (list($ID, $Title, $Date, $UserID) = $DB->next_record()) { ?>
+<?php    while ([$ID, $Title, $Date, $UserID] = $DB->next_record()) { ?>
     <tr>
       <td><a href="wiki.php?action=article&amp;id=<?=$ID?>"><?=$Title?></a></td>
       <td><?=$Date?></td>
       <td><?=Users::format_username($UserID, false, false, false)?></td>
     </tr>
-<?    } ?>
+<?php    } ?>
   </table>
   </div>
-<?  } ?>
+<?php  } ?>
   <div class="box pad center">
     <p>Search the wiki for user created tutorials and information.</p>
     <form class="search_form" name="wiki" action="wiki.php" method="get">
@@ -91,4 +91,4 @@ $DB->query($sql);
     </span>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

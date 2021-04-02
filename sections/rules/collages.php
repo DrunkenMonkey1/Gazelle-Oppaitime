@@ -1,4 +1,4 @@
-<?
+<?php
 //Include the header
 View::show_header('Collection Rules');
 ?>
@@ -47,8 +47,8 @@ View::show_header('Collection Rules');
 
     </ul>
   </div>
-<? include('jump.php'); ?>
+<?php include 'jump.php'; ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

@@ -1,9 +1,9 @@
 <?php
 
 if (!check_perms('users_warn')) {
-  error(404);
+    error(404);
 }
-Misc::assert_isset_request($_POST, array('postid', 'userid', 'key'));
+Misc::assert_isset_request($_POST, ['postid', 'userid', 'key']);
 $PostID = (int)$_POST['postid'];
 $UserID = (int)$_POST['userid'];
 $Key = (int)$_POST['key'];
@@ -13,7 +13,7 @@ $DB->query("
   FROM forums_posts AS p
     JOIN forums_topics AS t ON p.TopicID = t.ID
   WHERE p.ID = '$PostID'");
-list($PostBody, $ForumID) = $DB -> next_record();
+[$PostBody, $ForumID] = $DB -> next_record();
 View::show_header('Warn User');
 ?>
 <div class="thin">
@@ -41,9 +41,9 @@ View::show_header('Warn User');
               <option value="1">1 week</option>
               <option value="2">2 weeks</option>
               <option value="4">4 weeks</option>
-<?          if (check_perms('users_mod')) { ?>
+<?php          if (check_perms('users_mod')) { ?>
               <option value="8">8 weeks</option>
-<?          } ?>
+<?php          } ?>
             </select>
           </td>
         </tr>
@@ -65,4 +65,4 @@ View::show_header('Warn User');
     </form>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

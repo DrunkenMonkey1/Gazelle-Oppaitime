@@ -1,4 +1,4 @@
-<?
+<?php
 //**********************************************************************//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Upload form ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // This page relies on the TorrentForm class. All it does is call      //
@@ -13,7 +13,7 @@ ini_set('max_file_uploads', '100');
 View::show_header('Upload', 'upload,validate_upload,multiformat_uploader,bbcode');
 
 if (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid'])) {
-  $DB->query('
+    $DB->query('
     SELECT
       tg.ID as GroupID,
       tg.CategoryID,
@@ -30,30 +30,30 @@ if (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid']
       tg.WikiBody AS GroupDescription
     FROM torrents_group AS tg
       LEFT JOIN torrents AS t ON t.GroupID = tg.ID
-    WHERE tg.ID = '.$_GET['groupid'].'
+    WHERE tg.ID = ' . $_GET['groupid'] . '
     GROUP BY tg.ID');
-  if ($DB->has_results()) {
-    list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
-    $UploadForm = $Categories[$Properties['CategoryID'] - 1];
-    $Properties['CategoryName'] = $Categories[$Properties['CategoryID'] - 1];
-    $Properties['Artists'] = Artists::get_artist($_GET['groupid']);
+    if ($DB->has_results()) {
+        [$Properties] = $DB->to_array(false, MYSQLI_BOTH);
+        $UploadForm = $Categories[$Properties['CategoryID'] - 1];
+        $Properties['CategoryName'] = $Categories[$Properties['CategoryID'] - 1];
+        $Properties['Artists'] = Artists::get_artist($_GET['groupid']);
 
-    $DB->query("
+        $DB->query("
       SELECT
         GROUP_CONCAT(tags.Name SEPARATOR ', ') AS TagList
       FROM torrents_tags AS tt
         JOIN tags ON tags.ID = tt.TagID
       WHERE tt.GroupID = '$_GET[groupid]'");
 
-    list($Properties['TagList']) = $DB->next_record();
-  } else {
-    unset($_GET['groupid']);
-  }
-  if (!empty($_GET['requestid']) && is_number($_GET['requestid'])) {
-    $Properties['RequestID'] = $_GET['requestid'];
-  }
+        [$Properties['TagList']] = $DB->next_record();
+    } else {
+        unset($_GET['groupid']);
+    }
+    if (!empty($_GET['requestid']) && is_number($_GET['requestid'])) {
+        $Properties['RequestID'] = $_GET['requestid'];
+    }
 } elseif (empty($Properties) && isset($_GET['requestid']) && is_number($_GET['requestid'])) {
-  $DB->query('
+    $DB->query('
     SELECT
       ID AS RequestID,
       CategoryID,
@@ -63,31 +63,31 @@ if (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid']
       DLSiteID,
       Image
     FROM requests
-    WHERE ID = '.$_GET['requestid']);
+    WHERE ID = ' . $_GET['requestid']);
 
-  list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
-  $UploadForm = $Categories[$Properties['CategoryID'] - 1];
-  $Properties['CategoryName'] = $Categories[$Properties['CategoryID'] - 1];
-  $Properties['Artists'] = Requests::get_artists($_GET['requestid']);
-  $Properties['TagList'] = implode(', ', Requests::get_tags($_GET['requestid'])[$_GET['requestid']]);
+    [$Properties] = $DB->to_array(false, MYSQLI_BOTH);
+    $UploadForm = $Categories[$Properties['CategoryID'] - 1];
+    $Properties['CategoryName'] = $Categories[$Properties['CategoryID'] - 1];
+    $Properties['Artists'] = Requests::get_artists($_GET['requestid']);
+    $Properties['TagList'] = implode(', ', Requests::get_tags($_GET['requestid'])[$_GET['requestid']]);
 }
 
 if (!empty($ArtistForm)) {
-  $Properties['Artists'] = $ArtistForm;
+    $Properties['Artists'] = $ArtistForm;
 }
 
-require_once(SERVER_ROOT.'/classes/torrent_form.class.php');
+require_once SERVER_ROOT . '/classes/torrent_form.class.php';
 $TorrentForm = new TorrentForm($Properties ?? false, $Err ?? false);
 
 $GenreTags = $Cache->get_value('genre_tags');
 if (!$GenreTags) {
-  $DB->query("
+    $DB->query("
     SELECT Name
     FROM tags
     WHERE TagType = 'genre'
     ORDER BY Name");
-  $GenreTags = $DB->collect('Name');
-  $Cache->cache_value('genre_tags', $GenreTags, 3600 * 6);
+    $GenreTags = $DB->collect('Name');
+    $Cache->cache_value('genre_tags', $GenreTags, 3600 * 6);
 }
 
 $DB->query('
@@ -99,12 +99,12 @@ $DB->query('
   ORDER BY Sequence');
 $DNU = $DB->to_array();
 $DB->query('SELECT MAX(Time) FROM do_not_upload');
-list($Updated) = $DB->next_record();
+[$Updated] = $DB->next_record();
 $DB->query("
   SELECT IF(MAX(Time) IS NULL OR MAX(Time) < '$Updated', 1, 0)
   FROM torrents
-  WHERE UserID = ".$LoggedUser['ID']);
-list($NewDNU) = $DB->next_record();
+  WHERE UserID = " . $LoggedUser['ID']);
+[$NewDNU] = $DB->next_record();
 $HideDNU = check_perms('torrents_hide_dnu') && !$NewDNU;
 //DNU list disabled in below CSS
 ?>
@@ -112,32 +112,32 @@ $HideDNU = check_perms('torrents_hide_dnu') && !$NewDNU;
   <h3 id="dnu_header">Do Not Upload List</h3>
   <p><?=$NewDNU ? '<strong class="important_text">' : '' ?>Last updated: <?=time_diff($Updated)?><?=$NewDNU ? '</strong>' : '' ?></p>
   <p>The following releases are currently forbidden from being uploaded to the site. Do not upload them unless your torrent meets a condition specified in the comment.
-<?  if ($HideDNU) { ?>
+<?php  if ($HideDNU) { ?>
   <span id="showdnu"><a data-toggle-target="#dnulist" data-toggle-replace="Hide" class="brackets">Show</a></span>
-<?  } ?>
+<?php  } ?>
   </p>
   <table id="dnulist" class="<?=($HideDNU ? 'hidden' : '')?>">
     <tr class="colhead">
       <td width="50%"><strong>Name</strong></td>
       <td><strong>Comment</strong></td>
     </tr>
-<?  $TimeDiff = strtotime('-1 month', strtotime('now'));
+<?php  $TimeDiff = strtotime('-1 month', strtotime('now'));
   foreach ($DNU as $BadUpload) {
-    list($Name, $Comment, $Updated) = $BadUpload;
-?>
+      [$Name, $Comment, $Updated] = $BadUpload; ?>
     <tr>
       <td>
         <?=Text::full_format($Name) . "\n" ?>
-<?    if ($TimeDiff < strtotime($Updated)) { ?>
+<?php    if ($TimeDiff < strtotime($Updated)) { ?>
         <strong class="important_text">(New!)</strong>
-<?    } ?>
+<?php    } ?>
       </td>
       <td><?=Text::full_format($Comment)?></td>
     </tr>
-<? } ?>
+<?php
+  } ?>
   </table>
 </div><?=($HideDNU ? '<br />' : '')?>
-<?
+<?php
 $TorrentForm->upload_form();
 
 View::show_footer();

@@ -1,4 +1,5 @@
-<?
+<?php
+
 //TODO
 /*****************************************************************
 Finish removing the take[action] pages and utilize the index correctly
@@ -6,95 +7,95 @@ Should the advanced search really only show if they match 3 perms?
 Make sure all constants are defined in config.php and not in random files
 *****************************************************************/
 enforce_login();
-include(SERVER_ROOT."/classes/validate.class.php");
-$Val = NEW VALIDATE;
+include SERVER_ROOT . "/classes/validate.class.php";
+$Val = new VALIDATE();
 
 if (empty($_REQUEST['action'])) {
-  $_REQUEST['action'] = '';
+    $_REQUEST['action'] = '';
 }
 
 switch ($_REQUEST['action']) {
   case 'notify':
-    include('notify_edit.php');
+    include 'notify_edit.php';
     break;
   case 'notify_handle':
-    include('notify_handle.php');
+    include 'notify_handle.php';
     break;
   case 'notify_delete':
     authorize();
     if ($_GET['id'] && is_number($_GET['id'])) {
-      $DB->query("DELETE FROM users_notify_filters WHERE ID='".db_string($_GET['id'])."' AND UserID='$LoggedUser[ID]'");
-      $ArtistNotifications = $Cache->get_value('notify_artists_'.$LoggedUser['ID']);
-      if (is_array($ArtistNotifications) && $ArtistNotifications['ID'] == $_GET['id']) {
-        $Cache->delete_value('notify_artists_'.$LoggedUser['ID']);
-      }
+        $DB->query("DELETE FROM users_notify_filters WHERE ID='" . db_string($_GET['id']) . "' AND UserID='$LoggedUser[ID]'");
+        $ArtistNotifications = $Cache->get_value('notify_artists_' . $LoggedUser['ID']);
+        if (is_array($ArtistNotifications) && $ArtistNotifications['ID'] == $_GET['id']) {
+            $Cache->delete_value('notify_artists_' . $LoggedUser['ID']);
+        }
     }
-    $Cache->delete_value('notify_filters_'.$LoggedUser['ID']);
+    $Cache->delete_value('notify_filters_' . $LoggedUser['ID']);
     header('Location: user.php?action=notify');
     break;
   case 'search':// User search
     if (check_perms('admin_advanced_user_search') && check_perms('users_view_ips') && check_perms('users_view_email')) {
-      include('advancedsearch.php');
+        include 'advancedsearch.php';
     } else {
-      include('search.php');
+        include 'search.php';
     }
     break;
   case 'edit':
-    include('edit.php');
+    include 'edit.php';
     break;
   case 'take_edit':
-    include('take_edit.php');
+    include 'take_edit.php';
     break;
   case '2fa':
-    include('2fa.php');
+    include '2fa.php';
     break;
   case 'invitetree':
-    include('invitetree.php');
+    include 'invitetree.php';
     break;
   case 'invite':
-    include('invite.php');
+    include 'invite.php';
     break;
   case 'take_invite':
-    include('take_invite.php');
+    include 'take_invite.php';
     break;
   case 'delete_invite':
-    include('delete_invite.php');
+    include 'delete_invite.php';
     break;
   case 'dupes':
-    include('manage_linked.php');
+    include 'manage_linked.php';
     break;
   case 'sessions':
-    include('sessions.php');
+    include 'sessions.php';
     break;
   case 'connchecker':
-    include('connchecker.php');
+    include 'connchecker.php';
     break;
   case 'permissions':
-    include('permissions.php');
+    include 'permissions.php';
     break;
   case 'similar':
-    include('similar.php');
+    include 'similar.php';
     break;
   case 'moderate':
-    include('takemoderate.php');
+    include 'takemoderate.php';
     break;
   case 'hnr':
-    include('hnr.php');
+    include 'hnr.php';
     break;
   case 'clearcache':
     if (!check_perms('admin_clear_cache') || !check_perms('users_override_paranoia')) {
-      error(403);
+        error(403);
     }
     $UserID = $_REQUEST['id'];
-    $Cache->delete_value('user_info_'.$UserID);
-    $Cache->delete_value('user_info_heavy_'.$UserID);
-    $Cache->delete_value('subscriptions_user_new_'.$UserID);
-    $Cache->delete_value('user_badges_'.$UserID);
-    $Cache->delete_value('staff_pm_new_'.$UserID);
-    $Cache->delete_value('inbox_new_'.$UserID);
-    $Cache->delete_value('notifications_new_'.$UserID);
-    $Cache->delete_value('collage_subs_user_new_'.$UserID);
-    include(SERVER_ROOT.'/sections/user/user.php');
+    $Cache->delete_value('user_info_' . $UserID);
+    $Cache->delete_value('user_info_heavy_' . $UserID);
+    $Cache->delete_value('subscriptions_user_new_' . $UserID);
+    $Cache->delete_value('user_badges_' . $UserID);
+    $Cache->delete_value('staff_pm_new_' . $UserID);
+    $Cache->delete_value('inbox_new_' . $UserID);
+    $Cache->delete_value('notifications_new_' . $UserID);
+    $Cache->delete_value('collage_subs_user_new_' . $UserID);
+    include SERVER_ROOT . '/sections/user/user.php';
     break;
 
   case 'take_donate':
@@ -102,13 +103,12 @@ switch ($_REQUEST['action']) {
   case 'take_update_rank':
     break;
   case 'points':
-    include(SERVER_ROOT.'/sections/user/points.php');
+    include SERVER_ROOT . '/sections/user/points.php';
     break;
   default:
     if (isset($_REQUEST['id'])) {
-      include(SERVER_ROOT.'/sections/user/user.php');
+        include SERVER_ROOT . '/sections/user/user.php';
     } else {
-      header('Location: index.php');
+        header('Location: index.php');
     }
 }
-?>

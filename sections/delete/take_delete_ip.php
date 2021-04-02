@@ -1,51 +1,51 @@
-<?
+<?php
 
 enforce_login();
 authorize();
 
 if (!isset($_POST['ips']) || !is_array($_POST['ips'])) {
-  error("Stop that.");
+    error("Stop that.");
 }
 
 if (!apcu_exists('DBKEY')) {
-  error(403);
+    error(403);
 }
 
 $EncIPs = $_POST['ips'];
 
 $Reason = $_POST['reason'] ?? '';
 
-forEach ($EncIPs as $EncIP) {
-  $DB->query("
+foreach ($EncIPs as $EncIP) {
+    $DB->query("
     SELECT UserID
     FROM users_history_ips
-    WHERE IP = '".db_string($EncIP)."'");
+    WHERE IP = '" . db_string($EncIP) . "'");
 
-  if (!$DB->has_results()) {
-    error('IP not found');
-  }
+    if (!$DB->has_results()) {
+        error('IP not found');
+    }
 
-  list($UserID) = $DB->next_record();
+    [$UserID] = $DB->next_record();
 
-  if (!check_perms('users_mod') && ($UserID != $LoggedUser['ID'])) {
-    error(403);
-  }
+    if (!check_perms('users_mod') && ($UserID != $LoggedUser['ID'])) {
+        error(403);
+    }
 
-  $DB->query("
+    $DB->query("
     SELECT IP
     FROM users_main
     WHERE ID = '$UserID'");
 
-  if (!$DB->has_results()) {
-    error(404);
-  }
+    if (!$DB->has_results()) {
+        error(404);
+    }
 
-  list($Curr) = $DB->next_record();
-  $Curr = Crypto::decrypt($Curr);
+    [$Curr] = $DB->next_record();
+    $Curr = Crypto::decrypt($Curr);
 
-  if ($Curr == Crypto::decrypt($EncIP)) {
-    error("You can't delete your current IP.");
-  }
+    if ($Curr == Crypto::decrypt($EncIP)) {
+        error("You can't delete your current IP.");
+    }
 }
 
 //Okay I think everything checks out.
@@ -54,7 +54,7 @@ $DB->query("
   INSERT INTO deletion_requests
     (UserID, Type, Value, Reason, Time)
   VALUES
-    ('$UserID', 'IP', '".db_string($EncIPs[0])."', '".db_string($Reason)."', NOW())");
+    ('$UserID', 'IP', '" . db_string($EncIPs[0]) . "', '" . db_string($Reason) . "', NOW())");
 
 $Cache->delete_value('num_deletion_requests');
 
@@ -69,4 +69,4 @@ View::show_header('IP Address Deletion Request');
     <p><a href="/index.php">Return</a></p>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

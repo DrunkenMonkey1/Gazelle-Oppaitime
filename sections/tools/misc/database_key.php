@@ -1,17 +1,17 @@
-<?
+<?php
 // if set, do not enforce login so we can set the encryption key w/o an account
 if (!FEATURE_SET_ENC_KEY_PUBLIC) {
-  if (!check_perms('site_debug')) {
-      error(403);
-  }
+    if (!check_perms('site_debug')) {
+        error(403);
+    }
 }
 
 if (isset($_POST['dbkey'])) {
-  // if set, do not enforce login so we can set the encryption key w/o an account
-  if (!FEATURE_SET_ENC_KEY_PUBLIC) {
-    authorize();
-  }
-  apcu_store('DBKEY', hash('sha512', $_POST['dbkey']));
+    // if set, do not enforce login so we can set the encryption key w/o an account
+    if (!FEATURE_SET_ENC_KEY_PUBLIC) {
+        authorize();
+    }
+    apcu_store('DBKEY', hash('sha512', $_POST['dbkey']));
 }
 
 View::show_header('Database Encryption Key');
@@ -32,4 +32,4 @@ View::show_header('Database Encryption Key');
   </form>
 </div>
 
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

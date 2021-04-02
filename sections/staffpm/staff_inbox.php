@@ -8,7 +8,7 @@ $UserLevel = $LoggedUser['EffectiveClass'];
 $LevelCap = 1000;
 
 // Setup for current view mode
-$SortStr = 'IF(AssignedToUser = '.$LoggedUser['ID'].', 0, 1) ASC, ';
+$SortStr = 'IF(AssignedToUser = ' . $LoggedUser['ID'] . ', 0, 1) ASC, ';
 switch ($View) {
   case 'unanswered':
     $ViewString = 'Unanswered';
@@ -31,10 +31,10 @@ switch ($View) {
   default:
     $Status = "Unanswered";
     if ($UserLevel >= $Classes[MOD]['Level'] || $UserLevel == $Classes[FORUM_MOD]['Level']) {
-      $ViewString = 'Your Unanswered';
+        $ViewString = 'Your Unanswered';
     } else {
-      // FLS
-      $ViewString = 'Unanswered';
+        // FLS
+        $ViewString = 'Unanswered';
     }
     break;
 }
@@ -42,18 +42,18 @@ switch ($View) {
 $WhereCondition = "
   WHERE (
     LEAST($LevelCap, spc.Level) <= $UserLevel
-    OR spc.AssignedToUser = '".$LoggedUser['ID']."')
+    OR spc.AssignedToUser = '" . $LoggedUser['ID'] . "')
   AND spc.Status IN ('$Status')";
 
-if ($ViewString == 'Your Unanswered') {
-  if ($UserLevel >= $Classes[MOD]['Level']) {
-    $WhereCondition .= " AND spc.Level >= " . $Classes[MOD]['Level'];
-  } else if ($UserLevel == $Classes[FORUM_MOD]['Level']) {
-    $WhereCondition .= " AND spc.Level >= " . $Classes[FORUM_MOD]['Level'];
-  }
+if ('Your Unanswered' == $ViewString) {
+    if ($UserLevel >= $Classes[MOD]['Level']) {
+        $WhereCondition .= " AND spc.Level >= " . $Classes[MOD]['Level'];
+    } elseif ($UserLevel == $Classes[FORUM_MOD]['Level']) {
+        $WhereCondition .= " AND spc.Level >= " . $Classes[FORUM_MOD]['Level'];
+    }
 }
 
-list($Page, $Limit) = Format::page_limit(MESSAGES_PER_PAGE);
+[$Page, $Limit] = Format::page_limit(MESSAGES_PER_PAGE);
 // Get messages
 $StaffPMs = $DB->query("
   SELECT
@@ -77,14 +77,14 @@ $StaffPMs = $DB->query("
 ");
 
 $DB->query('SELECT FOUND_ROWS()');
-list($NumResults) = $DB->next_record();
+[$NumResults] = $DB->next_record();
 $DB->set_query_id($StaffPMs);
 
 $CurURL = Format::get_url();
 if (empty($CurURL)) {
-  $CurURL = 'staffpm.php?';
+    $CurURL = 'staffpm.php?';
 } else {
-  $CurURL = "staffpm.php?$CurURL&";
+    $CurURL = "staffpm.php?$CurURL&";
 }
 $Pages = Format::get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
 
@@ -94,15 +94,15 @@ $Pages = Format::get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
   <div class="header">
     <h2><?=$ViewString?> Staff PMs</h2>
     <div class="linkbox">
-<?  if ($IsStaff) { ?>
+<?php  if ($IsStaff) { ?>
       <a href="staffpm.php" class="brackets">View your unanswered</a>
-<?  } ?>
+<?php  } ?>
       <a href="staffpm.php?view=unanswered" class="brackets">View all unanswered</a>
       <a href="staffpm.php?view=open" class="brackets">View unresolved</a>
       <a href="staffpm.php?view=resolved" class="brackets">View resolved</a>
-<?  if ($IsStaff) { ?>
+<?php  if ($IsStaff) { ?>
       <a href="staffpm.php?action=scoreboard" class="brackets">View scoreboard</a>
-<?  } ?>
+<?php  } ?>
     </div>
   </div>
   <br />
@@ -111,100 +111,94 @@ $Pages = Format::get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
     <?=$Pages?>
   </div>
   <div class="box pad" id="inbox">
-<?
+<?php
 
 if (!$DB->has_results()) {
-  // No messages
+    // No messages
 ?>
     <h2>No messages</h2>
-<?
-
+<?php
 } else {
-  // Messages, draw table
-  if ($ViewString != 'Resolved' && $IsStaff) {
-    // Open multiresolve form
+    // Messages, draw table
+    if ('Resolved' != $ViewString && $IsStaff) {
+        // Open multiresolve form
 ?>
     <form class="manage_form" name="staff_messages" method="post" action="staffpm.php" id="messageform">
       <input type="hidden" name="action" value="multiresolve" />
       <input type="hidden" name="view" value="<?=strtolower($View)?>" />
-<?
-  }
+<?php
+    }
 
-  // Table head
-?>
-      <table class="message_table<?=($ViewString != 'Resolved' && $IsStaff) ? ' checkboxes' : '' ?>">
+    // Table head?>
+      <table class="message_table<?=('Resolved' != $ViewString && $IsStaff) ? ' checkboxes' : '' ?>">
         <tr class="colhead">
-<?  if ($ViewString != 'Resolved' && $IsStaff) { ?>
+<?php  if ('Resolved' != $ViewString && $IsStaff) { ?>
           <td width="10"><input type="checkbox" onclick="toggleChecks('messageform', this);" /></td>
-<?  } ?>
+<?php  } ?>
           <td>Subject</td>
           <td>Sender</td>
           <td>Date</td>
           <td>Assigned to</td>
           <td>Replies</td>
-<?  if ($ViewString == 'Resolved') { ?>
+<?php  if ('Resolved' == $ViewString) { ?>
           <td>Resolved by</td>
-<?  } ?>
+<?php  } ?>
         </tr>
-<?
+<?php
 
   // List messages
-  while (list($ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $NumReplies, $ResolverID) = $DB->next_record()) {
+  while ([$ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread, $NumReplies, $ResolverID] = $DB->next_record()) {
 
     //$UserInfo = Users::user_info($UserID);
-    $UserStr = Users::format_username($UserID, true, true, true, true);
+      $UserStr = Users::format_username($UserID, true, true, true, true);
 
-    // Get assigned
-    if ($AssignedToUser == '') {
-      // Assigned to class
-      $Assigned = ($Level == 0) ? 'First Line Support' : $ClassLevels[$Level]['Name'];
-      // No + on Sysops
-      if ($Assigned != 'Sysop') {
-        $Assigned .= '+';
+      // Get assigned
+      if ('' == $AssignedToUser) {
+          // Assigned to class
+          $Assigned = (0 == $Level) ? 'First Line Support' : $ClassLevels[$Level]['Name'];
+          // No + on Sysops
+          if ('Sysop' != $Assigned) {
+              $Assigned .= '+';
+          }
+      } else {
+          // Assigned to user
+          // $UserInfo = Users::user_info($AssignedToUser);
+          $Assigned = Users::format_username($AssignedToUser, true, true, true, true);
       }
 
-    } else {
-      // Assigned to user
-      // $UserInfo = Users::user_info($AssignedToUser);
-      $Assigned = Users::format_username($AssignedToUser, true, true, true, true);
+      // Get resolver
+      if ('Resolved' == $ViewString) {
+          //$UserInfo = Users::user_info($ResolverID);
+          $ResolverStr = Users::format_username($ResolverID, true, true, true, true);
+      }
 
-    }
-
-    // Get resolver
-    if ($ViewString == 'Resolved') {
-      //$UserInfo = Users::user_info($ResolverID);
-      $ResolverStr = Users::format_username($ResolverID, true, true, true, true);
-    }
-
-    // Table row
-?>
+      // Table row?>
         <tr class="row">
-<?    if ($ViewString != 'Resolved' && $IsStaff) { ?>
+<?php    if ('Resolved' != $ViewString && $IsStaff) { ?>
           <td class="center"><input type="checkbox" name="id[]" value="<?=$ID?>" /></td>
-<?    } ?>
+<?php    } ?>
           <td><a href="staffpm.php?action=viewconv&amp;id=<?=$ID?>"><?=display_str($Subject)?></a></td>
           <td><?=$UserStr?></td>
           <td><?=time_diff($Date, 2, true)?></td>
           <td><?=$Assigned?></td>
           <td><?=$NumReplies - 1?></td>
-<?    if ($ViewString == 'Resolved') { ?>
+<?php    if ('Resolved' == $ViewString) { ?>
           <td><?=$ResolverStr?></td>
-<?    } ?>
+<?php    } ?>
         </tr>
-<?
+<?php
 
     $DB->set_query_id($StaffPMs);
   } //while
 
-  // Close table and multiresolve form
-?>
+    // Close table and multiresolve form?>
       </table>
-<?  if ($ViewString != 'Resolved' && $IsStaff) { ?>
+<?php  if ('Resolved' != $ViewString && $IsStaff) { ?>
       <div class="submit_div">
         <input type="submit" value="Resolve selected" />
       </div>
     </form>
-<?
+<?php
   }
 } //if (!$DB->has_results())
 ?>
@@ -213,7 +207,7 @@ if (!$DB->has_results()) {
     <?=$Pages?>
   </div>
 </div>
-<?
+<?php
 
 View::show_footer();
 

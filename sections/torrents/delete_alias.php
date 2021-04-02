@@ -1,12 +1,13 @@
-<?
+<?php
+
 $ArtistID = db_string($_GET['artistid']);
 $GroupID = db_string($_GET['groupid']);
 
 if (!is_number($ArtistID) || !is_number($GroupID)) {
-  error(404);
+    error(404);
 }
 if (!check_perms('torrents_edit')) {
-  error(403);
+    error(403);
 }
 
 // Remove artist from this group.
@@ -19,16 +20,16 @@ $DB->query("
   SELECT Name
   FROM artists_group
   WHERE ArtistID = $ArtistID");
-list($ArtistName) = $DB->next_record(MYSQLI_NUM, false);
+[$ArtistName] = $DB->next_record(MYSQLI_NUM, false);
 
 $DB->query("
   SELECT Name
   FROM torrents_group
   WHERE ID = $GroupID");
 if (!$DB->has_results()) {
-  error(404);
+    error(404);
 }
-list($GroupName) = $DB->next_record(MYSQLI_NUM, false);
+[$GroupName] = $DB->next_record(MYSQLI_NUM, false);
 
 // Get a count of how many groups or requests use this artist ID
 $DB->query("
@@ -46,17 +47,16 @@ $DB->query("
     AND ag.ArtistID = $ArtistID");
 $GroupCount = $DB->record_count();
 if (($ReqCount + $GroupCount) == 0) {
-  // The only group to use this artist
-  Artists::delete_artist($ArtistID);
+    // The only group to use this artist
+    Artists::delete_artist($ArtistID);
 }
 
 $Cache->delete_value("torrents_details_$GroupID"); // Delete torrent group cache
 $Cache->delete_value("groups_artists_$GroupID"); // Delete group artist cache
-Misc::write_log("Artist $ArtistID ($ArtistName) was removed from the group $GroupID ($GroupName) by user ".$LoggedUser['ID'].' ('.$LoggedUser['Username'].')');
+Misc::write_log("Artist $ArtistID ($ArtistName) was removed from the group $GroupID ($GroupName) by user " . $LoggedUser['ID'] . ' (' . $LoggedUser['Username'] . ')');
 Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "removed artist $ArtistName", 0);
 
 Torrents::update_hash($GroupID);
 $Cache->delete_value("artist_groups_$ArtistID");
 
-header('Location: '.$_SERVER['HTTP_REFERER']);
-?>
+header('Location: ' . $_SERVER['HTTP_REFERER']);

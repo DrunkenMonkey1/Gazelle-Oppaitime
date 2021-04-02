@@ -1,6 +1,6 @@
-<?
+<?php
 if (($Results = $Cache->get_value('better_single_groupids')) === false) {
-  $DB->query("
+    $DB->query("
     SELECT
       t.ID AS TorrentID,
       t.GroupID AS GroupID
@@ -12,8 +12,8 @@ if (($Results = $Cache->get_value('better_single_groupids')) === false) {
     ORDER BY t.LogScore DESC, t.Time ASC
     LIMIT 30");
 
-  $Results = $DB->to_pair('GroupID', 'TorrentID', false);
-  $Cache->cache_value('better_single_groupids', $Results, 30 * 60);
+    $Results = $DB->to_pair('GroupID', 'TorrentID', false);
+    $Cache->cache_value('better_single_groupids', $Results, 30 * 60);
 }
 
 $Groups = Torrents::get_groups(array_keys($Results));
@@ -28,36 +28,35 @@ View::show_header('Single seeder FLACs');
     <tr class="colhead">
       <td>Torrent</td>
     </tr>
-<?
+<?php
 foreach ($Results as $GroupID => $FlacID) {
-  if (!isset($Groups[$GroupID])) {
-    continue;
-  }
-  $Group = $Groups[$GroupID];
-  extract(Torrents::array_group($Group));
-  $TorrentTags = new Tags($TagList);
+    if (!isset($Groups[$GroupID])) {
+        continue;
+    }
+    $Group = $Groups[$GroupID];
+    extract(Torrents::array_group($Group));
+    $TorrentTags = new Tags($TagList);
 
-  if (!empty($ExtendedArtists[1]) || !empty($ExtendedArtists[4]) || !empty($ExtendedArtists[5]) || !empty($ExtendedArtists[6])) {
-    unset($ExtendedArtists[2]);
-    unset($ExtendedArtists[3]);
-    $DisplayName = Artists::display_artists($ExtendedArtists);
-  } else {
-    $DisplayName = '';
-  }
+    if (!empty($ExtendedArtists[1]) || !empty($ExtendedArtists[4]) || !empty($ExtendedArtists[5]) || !empty($ExtendedArtists[6])) {
+        unset($ExtendedArtists[2]);
+        unset($ExtendedArtists[3]);
+        $DisplayName = Artists::display_artists($ExtendedArtists);
+    } else {
+        $DisplayName = '';
+    }
 
-  $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$FlacID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
-  if ($GroupYear > 0) {
-    $DisplayName .= " [$GroupYear]";
-  }
-  if ($ReleaseType > 0) {
-    $DisplayName .= " [".$ReleaseTypes[$ReleaseType]."]";
-  }
+    $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$FlacID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
+    if ($GroupYear > 0) {
+        $DisplayName .= " [$GroupYear]";
+    }
+    if ($ReleaseType > 0) {
+        $DisplayName .= " [" . $ReleaseTypes[$ReleaseType] . "]";
+    }
 
-  $ExtraInfo = Torrents::torrent_info($Torrents[$FlacID]);
-  if ($ExtraInfo) {
-    $DisplayName .= ' - '.$ExtraInfo;
-  }
-?>
+    $ExtraInfo = Torrents::torrent_info($Torrents[$FlacID]);
+    if ($ExtraInfo) {
+        $DisplayName .= ' - ' . $ExtraInfo;
+    } ?>
     <tr class="torrent torrent_row<?=$Torrents[$FlacID]['IsSnatched'] ? ' snatched_torrent' : ''?>">
       <td>
         <span class="torrent_links_block">
@@ -67,9 +66,10 @@ foreach ($Results as $GroupID => $FlacID) {
         <div class="tags"><?=$TorrentTags->format()?></div>
       </td>
     </tr>
-<?  } ?>
+<?php
+} ?>
   </table>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /***************************************************************
 * This page handles the backend of the "new group" function
 * which splits a torrent off into a new group.
@@ -7,7 +7,7 @@
 authorize();
 
 if (!check_perms('torrents_edit')) {
-  error(403);
+    error(403);
 }
 
 $OldGroupID = $_POST['oldgroupid'];
@@ -17,13 +17,12 @@ $Title = db_string(trim($_POST['title']));
 $Year = db_string(trim($_POST['year']));
 
 if (!is_number($OldGroupID) || !is_number($TorrentID) || !is_number($Year) || !$OldGroupID || !$TorrentID || !$Year || empty($Title) || empty($ArtistName)) {
-  error(0);
+    error(0);
 }
 
 //Everything is legit, let's just confim they're not retarded
 if (empty($_POST['confirm'])) {
-  View::show_header();
-?>
+    View::show_header(); ?>
   <div class="center thin">
   <div class="header">
     <h2>Split Confirm!</h2>
@@ -44,64 +43,64 @@ if (empty($_POST['confirm'])) {
     </form>
   </div>
   </div>
-<?
+<?php
   View::show_footer();
 } else {
-  $DB->query("
+    $DB->query("
     SELECT ArtistID,  Name
     FROM artists_group
     WHERE Name = '$ArtistName'");
-  if (!$DB->has_results()) {
-    $DB->query("
+    if (!$DB->has_results()) {
+        $DB->query("
       INSERT INTO artists_group (Name)
       VALUES ('$ArtistName')");
-    $ArtistID = $DB->inserted_id();
-  } else {
-    list($ArtistID, $ArtistName) = $DB->next_record();
-  }
+        $ArtistID = $DB->inserted_id();
+    } else {
+        [$ArtistID, $ArtistName] = $DB->next_record();
+    }
 
-  $DB->query("
+    $DB->query("
     SELECT CategoryID
     FROM torrents_group
     WHERE ID = $OldGroupID");
 
-  list($CategoryID) = $DB->next_record();
+    [$CategoryID] = $DB->next_record();
 
-  $DB->query("
+    $DB->query("
     INSERT INTO torrents_group
       (CategoryID, Name, Year, Time, WikiBody, WikiImage)
     VALUES
       ('$CategoryID', '$Title', '$Year', NOW(), '', '')");
-  $GroupID = $DB->inserted_id();
+    $GroupID = $DB->inserted_id();
 
-  $DB->query("
+    $DB->query("
     INSERT INTO torrents_artists
       (GroupID, ArtistID, UserID)
     VALUES
       ('$GroupID', '$ArtistID', '$LoggedUser[ID]')");
 
-  $DB->query("
+    $DB->query("
     UPDATE torrents
     SET GroupID = '$GroupID'
     WHERE ID = '$TorrentID'");
 
-  // Delete old group if needed
-  $DB->query("
+    // Delete old group if needed
+    $DB->query("
     SELECT ID
     FROM torrents
     WHERE GroupID = '$OldGroupID'");
-  if (!$DB->has_results()) {
-    Torrents::delete_group($OldGroupID);
-  } else {
-    Torrents::update_hash($OldGroupID);
-  }
+    if (!$DB->has_results()) {
+        Torrents::delete_group($OldGroupID);
+    } else {
+        Torrents::update_hash($OldGroupID);
+    }
 
-  Torrents::update_hash($GroupID);
+    Torrents::update_hash($GroupID);
 
-  $Cache->delete_value("torrent_download_$TorrentID");
+    $Cache->delete_value("torrent_download_$TorrentID");
 
-  Misc::write_log("Torrent $TorrentID was edited by " . $LoggedUser['Username']);
+    Misc::write_log("Torrent $TorrentID was edited by " . $LoggedUser['Username']);
 
-  header("Location: torrents.php?id=$GroupID");
+    header("Location: torrents.php?id=$GroupID");
 }
 ?>

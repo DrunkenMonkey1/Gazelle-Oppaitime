@@ -1,12 +1,13 @@
-<?
+<?php
+
 authorize();
 $UserSubscriptions = Subscriptions::get_subscriptions();
 if (!empty($UserSubscriptions)) {
-  $DB->query("
+    $DB->query("
     INSERT INTO forums_last_read_topics (UserID, TopicID, PostID)
       SELECT '$LoggedUser[ID]', ID, LastPostID
       FROM forums_topics
-      WHERE ID IN (".implode(',', $UserSubscriptions).')
+      WHERE ID IN (" . implode(',', $UserSubscriptions) . ')
     ON DUPLICATE KEY UPDATE
       PostID = LastPostID');
 }
@@ -29,6 +30,5 @@ $DB->query("
   ) AS t
   ON DUPLICATE KEY UPDATE
     PostID = LastPostID");
-$Cache->delete_value('subscriptions_user_new_'.$LoggedUser['ID']);
+$Cache->delete_value('subscriptions_user_new_' . $LoggedUser['ID']);
 header('Location: userhistory.php?action=subscriptions');
-?>

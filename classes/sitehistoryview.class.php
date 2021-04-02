@@ -1,86 +1,89 @@
-<?
+<?php
 
-class SiteHistoryView {
-
-  public static function render_linkbox() {
-    if (check_perms('users_mod')
+class SiteHistoryView
+{
+    public static function render_linkbox()
+    {
+        if (check_perms('users_mod')
       ) {
-?>
+            ?>
   <div class="linkbox">
     <a href="sitehistory.php?action=edit" class="brackets">Create new event</a>
   </div>
-<?
+<?php
+        }
     }
-  }
 
-  public static function render_events($Events) {
-    $Categories = SiteHistory::get_categories();
-    $SubCategories = SiteHistory::get_sub_categories();
-    $CanEdit = check_perms('users_mod') ;
-    foreach ($Events as $Event) {
-?>
+    public static function render_events($Events)
+    {
+        $Categories = SiteHistory::get_categories();
+        $SubCategories = SiteHistory::get_sub_categories();
+        $CanEdit = check_perms('users_mod') ;
+        foreach ($Events as $Event) {
+            ?>
       <div class="box">
         <div class="head colhead_dark">
           <div class="title">
-<?      if ($CanEdit) { ?>
+<?php      if ($CanEdit) { ?>
             <a class="brackets" href="sitehistory.php?action=edit&amp;id=<?=$Event['ID']?>">Edit</a>
-<?      } ?>
+<?php      } ?>
 
-            <?=date('F d, Y', strtotime($Event['Date']));?>
+            <?=date('F d, Y', strtotime($Event['Date'])); ?>
               -
             <a href="sitehistory.php?action=search&amp;category=<?=$Event['Category']?>" class="brackets"><?=$Categories[$Event['Category']]?></a>
             <a href="sitehistory.php?action=search&amp;subcategory=<?=$Event['SubCategory']?>" class="brackets"><?=$SubCategories[$Event['SubCategory']]?></a>
 
-<?      if (!empty($Event['Url'])) { ?>
+<?php      if (!empty($Event['Url'])) { ?>
             <a href="<?=$Event['Url']?>"><?=$Event['Title']?></a>
-<?      } else { ?>
+<?php      } else { ?>
             <?=$Event['Title']?>
-<?      } ?>
+<?php      } ?>
           </div>
           <div class="tags">
-            <? self::render_tags($Event['Tags'])?>
+            <?php self::render_tags($Event['Tags'])?>
           </div>
           </div>
-<?      if (!empty($Event['Body'])) { ?>
+<?php      if (!empty($Event['Body'])) { ?>
           <div class="body">
             <?=Text::full_format($Event['Body'])?>
           </div>
-<?      } ?>
+<?php      } ?>
       </div>
-<?
+<?php
+        }
     }
-  }
 
-  private static function render_tags($Tags) {
-    $Tags = explode(',', $Tags);
-    natcasesort($Tags);
-    $FormattedTags = '';
-    foreach ($Tags as $Tag) {
-      $FormattedTags .= "<a href=\"sitehistory.php?action=search&amp;tags=$Tag\">$Tag" . "</a>, ";
+    private static function render_tags($Tags)
+    {
+        $Tags = explode(',', $Tags);
+        natcasesort($Tags);
+        $FormattedTags = '';
+        foreach ($Tags as $Tag) {
+            $FormattedTags .= "<a href=\"sitehistory.php?action=search&amp;tags=$Tag\">$Tag" . "</a>, ";
+        }
+        echo rtrim($FormattedTags, ', ');
     }
-    echo rtrim($FormattedTags, ', ');
-  }
 
-  public static function render_months($Months) { ?>
+    public static function render_months($Months) { ?>
     <div class="box">
       <div class="head">Calendar</div>
       <div class="pad">
-<?
+<?php
     $Year = "";
     foreach ($Months as $Month) {
-      if ($Month['Year'] != $Year) {
-        $Year = $Month['Year'];
-        echo "<h2>$Year</h2>";
-      }
-?>
+        if ($Month['Year'] != $Year) {
+            $Year = $Month['Year'];
+            echo "<h2>$Year</h2>";
+        } ?>
         <a style="margin-left: 5px;" href="sitehistory.php?month=<?=$Month['Month']?>&amp;year=<?=$Month['Year']?>"><?=$Month['MonthName']?></a>
-<?    } ?>
+<?php
+    } ?>
       </div>
     </div>
-<?
+<?php
   }
 
-  public static function render_search() { ?>
+    public static function render_search() { ?>
       <div class="box">
         <div class="head">Search</div>
         <div class="pad">
@@ -92,38 +95,40 @@ class SiteHistoryView {
             <br /><br/>
             <select name="category" id="category">
               <option value="0">Choose a category</option>
-<?
+<?php
       $Categories = SiteHistory::get_categories();
       foreach ($Categories as $Key => $Value) {
-?>
+          ?>
               <option<?=$Key == $Event['Category'] ? ' selected="selected"' : ''?> value="<?=$Key?>"><?=$Value?></option>
-<?      } ?>
+<?php
+      } ?>
             </select>
             <br /><br/>
             <select name="subcategory">
               <option value="0">Choose a subcategory</option>
-<?
+<?php
       $SubCategories = SiteHistory::get_sub_categories();
       foreach ($SubCategories as $Key => $Value) {
-?>
+          ?>
               <option<?=$Key == $Event['SubCategory'] ? ' selected="selected"' : ''?> value="<?=$Key?>"><?=$Value?></option>
-<?      } ?>
+<?php
+      } ?>
             </select>
             <br /><br/>
             <input value="Search" type="submit" />
           </form>
         </div>
       </div>
-<?  }
+<?php  }
 
-  public static function render_edit_form($Event) { ?>
+    public static function render_edit_form($Event) { ?>
     <form id="event_form" method="post" action="">
-<?    if ($Event) { ?>
+<?php    if ($Event) { ?>
       <input type="hidden" name="action" value="take_edit" />
       <input type="hidden" name="id" value="<?=$Event['ID']?>" />
-<?    } else { ?>
+<?php    } else { ?>
       <input type="hidden" name="action" value="take_create" />
-<?    } ?>
+<?php    } ?>
       <input type="hidden" name="auth" value="<?=G::$LoggedUser['AuthKey']?>" />
       <table cellpadding="6" cellspacing="1" border="0" class="layout border" width="100%">
         <tr>
@@ -149,12 +154,13 @@ class SiteHistoryView {
           <td>
             <select id="category" name="category" class="required">
               <option value="0">Choose a category</option>
-<?
+<?php
     $Categories = SiteHistory::get_categories();
     foreach ($Categories as $Key => $Value) {
-?>
+        ?>
               <option<?=$Key == $Event['Category'] ? ' selected="selected"' : ''?> value="<?=$Key?>"><?=$Value?></option>
-<?    } ?>
+<?php
+    } ?>
             </select>
           </td>
         </tr>
@@ -163,10 +169,10 @@ class SiteHistoryView {
           <td>
             <select id="category" name="sub_category" class="required">
               <option value="0">Choose a subcategory</option>
-<?    $SubCategories = SiteHistory::get_sub_categories();
+<?php    $SubCategories = SiteHistory::get_sub_categories();
     foreach ($SubCategories as $Key => $Value) { ?>
               <option<?=$Key == $Event['SubCategory'] ? ' selected="selected"' : ''?> value="<?=$Key?>"><?=$Value?></option>
-<?    } ?>
+<?php    } ?>
             </select>
           </td>
         </tr>
@@ -176,12 +182,13 @@ class SiteHistoryView {
             <input type="text" id="tags" name="tags" placeholder="Comma-separated tags; use periods/dots for spaces" size="50" value="<?=$Event['Tags']?>" />
             <select id="tag_list">
               <option>Choose tags</option>
-<?
+<?php
     $Tags = SiteHistory::get_tags();
     foreach ($Tags as $Tag) {
-?>
+        ?>
               <option><?=$Tag?></option>
-<?    } ?>
+<?php
+    } ?>
             </select>
           </td>
         </tr>
@@ -193,34 +200,35 @@ class SiteHistoryView {
         </tr>
       </table>
       <input type="submit" name="submit" value="Submit" />
-<?    if ($Event) { ?>
+<?php    if ($Event) { ?>
       <input type="submit" name="delete" value="Delete" />
-<?    } ?>
+<?php    } ?>
     </form>
-<?
+<?php
   }
 
-  public static function render_recent_sidebar($Events) { ?>
+    public static function render_recent_sidebar($Events) { ?>
     <div class="box">
       <div class="head colhead_dark">
         <strong><a href="sitehistory.php">Latest site history</a></strong>
       </div>
       <ul class="stats nobullet">
-<?
+<?php
     $Categories = SiteHistory::get_categories();
     foreach ($Events as $Event) {
-?>
+        ?>
         <li>
           <a href="sitehistory.php?action=search&amp;category=<?=$Event['Category']?>" class="brackets"><?=$Categories[$Event['Category']]?></a>
-<?      if (!empty($Event['Url'])) { ?>
+<?php      if (!empty($Event['Url'])) { ?>
           <a href="<?=$Event['Url']?>"><?=Format::cut_string($Event['Title'], 20)?></a>
-<?      } else { ?>
+<?php      } else { ?>
           <?=Format::cut_string($Event['Title'], 20)?>
-<?      } ?>
+<?php      } ?>
         </li>
-<?    } ?>
+<?php
+    } ?>
       </ul>
     </div>
-<?
+<?php
   }
 }

@@ -1,4 +1,4 @@
-<?
+<?php
+
 enforce_login();
-include(SERVER_ROOT.'/sections/snatchlist/snatchlist.php');
-?>
+include SERVER_ROOT . '/sections/snatchlist/snatchlist.php';

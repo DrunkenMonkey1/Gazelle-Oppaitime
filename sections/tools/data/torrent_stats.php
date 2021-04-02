@@ -1,32 +1,32 @@
-<?
+<?php
 if (!check_perms('site_view_flow')) {
-  error(403);
+    error(403);
 }
 View::show_header('Torrents');
 
 if (!$TorrentStats = $Cache->get_value('new_torrent_stats')) {
-  $DB->query("
+    $DB->query("
     SELECT COUNT(ID), SUM(Size), SUM(FileCount)
     FROM torrents");
-  list($TorrentCount, $TotalSize, $TotalFiles) = $DB->next_record();
-  $DB->query("
+    [$TorrentCount, $TotalSize, $TotalFiles] = $DB->next_record();
+    $DB->query("
     SELECT COUNT(ID)
     FROM users_main
     WHERE Enabled = '1'");
-  list($NumUsers) = $DB->next_record();
-  $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 1 DAY)");
-  list($DayNum, $DaySize, $DayFiles) = $DB->next_record();
-  $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 7 DAY)");
-  list($WeekNum, $WeekSize, $WeekFiles) = $DB->next_record();
-  $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 30 DAY)");
-  list($MonthNum, $MonthSize, $MonthFiles) = $DB->next_record();
-  $Cache->cache_value('new_torrent_stats', array($TorrentCount, $TotalSize, $TotalFiles,
-            $NumUsers, $DayNum, $DaySize, $DayFiles,
-            $WeekNum, $WeekSize, $WeekFiles, $MonthNum,
-            $MonthSize, $MonthFiles), 3600);
+    [$NumUsers] = $DB->next_record();
+    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 1 DAY)");
+    [$DayNum, $DaySize, $DayFiles] = $DB->next_record();
+    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 7 DAY)");
+    [$WeekNum, $WeekSize, $WeekFiles] = $DB->next_record();
+    $DB->query("SELECT COUNT(ID), SUM(Size), SUM(FileCount) FROM torrents WHERE Time > SUBDATE(NOW(), INTERVAL 30 DAY)");
+    [$MonthNum, $MonthSize, $MonthFiles] = $DB->next_record();
+    $Cache->cache_value('new_torrent_stats', [$TorrentCount, $TotalSize, $TotalFiles,
+        $NumUsers, $DayNum, $DaySize, $DayFiles,
+        $WeekNum, $WeekSize, $WeekFiles, $MonthNum,
+        $MonthSize, $MonthFiles], 3600);
 } else {
-  list($TorrentCount, $TotalSize, $TotalFiles, $NumUsers, $DayNum, $DaySize, $DayFiles,
-    $WeekNum, $WeekSize, $WeekFiles, $MonthNum, $MonthSize, $MonthFiles) = $TorrentStats;
+    [$TorrentCount, $TotalSize, $TotalFiles, $NumUsers, $DayNum, $DaySize, $DayFiles,
+    $WeekNum, $WeekSize, $WeekFiles, $MonthNum, $MonthSize, $MonthFiles] = $TorrentStats;
 }
 
 ?>
@@ -74,6 +74,6 @@ if (!$TorrentStats = $Cache->get_value('new_torrent_stats')) {
     </div>
   </div>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

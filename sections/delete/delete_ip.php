@@ -1,11 +1,11 @@
-<?
+<?php
 
 if (!isset($_POST['ips']) || !is_array($_POST['ips'])) {
-  error("No IP requested");
+    error("No IP requested");
 }
 
 if (!apcu_exists('DBKEY')) {
-  error(403);
+    error(403);
 }
 
 View::show_header('IP Address Expunge Request');
@@ -17,9 +17,9 @@ View::show_header('IP Address Expunge Request');
 </div>
 <form class="create_form box pad" name="ipdelete" action="delete.php" method="post">
   <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-  <? foreach($_POST['ips'] as $ip) { ?>
+  <?php foreach ($_POST['ips'] as $ip) { ?>
   <input type="hidden" name="ips[]" value="<?=$ip?>" />
-  <? } ?>
+  <?php } ?>
   <input type="hidden" name="action" value="takeip" />
   <table cellspacing="1" cellpadding="3" border="0" class="layout" width="100%">
     <tr>
@@ -39,4 +39,4 @@ View::show_header('IP Address Expunge Request');
   </table>
 </form>
 
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

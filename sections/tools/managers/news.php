@@ -1,7 +1,7 @@
-<?
+<?php
 enforce_login();
 if (!check_perms('admin_manage_news')) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Manage news', 'bbcode');
@@ -9,57 +9,59 @@ View::show_header('Manage news', 'bbcode');
 switch ($_GET['action']) {
   case 'takeeditnews':
     if (!check_perms('admin_manage_news')) {
-      error(403);
+        error(403);
     }
     if (is_number($_POST['newsid'])) {
-      authorize();
+        authorize();
 
-      $DB->query("
+        $DB->query("
         UPDATE news
-        SET Title = '".db_string($_POST['title'])."', Body = '".db_string($_POST['body'])."'
-        WHERE ID = '".db_string($_POST['newsid'])."'");
-      $Cache->delete_value('news');
-      $Cache->delete_value('feed_news');
+        SET Title = '" . db_string($_POST['title']) . "', Body = '" . db_string($_POST['body']) . "'
+        WHERE ID = '" . db_string($_POST['newsid']) . "'");
+        $Cache->delete_value('news');
+        $Cache->delete_value('feed_news');
     }
     header('Location: index.php');
     break;
   case 'editnews':
     if (is_number($_GET['id'])) {
-      $NewsID = $_GET['id'];
-      $DB->query("
+        $NewsID = $_GET['id'];
+        $DB->query("
         SELECT Title, Body
         FROM news
         WHERE ID = $NewsID");
-      list($Title, $Body) = $DB->next_record();
+        [$Title, $Body] = $DB->next_record();
     }
 }
 ?>
 <div class="thin">
   <div class="header">
-    <h2><?= ($_GET['action'] == 'news') ? 'Create a news post' : 'Edit news post';?></h2>
+    <h2><?= ('news' == $_GET['action']) ? 'Create a news post' : 'Edit news post';?></h2>
   </div>
-  <form class="<?= ($_GET['action'] == 'news') ? 'create_form' : 'edit_form';?>" name="news_post" action="tools.php" method="post">
+  <form class="<?= ('news' == $_GET['action']) ? 'create_form' : 'edit_form';?>" name="news_post" action="tools.php" method="post">
     <div class="box pad">
-      <input type="hidden" name="action" value="<?= ($_GET['action'] == 'news') ? 'takenewnews' : 'takeeditnews';?>">
+      <input type="hidden" name="action" value="<?= ('news' == $_GET['action']) ? 'takenewnews' : 'takeeditnews';?>">
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>">
-<? if ($_GET['action'] == 'editnews') { ?>
+<?php if ('editnews' == $_GET['action']) { ?>
       <input type="hidden" name="newsid" value="<?=$NewsID; ?>">
-<? } ?>
+<?php } ?>
       <h3>Title</h3>
-      <input type="text" name="title" size="95"<? if (!empty($Title)) { echo ' value="'.display_str($Title).'"'; } ?>>
+      <input type="text" name="title" size="95"<?php if (!empty($Title)) {
+    echo ' value="' . display_str($Title) . '"';
+} ?>>
 <!-- Why did someone add this?  <input type="datetime" name="datetime" value="<?=sqltime()?>" /> -->
       <br>
       <h3>Body</h3>
-<?    $Textarea = new TEXTAREA_PREVIEW('body', '', display_str($Body), 95, 15, true, false); ?>
+<?php    $Textarea = new TEXTAREA_PREVIEW('body', '', display_str($Body), 95, 15, true, false); ?>
       <div class="center">
         <input type="button" value="Preview" class="hidden button_preview_<?=$Textarea->getID()?>">
-        <input type="submit" value="<?= ($_GET['action'] == 'news') ? 'Create news post' : 'Edit news post';?>">
+        <input type="submit" value="<?= ('news' == $_GET['action']) ? 'Create news post' : 'Edit news post';?>">
       </div>
     </div>
   </form>
 
   <h2>News archive</h2>
-<?
+<?php
 $DB->query('
   SELECT
     ID,
@@ -68,8 +70,8 @@ $DB->query('
     Time
   FROM news
   ORDER BY Time DESC');// LIMIT 20
-while (list($NewsID, $Title, $Body, $NewsTime) = $DB->next_record()) {
-?>
+while ([$NewsID, $Title, $Body, $NewsTime] = $DB->next_record()) {
+    ?>
   <div class="box vertical_space news_post">
     <div class="head">
       <strong><?=display_str($Title) ?></strong> - posted <?=time_diff($NewsTime) ?>
@@ -78,6 +80,7 @@ while (list($NewsID, $Title, $Body, $NewsTime) = $DB->next_record()) {
     </div>
     <div class="pad"><?=Text::full_format($Body) ?></div>
   </div>
-<? } ?>
+<?php
+} ?>
 </div>
-<? View::show_footer();?>
+<?php View::show_footer();?>

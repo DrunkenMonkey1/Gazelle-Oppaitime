@@ -1,19 +1,19 @@
-<?
+<?php
 $CollageID = $_GET['collageid'];
 if (!is_number($CollageID)) {
-  error(0);
+    error(0);
 }
 
 $DB->query("
   SELECT Name, UserID, CategoryID
   FROM collages
   WHERE ID = '$CollageID'");
-list($Name, $UserID, $CategoryID) = $DB->next_record();
-if ($CategoryID == 0 && $UserID != $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
-  error(403);
+[$Name, $UserID, $CategoryID] = $DB->next_record();
+if (0 == $CategoryID && $UserID != $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
+    error(403);
 }
-if ($CategoryID == array_search(ARTIST_COLLAGE, $CollageCats)) {
-  error(404);
+if ($CategoryID == array_search(ARTIST_COLLAGE, $CollageCats, true)) {
+    error(404);
 }
 
 $DB->query("
@@ -33,9 +33,9 @@ $GroupIDs = $DB->collect('GroupID');
 
 $CollageDataList = $DB->to_array('GroupID', MYSQLI_ASSOC);
 if (count($GroupIDs) > 0) {
-  $TorrentList = Torrents::get_groups($GroupIDs);
+    $TorrentList = Torrents::get_groups($GroupIDs);
 } else {
-  $TorrentList = [];
+    $TorrentList = [];
 }
 
 View::show_header("Manage collection: $Name", 'jquery-ui,jquery.tablesorter,sort');
@@ -77,31 +77,30 @@ View::show_header("Manage collection: $Name", 'jquery-ui,jquery.tablesorter,sort
       </tr>
     </thead>
     <tbody>
-<?
+<?php
 
   $Number = 0;
   foreach ($GroupIDs as $GroupID) {
-    if (!isset($TorrentList[$GroupID])) {
-      continue;
-    }
-    $Group = $TorrentList[$GroupID];
-    extract(Torrents::array_group($Group));
-    list(, $UserID, $Username, $Sort, $CatNum) = array_values($CollageDataList[$GroupID]);
+      if (!isset($TorrentList[$GroupID])) {
+          continue;
+      }
+      $Group = $TorrentList[$GroupID];
+      extract(Torrents::array_group($Group));
+      [, $UserID, $Username, $Sort, $CatNum] = array_values($CollageDataList[$GroupID]);
 
-    $Number++;
+      $Number++;
 
-    $DisplayName = '';
-    if (!empty($ExtendedArtists[1]) || !empty($ExtendedArtists[4]) || !empty($ExtendedArtists[5]) || !empty($ExtendedArtists[6])) {
-      unset($ExtendedArtists[2]);
-      unset($ExtendedArtists[3]);
-      $DisplayName .= Artists::display_artists($ExtendedArtists, true, false);
-    } elseif (count($Artists) > 0) {
-      $DisplayName .= Artists::display_artists($Artists, true, false);
-    }
-    $GroupNameLang = $GroupName ? $GroupName : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP);
-    $TorrentLink = "<a href=\"torrents.php?id=$GroupID\" class=\"tooltip\" title=\"View torrent group\">$GroupNameLang</a>";
-    $GroupYear = $GroupYear > 0 ? $GroupYear : '';
-?>
+      $DisplayName = '';
+      if (!empty($ExtendedArtists[1]) || !empty($ExtendedArtists[4]) || !empty($ExtendedArtists[5]) || !empty($ExtendedArtists[6])) {
+          unset($ExtendedArtists[2]);
+          unset($ExtendedArtists[3]);
+          $DisplayName .= Artists::display_artists($ExtendedArtists, true, false);
+      } elseif (count($Artists) > 0) {
+          $DisplayName .= Artists::display_artists($Artists, true, false);
+      }
+      $GroupNameLang = $GroupName ? $GroupName : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP);
+      $TorrentLink = "<a href=\"torrents.php?id=$GroupID\" class=\"tooltip\" title=\"View torrent group\">$GroupNameLang</a>";
+      $GroupYear = $GroupYear > 0 ? $GroupYear : ''; ?>
       <tr class="drag row" id="li_<?=$GroupID?>">
         <form class="manage_form" name="collage" action="collages.php" method="post">
           <td>
@@ -123,7 +122,8 @@ View::show_header("Manage collection: $Name", 'jquery-ui,jquery.tablesorter,sort
           </td>
         </form>
       </tr>
-<? } ?>
+<?php
+  } ?>
     </tbody>
   </table>
   <div class="drag_drop_save hidden">
@@ -139,4 +139,4 @@ View::show_header("Manage collection: $Name", 'jquery-ui,jquery.tablesorter,sort
     </div>
   </form>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

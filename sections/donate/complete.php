@@ -1,4 +1,4 @@
-<?
+<?php
 enforce_login();
 View::show_header('Donation Complete');
 ?>
@@ -10,4 +10,4 @@ View::show_header('Donation Complete');
     <p>Thank you for your donation! If this is your first time donating, you will have received two (2) invitations and a <img src="<?=(STATIC_SERVER)?>common/symbols/donor.png" alt="Donor" />.</p>
   </div>
 </div>
-<? View::show_footer();?>
+<?php View::show_footer();?>

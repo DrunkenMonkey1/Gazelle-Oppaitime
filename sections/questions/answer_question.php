@@ -1,13 +1,13 @@
-<?
+<?php
 Text::$TOC = true;
 if (!check_perms("users_mod")) {
-  error(403);
+    error(403);
 }
 
 $ID = $_GET['id'];
 
 if (!is_number($ID)) {
-  error(404);
+    error(404);
 }
 
 $DB->query("
@@ -49,5 +49,5 @@ View::show_header('Ask the Staff', 'bbcode');
     </form>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

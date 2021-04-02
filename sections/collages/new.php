@@ -1,20 +1,20 @@
-<?
+<?php
 View::show_header('Create a collection', 'bbcode');
 
 if (!check_perms('site_collages_renamepersonal')) {
-  $ChangeJS = " onchange=\"if ( this.options[this.selectedIndex].value == '0') { $('#namebox').ghide(); $('#personal').gshow(); } else { $('#namebox').gshow(); $('#personal').ghide(); }\"";
+    $ChangeJS = " onchange=\"if ( this.options[this.selectedIndex].value == '0') { $('#namebox').ghide(); $('#personal').gshow(); } else { $('#namebox').gshow(); $('#personal').ghide(); }\"";
 }
 
-if (!check_perms('site_collages_renamepersonal') && $Category === '0') {
-  $NoName = true;
+if (!check_perms('site_collages_renamepersonal') && '0' === $Category) {
+    $NoName = true;
 }
 ?>
 <div class="thin">
-<?
+<?php
 if (isset($Err)) { ?>
   <div class="save_message error"><?=$Err?></div>
   <br />
-<?
+<?php
 } ?>
   <div class="box pad">
   <form class="create_form" name="collage" action="collages.php" method="post">
@@ -32,12 +32,12 @@ if (isset($Err)) { ?>
         <td class="label"><strong>Category</strong></td>
         <td>
           <select name="category"<?=$ChangeJS?>>
-<?
+<?php
 array_shift($CollageCats);
 
 foreach ($CollageCats as $CatID=>$CatName) { ?>
             <option value="<?=$CatID + 1 ?>"<?=(($CatID + 1 == $Category) ? ' selected="selected"' : '')?>><?=$CatName?></option>
-<?
+<?php
 }
 
 $DB->query("
@@ -46,20 +46,20 @@ $DB->query("
   WHERE UserID = '$LoggedUser[ID]'
     AND CategoryID = '0'
     AND Deleted = '0'");
-list($CollageCount) = $DB->next_record();
+[$CollageCount] = $DB->next_record();
 if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('site_collages_personal')) { ?>
-            <option value="0"<?=(($Category === '0') ? ' selected="selected"' : '')?>>Personal</option>
-<?
+            <option value="0"<?=(('0' === $Category) ? ' selected="selected"' : '')?>>Personal</option>
+<?php
 } ?>
           </select>
           <br />
           <ul>
             <li><strong>Theme</strong> - A collection containing releases that all relate to a certain theme</li>
             <li><strong>Staff picks</strong> - A listing of recommendations picked by the staff on special occasions.</li>
-<?
+<?php
   if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('site_collages_personal')) { ?>
             <li><strong>Personal</strong> - You can put whatever you want here. It is your own personal collection.</li>
-<?  } ?>
+<?php  } ?>
           </ul>
         </td>
       </tr>
@@ -87,4 +87,4 @@ if (($CollageCount < $LoggedUser['Permissions']['MaxCollages']) && check_perms('
   </form>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

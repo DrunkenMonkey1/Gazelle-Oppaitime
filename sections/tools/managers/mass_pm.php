@@ -1,12 +1,12 @@
-<?
+<?php
 if (!check_perms("users_mod")) {
-  error(403);
+    error(403);
 }
 
 $Classes = Users::get_classes()[0];
 // If your user base is large, sending a PM to the lower classes will take a long time
 // add the class ID into this array to skip it when presenting the list of classes
-$SkipClassIDs = array(USER, MEMBER, POWER, ELITE, TORRENT_MASTER, DONOR, POWER_TM, ELITE_TM);
+$SkipClassIDs = [USER, MEMBER, POWER, ELITE, TORRENT_MASTER, DONOR, POWER_TM, ELITE_TM];
 
 View::show_header('Compose Mass PM', 'inbox,bbcode,jquery.validate,form_validate');
 ?>
@@ -22,11 +22,11 @@ View::show_header('Compose Mass PM', 'inbox,bbcode,jquery.validate,form_validate
         <h3>Class</h3>
         <select id="class_id" name="class_id">
           <option>---</option>
-<?          foreach ($Classes as $Class) {
-            if (!in_array($Class['ID'], $SkipClassIDs)) { ?>
+<?php          foreach ($Classes as $Class) {
+    if (!in_array($Class['ID'], $SkipClassIDs, true)) { ?>
               <option value="<?=$Class['ID']?>"><?=$Class['Name']?></option>
-<?            }
-          } ?>
+<?php            }
+} ?>
         </select>
         <h3>Subject</h3>
         <input type="text" class="required" name="subject" size="95" /><br />
@@ -42,6 +42,6 @@ View::show_header('Compose Mass PM', 'inbox,bbcode,jquery.validate,form_validate
     </div>
   </form>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

@@ -1,6 +1,6 @@
-<?
+<?php
 if (!check_perms('admin_whitelist')) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Client Whitelist Manager');
@@ -40,9 +40,9 @@ $DB->query('
     <td>Submit</td>
   </tr>
 </table>
-<?
-while (list($ID, $Client, $Peer_ID) = $DB->next_record()) {
-?>
+<?php
+while ([$ID, $Client, $Peer_ID] = $DB->next_record()) {
+    ?>
 <form class="manage_form" name="clients" action="" method="post">
   <input type="hidden" name="action" value="whitelist_alter" />
   <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
@@ -62,6 +62,7 @@ while (list($ID, $Client, $Peer_ID) = $DB->next_record()) {
     </tr>
   </table>
 </form>
-<? } ?>
+<?php
+} ?>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

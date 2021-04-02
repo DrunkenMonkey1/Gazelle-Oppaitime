@@ -1,4 +1,4 @@
-<?
+<?php
 //Include the header
 View::show_header('Request Rules');
 ?>
@@ -34,8 +34,8 @@ View::show_header('Request Rules');
       </li>
     </ul>
   </div>
-<? include('jump.php'); ?>
+<?php include 'jump.php'; ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

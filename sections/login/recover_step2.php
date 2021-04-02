@@ -1,4 +1,4 @@
-<?
+<?php
 View::show_header('Recover Password');
 ?>
 <script src="<?=(STATIC_SERVER)?>functions/validate.js" type="text/javascript"></script>
@@ -7,12 +7,13 @@ View::show_header('Recover Password');
   <input type="hidden" name="key" value="<?=display_str($_REQUEST['key'])?>" />
   <div style="width: 500px;">
     <span class="titletext">Reset your password - Final Step</span><br /><br />
-<?
+<?php
 if (empty($PassWasReset)) {
-  if (!empty($Err)) {
-?>
+    if (!empty($Err)) {
+        ?>
     <strong class="important_text"><?=display_str($Err)?></strong><br /><br />
-<?  } ?> Any password 6 characters or longer is accepted, but a strong password is 8 characters or longer, contains at least 1 lowercase and uppercase letter, and contains at least a number or symbol.<br /><br />
+<?php
+    } ?> Any password 6 characters or longer is accepted, but a strong password is 8 characters or longer, contains at least 1 lowercase and uppercase letter, and contains at least a number or symbol.<br /><br />
     <table class="layout">
       <tr>
         <td><strong id="pass_strength"></strong></td>
@@ -27,12 +28,13 @@ if (empty($PassWasReset)) {
         <td><input type="submit" name="reset" value="Reset!" class="submit"></td>
       </tr>
     </table>
-<? } else { ?>
+<?php
+} else { ?>
     Your password has been successfully reset.<br />
     Please <a href="login.php">click here</a> to log in using your new password.
-<? } ?>
+<?php } ?>
   </div>
 </form>
-<?
+<?php
 View::show_footer(['recover' => true]);
 ?>

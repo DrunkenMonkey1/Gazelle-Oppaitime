@@ -1,4 +1,4 @@
-<?
+<?php
 /***********************************************
  * This file displays the list of available tools in the staff toolbox.
  *
@@ -10,7 +10,7 @@
  */
 
 if (!check_perms('users_mod')) {
-  error(403);
+    error(403);
 }
 
 /**
@@ -19,18 +19,19 @@ if (!check_perms('users_mod')) {
  * in a given subcontainer and gets reset at the beginning of each new
  * subcontainer.
  *
- * @param string $Title - the displayed name of the tool
- * @param string $URL - the relative URL of the tool
- * @param bool $HasPermission - whether the user has permission to view/use the tool
- * @param string $Tooltip - optional tooltip
+ * @param string $Title         - the displayed name of the tool
+ * @param string $URL           - the relative URL of the tool
+ * @param bool   $HasPermission - whether the user has permission to view/use the tool
+ * @param string $Tooltip       - optional tooltip
  *
  */
-function create_row($Title, $URL, $HasPermission = false, $Tooltip = false) {
-  if ($HasPermission) {
-    global $ToolsHTML;
-    $TooltipHTML = $Tooltip !== false ? " class=\"tooltip\" title=\"$Tooltip\"" : "";
-    $ToolsHTML .= "\t\t\t\t<tr><td><a href=\"$URL\"$TooltipHTML>$Title</a></td></tr>\n";
-  }
+function create_row($Title, $URL, $HasPermission = false, $Tooltip = false)
+{
+    if ($HasPermission) {
+        global $ToolsHTML;
+        $TooltipHTML = false !== $Tooltip ? " class=\"tooltip\" title=\"$Tooltip\"" : "";
+        $ToolsHTML .= "\t\t\t\t<tr><td><a href=\"$URL\"$TooltipHTML>$Title</a></td></tr>\n";
+    }
 }
 
 View::show_header('Staff Tools');
@@ -38,7 +39,7 @@ View::show_header('Staff Tools');
 <div class="permissions">
   <div class="permission_container">
   <!-- begin left column -->
-<?
+<?php
   // begin Administration category
   $ToolsHTML = "";
   create_row("Client whitelist", "tools.php?action=whitelist", check_perms("admin_whitelist"));
@@ -48,14 +49,14 @@ View::show_header('Staff Tools');
   create_row("Database key", "tools.php?action=database_key", check_perms("admin_manage_permissions"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Administration</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Announcements category
@@ -67,14 +68,14 @@ View::show_header('Staff Tools');
   create_row("News post", "tools.php?action=news", check_perms("admin_manage_news"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Announcements</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Community category
@@ -82,14 +83,14 @@ View::show_header('Staff Tools');
   create_row("Forum manager", "tools.php?action=forum", check_perms("admin_manage_forums"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Community</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Finances category
@@ -100,19 +101,20 @@ View::show_header('Staff Tools');
   create_row("Donor rewards", "tools.php?action=donor_rewards", check_perms("users_mod"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Finances</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?  } ?>
+<?php
+  } ?>
   <!-- end left column -->
   </div>
   <div class="permission_container">
   <!-- begin middle column -->
-<?
+<?php
   // begin Queue category
   $ToolsHTML = "";
   create_row("Auto-Enable requests", "tools.php?action=enable_requests", check_perms("users_mod"));
@@ -120,14 +122,14 @@ View::show_header('Staff Tools');
   create_row("Login watch", "tools.php?action=login_watch", check_perms("admin_login_watch"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Queue</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Managers category
@@ -138,14 +140,14 @@ View::show_header('Staff Tools');
   create_row("Manipulate invite tree", "tools.php?action=manipulate_tree", check_perms("users_mod"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Managers</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Developer Sandboxes category
@@ -159,19 +161,20 @@ View::show_header('Staff Tools');
   create_row("Testing", "testing.php", check_perms("users_mod"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Developer Sandboxes</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?  } ?>
+<?php
+  } ?>
   <!-- end middle column -->
   </div>
   <div class="permission_container">
   <!-- begin right column -->
-<?
+<?php
   // begin Site Information category
   $ToolsHTML = "";
   create_row("Database specifics", "tools.php?action=database_specifics", check_perms("site_debug"));
@@ -184,14 +187,14 @@ View::show_header('Staff Tools');
   create_row("User flow", "tools.php?action=user_flow", check_perms("site_view_flow"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Site Information</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Torrents category
@@ -207,14 +210,14 @@ View::show_header('Staff Tools');
   create_row("Sitewide freeleech manager", "tools.php?action=freeleech", check_perms("users_mod"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Torrents</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?
+<?php
   }
 
   // begin Development category
@@ -229,15 +232,16 @@ View::show_header('Staff Tools');
   create_row("Update GeoIP", "tools.php?action=update_geoip", check_perms("admin_update_geoip"));
 
   if ($ToolsHTML) {
-?>
+      ?>
     <div class="permission_subcontainer">
       <table class="layout">
         <tr class="colhead"><td>Development</td></tr>
 <?=       $ToolsHTML ?>
       </table>
     </div>
-<?  } ?>
+<?php
+  } ?>
   <!-- end right column -->
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

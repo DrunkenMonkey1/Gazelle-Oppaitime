@@ -1,18 +1,19 @@
-<? View::show_header('Login'); ?>
+<?php View::show_header('Login'); ?>
   <span id="no-cookies" class="hidden warning">You appear to have cookies disabled.<br /><br /></span>
-<?
+<?php
 if (!$Banned) {
-?>
+    ?>
   <form class="auth_form" name="login" id="loginform" method="post" action="login.php">
-<?
+<?php
   if (isset($Err)) {
-?>
+      ?>
   <span class="warning"><?=$Err?><br /><br /></span>
-<?  } ?>
-<?  if ($Attempts > 0) { ?>
+<?php
+  } ?>
+<?php  if ($Attempts > 0) { ?>
   You have <span class="info"><?=(6 - $Attempts)?></span> attempts remaining.<br /><br />
   <strong>WARNING:</strong> You will be banned for 6 hours after your login attempts run out!<br /><br />
-<?  } ?>
+<?php  } ?>
   <table class="layout">
     <tr>
       <td colspan="2">
@@ -34,17 +35,17 @@ if (!$Banned) {
     </tr>
   </table>
   </form>
-<?
+<?php
 } else {
-?>
+      ?>
   <span class="warning">You are banned from logging in for a few hours.</span>
-<?
-}
+<?php
+  }
 
 if ($Attempts > 0) {
-?>
+    ?>
   <br /><br />
   Forgot your password? <a href="login.php?act=recover" class="tooltip" title="Recover your password" style="text-decoration: underline;">Reset it here!</a>
-<?
+<?php
 }
 View::show_footer(); ?>

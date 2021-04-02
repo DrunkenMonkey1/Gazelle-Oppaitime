@@ -1,19 +1,19 @@
-<?
+<?php
 if (!isset($_GET['id']) || !is_number($_GET['id'])) {
-  error(404);
+    error(404);
 }
 $ArticleID = (int)$_GET['id'];
 
 $Latest = Wiki::get_article($ArticleID);
-list($Revision, $Title, $Body, $Read, $Edit, $Date, $AuthorID, $AuthorName) = array_shift($Latest);
+[$Revision, $Title, $Body, $Read, $Edit, $Date, $AuthorID, $AuthorName] = array_shift($Latest);
 if ($Read > $LoggedUser['EffectiveClass']) {
-  error(404);
+    error(404);
 }
 if ($Edit > $LoggedUser['EffectiveClass']) {
-  error(403);
+    error(403);
 }
 
-View::show_header("Revisions of ".$Title);
+View::show_header("Revisions of " . $Title);
 ?>
 <div class="thin">
   <div class="header">
@@ -39,7 +39,7 @@ View::show_header("Revisions of ".$Title);
         <td><input type="radio" name="old" value="<?=$Revision?>" disabled="disabled" /></td>
         <td><input type="radio" name="new" value="<?=$Revision?>" checked="checked" /></td>
       </tr>
-<?
+<?php
 $DB->query("
   SELECT
     Revision,
@@ -49,7 +49,7 @@ $DB->query("
   FROM wiki_revisions
   WHERE ID = '$ArticleID'
   ORDER BY Revision DESC");
-while (list($Revision, $Title, $AuthorID, $Date) = $DB->next_record()) { ?>
+while ([$Revision, $Title, $AuthorID, $Date] = $DB->next_record()) { ?>
       <tr>
         <td><?=$Revision?></td>
         <td><?=$Title?></td>
@@ -58,7 +58,7 @@ while (list($Revision, $Title, $AuthorID, $Date) = $DB->next_record()) { ?>
         <td><input type="radio" name="old" value="<?=$Revision?>" /></td>
         <td><input type="radio" name="new" value="<?=$Revision?>" /></td>
       </tr>
-<? } ?>
+<?php } ?>
       <tr>
         <td class="center" colspan="6">
           <input type="submit" value="Compare" />
@@ -67,4 +67,4 @@ while (list($Revision, $Title, $AuthorID, $Date) = $DB->next_record()) { ?>
     </table>
   </form>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

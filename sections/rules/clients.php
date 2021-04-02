@@ -1,14 +1,14 @@
-<?
+<?php
 View::show_header('Client Rules');
 
 if (!$WhitelistedClients = $Cache->get_value('whitelisted_clients')) {
-  $DB->query('
+    $DB->query('
     SELECT vstring
     FROM xbt_client_whitelist
     WHERE vstring NOT LIKE \'//%\'
     ORDER BY vstring ASC');
-  $WhitelistedClients = $DB->to_array(false, MYSQLI_NUM, false);
-  $Cache->cache_value('whitelisted_clients', $WhitelistedClients, 604800);
+    $WhitelistedClients = $DB->to_array(false, MYSQLI_NUM, false);
+    $Cache->cache_value('whitelisted_clients', $WhitelistedClients, 604800);
 }
 ?>
   <div class="thin">
@@ -21,14 +21,14 @@ if (!$WhitelistedClients = $Cache->get_value('whitelisted_clients')) {
       <tr class="colhead">
         <td style="width: 150px;"><strong>Allowed Clients</strong></td>
       </tr>
-<?
+<?php
   foreach ($WhitelistedClients as $Client) {
-    list($ClientName) = $Client;
-?>
+      [$ClientName] = $Client; ?>
       <tr class="row">
         <td><?=$ClientName?></td>
       </tr>
-<?  } ?>
+<?php
+  } ?>
     </table>
   </div>
 
@@ -44,6 +44,6 @@ if (!$WhitelistedClients = $Cache->get_value('whitelisted_clients')) {
       The testing of unstable clients by developers must first be approved by staff.
     </p>
   </div>
-<? include('jump.php'); ?>
+<?php include 'jump.php'; ?>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

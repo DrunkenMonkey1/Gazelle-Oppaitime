@@ -1,13 +1,13 @@
 <?php
 
 if (!check_perms('site_moderate_forums') || empty($_POST['id'])) {
-  print
+    print
     json_encode(
-      array(
-        'status' => 'failure'
-      )
+        [
+            'status' => 'failure'
+        ]
     );
-  die();
+    die();
 }
 
 $ID = (int)$_POST['id'];
@@ -15,27 +15,27 @@ $DB->query("
   SELECT ClaimerID
   FROM reports
   WHERE ID = '$ID'");
-list($ClaimerID) = $DB->next_record();
+[$ClaimerID] = $DB->next_record();
 if ($ClaimerID) {
-  print
+    print
     json_encode(
-      array(
-        'status' => 'dupe'
-      )
+        [
+            'status' => 'dupe'
+        ]
     );
-  die();
+    die();
 } else {
-  $UserID = $LoggedUser['ID'];
-  $DB->query("
+    $UserID = $LoggedUser['ID'];
+    $DB->query("
     UPDATE reports
     SET ClaimerID = '$UserID'
     WHERE ID = '$ID'");
-  print
+    print
     json_encode(
-      array(
-        'status' => 'success',
-        'username' => $LoggedUser['Username']
-      )
+        [
+            'status' => 'success',
+            'username' => $LoggedUser['Username']
+        ]
     );
-  die();
+    die();
 }

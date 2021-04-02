@@ -1,4 +1,5 @@
-<?
+<?php
+
 $DB->query("
   UPDATE friends
   SET Comment='$P[comment]'
@@ -6,4 +7,3 @@ $DB->query("
     AND FriendID='$P[friendid]'");
 
 header('Location: friends.php');
-?>

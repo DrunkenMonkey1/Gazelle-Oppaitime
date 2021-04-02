@@ -1,4 +1,4 @@
-<?
+<?php
 /*
  * This page creates previews of all supported stylesheets
  * SERVER_ROOT . '/' . STATIC_SERVER . 'stylespreview' must exist and be writable
@@ -23,9 +23,9 @@ $ImagePath = SERVER_ROOT . '/' . STATIC_SERVER . 'stylespreview';
       <ul class="stats nobullet">
         <li>Server root: <?= var_dump(SERVER_ROOT); ?></li>
         <li>Static server: <?= var_dump(STATIC_SERVER); ?></li>
-        <li>Whoami: <? echo(shell_exec('whoami')); ?></li>
-        <li>Path: <? echo dirname(__FILE__); ?></li>
-        <li>Phantomjs ver: <? echo (shell_exec('/usr/bin/phantomjs -v;')); ?></li>
+        <li>Whoami: <?php echo(shell_exec('whoami')); ?></li>
+        <li>Path: <?php echo dirname(__FILE__); ?></li>
+        <li>Phantomjs ver: <?php echo(shell_exec('/usr/bin/phantomjs -v;')); ?></li>
       </ul>
     </div>
   </div>
@@ -40,17 +40,17 @@ $ImagePath = SERVER_ROOT . '/' . STATIC_SERVER . 'stylespreview';
     <div class="box">
       <div class="head">Rendering status</div>
       <div class="pad">
-<?
+<?php
 //set_time_limit(0);
 foreach ($Styles as $Style) {
-?>
+    ?>
         <div class="box">
           <h6><?= $Style['Name'] ?></h6>
           <p>Build preview:
-<?
+<?php
   $CmdLine = '/usr/bin/phantomjs "' . dirname(__FILE__) . '/render_build_preview.js" "' . SERVER_ROOT . '" "' . STATIC_SERVER . '" "' . $Style['Name'] . '" "' . dirname(__FILE__) . '"';
-  $BuildResult = json_decode(shell_exec(escapeshellcmd($CmdLine)), true);
-  switch ($BuildResult['status']) {
+    $BuildResult = json_decode(shell_exec(escapeshellcmd($CmdLine)), true);
+    switch ($BuildResult['status']) {
     case 0:
       echo 'Success.';
       break;
@@ -68,24 +68,23 @@ foreach ($Styles as $Style) {
       break;
     default:
       echo 'Err: Unknown error returned';
-  }
-?>
+  } ?>
           </p>
-<?
+<?php
   //If build was successful, snap a preview.
-  if ($BuildResult['status'] === 0) {
-?>
+  if (0 === $BuildResult['status']) {
+      ?>
           <p>Snap preview:
-<?
+<?php
     $CmdLine = '/usr/bin/phantomjs "' . dirname(__FILE__) . '/render_snap_preview.js" "' . SERVER_ROOT . '" "' . STATIC_SERVER . '" "' . $Style['Name'] . '" "' . dirname(__FILE__) . '"';
-    $SnapResult = json_decode(shell_exec(escapeshellcmd($CmdLine)), true);
-    switch ($SnapResult['status']) {
+      $SnapResult = json_decode(shell_exec(escapeshellcmd($CmdLine)), true);
+      switch ($SnapResult['status']) {
       case 0:
         echo 'Success.';
         $CmdLine = '/usr/bin/convert "' . $ImagePath . '/full_' . $Style['Name'] . '.png" -filter Box -resize 40% -quality 94 "' . $ImagePath . '/thumb_' . $Style['Name'] . '.png"';
         $ResizeResult = shell_exec(escapeshellcmd($CmdLine));
-        if ($ResizeResult !== null) {
-          echo ' But failed to resize image';
+        if (null !== $ResizeResult) {
+            echo ' But failed to resize image';
         }
         break;
       case -1:
@@ -108,15 +107,16 @@ foreach ($Styles as $Style) {
         break;
       default:
         echo 'Err: Unknown error returned.';
-    }
-?>
+    } ?>
           </p>
-<?  } ?>
+<?php
+  } ?>
         </div>
-<? } ?>
+<?php
+} ?>
       </div>
     </div>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

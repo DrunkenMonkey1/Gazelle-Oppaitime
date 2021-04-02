@@ -1,0 +1,16 @@
+{
+  "name": "drunkenmonkey1/desi",
+  "description": "desi a fork of gazelle",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "DrunkenMonkey",
+      "email": "email@example.com"
+    }
+  ],
+  "require-dev": {
+    "phpstan/phpstan": "^0.12.82",
+    "friendsofphp/php-cs-fixer": "^2.18"
+  }
+}

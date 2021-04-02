@@ -1,4 +1,4 @@
-<?
+<?php
 /*
 This page is something of a hack so those
 easily scared off by funky solutions, don't
@@ -53,16 +53,16 @@ if (
   || !is_number($_REQUEST['preference'])
   || !is_number($_REQUEST['collageid'])
   || $_REQUEST['preference'] > 2
-  || count($_REQUEST['list']) === 0
+  || 0 === count($_REQUEST['list'])
 ) {
-  error(0);
+    error(0);
 }
 
 if (!check_perms('zip_downloader')) {
-  error(403);
+    error(403);
 }
 
-$Preferences = array('RemasterTitle DESC', 'Seeders ASC', 'Size ASC');
+$Preferences = ['RemasterTitle DESC', 'Seeders ASC', 'Size ASC'];
 
 $CollageID = $_REQUEST['collageid'];
 $Preference = $Preferences[$_REQUEST['preference']];
@@ -71,16 +71,16 @@ $DB->query("
   SELECT Name
   FROM collages
   WHERE ID = '$CollageID'");
-list($CollageName) = $DB->next_record(MYSQLI_NUM, false);
+[$CollageName] = $DB->next_record(MYSQLI_NUM, false);
 
 $SQL = 'SELECT CASE ';
 
 foreach ($_REQUEST['list'] as $Priority => $Selection) {
-  if (!is_number($Priority)) {
-    continue;
-  }
-  $SQL .= 'WHEN ';
-  switch ($Selection) {
+    if (!is_number($Priority)) {
+        continue;
+    }
+    $SQL .= 'WHEN ';
+    switch ($Selection) {
     case '00': $SQL .= "t.Format = 'MP3'  AND t.Encoding = 'V0 (VBR)'"; break;
     case '01': $SQL .= "t.Format = 'MP3'  AND t.Encoding = 'APX (VBR)'"; break;
     case '02': $SQL .= "t.Format = 'MP3'  AND t.Encoding = '256 (VBR)'"; break;
@@ -109,7 +109,7 @@ foreach ($_REQUEST['list'] as $Priority => $Selection) {
     case '46': $SQL .= "t.Format = 'AAC'  AND t.Encoding = '192'"; break;
     default: error(0);
   }
-  $SQL .= " THEN $Priority ";
+    $SQL .= " THEN $Priority ";
 }
 $SQL .= "
     ELSE 100
@@ -130,27 +130,26 @@ ORDER BY t.GroupID ASC, Rank DESC, t.$Preference";
 $DownloadsQ = $DB->query($SQL);
 $Collector = new TorrentsDL($DownloadsQ, $CollageName);
 
-while (list($Downloads, $GroupIDs) = $Collector->get_downloads('GroupID')) {
-  $Artists = Artists::get_artists($GroupIDs);
-  $TorrentIDs = array_keys($GroupIDs);
-  foreach ($TorrentIDs as $TorrentID) {
-    file_get_contents(TORRENT_STORE.$TorrentID.'.torrent');
-    $GroupID = $GroupIDs[$TorrentID];
-    $Download =& $Downloads[$GroupID];
-    $Download['Artist'] = Artists::display_artists($Artists[$Download['GroupID']], false, true, false);
-    if ($Download['Rank'] == 100) {
-      $Collector->skip_file($Download);
-      continue;
+while ([$Downloads, $GroupIDs] = $Collector->get_downloads('GroupID')) {
+    $Artists = Artists::get_artists($GroupIDs);
+    $TorrentIDs = array_keys($GroupIDs);
+    foreach ($TorrentIDs as $TorrentID) {
+        file_get_contents(TORRENT_STORE . $TorrentID . '.torrent');
+        $GroupID = $GroupIDs[$TorrentID];
+        $Download =&$Downloads[$GroupID];
+        $Download['Artist'] = Artists::display_artists($Artists[$Download['GroupID']], false, true, false);
+        if (100 == $Download['Rank']) {
+            $Collector->skip_file($Download);
+            continue;
+        }
+        $Collector->add_file($TorrentFile, $Download);
+        unset($Download);
     }
-    $Collector->add_file($TorrentFile, $Download);
-    unset($Download);
-  }
 }
 $Collector->finalize();
-$Settings = array(implode(':', $_REQUEST['list']), $_REQUEST['preference']);
+$Settings = [implode(':', $_REQUEST['list']), $_REQUEST['preference']];
 if (!isset($LoggedUser['Collector']) || $LoggedUser['Collector'] != $Settings) {
-  Users::update_site_options($LoggedUser['ID'], array('Collector' => $Settings));
+    Users::update_site_options($LoggedUser['ID'], ['Collector' => $Settings]);
 }
 
 define('SKIP_NO_CACHE_HEADERS', 1);
-?>

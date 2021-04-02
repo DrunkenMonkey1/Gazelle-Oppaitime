@@ -38,26 +38,35 @@
   global $HeavyInfo, $UserSubscriptions, $ThreadInfo, $Document;
 
   if (G::$LoggedUser['DisablePosting']) {
-    return;
+      return;
   }
   if (!isset($TextareaCols)) {
-    $TextareaCols = 70;
+      $TextareaCols = 70;
   }
   if (!isset($TextareaRows)) {
-    $TextareaRows = 8;
+      $TextareaRows = 8;
   }
   if (!isset($InputAction)) {
-    $InputAction = 'reply';
+      $InputAction = 'reply';
   }
   if (!isset($InputTitle)) {
-    $InputTitle = 'Post comment';
+      $InputTitle = 'Post comment';
   }
 
-  $ReplyText = new TEXTAREA_PREVIEW('body', 'quickpost', '',
-      $TextareaCols, $TextareaRows, false, false, true, array(
-        'tabindex="1"',
-        'onkeyup="resize(\'quickpost\')"'
-      ));
+  $ReplyText = new TEXTAREA_PREVIEW(
+      'body',
+      'quickpost',
+      '',
+      $TextareaCols,
+      $TextareaRows,
+      false,
+      false,
+      true,
+      [
+          'tabindex="1"',
+          'onkeyup="resize(\'quickpost\')"'
+      ]
+  );
 ?>
 
       <br />
@@ -66,9 +75,9 @@
         <div class="box pad">
           <table class="forum_post box vertical_margin hidden preview_wrap" id="preview_wrap_<?=$ReplyText->getID()?>">
             <colgroup>
-<?  if (Users::has_avatars_enabled()) { ?>
+<?php  if (Users::has_avatars_enabled()) { ?>
               <col class="col_avatar" />
-<?  } ?>
+<?php  } ?>
               <col class="col_post_body" />
             </colgroup>
             <tr class="colhead_dark">
@@ -84,11 +93,11 @@
               </td>
             </tr>
             <tr>
-<?  if (Users::has_avatars_enabled()) { ?>
+<?php  if (Users::has_avatars_enabled()) { ?>
               <td class="avatar valign_top">
                 <?=Users::show_avatar(G::$LoggedUser['Avatar'], G::$LoggedUser['ID'], G::$LoggedUser['Username'], (!isset($HeavyInfo['DisableAvatars']) || $HeavyInfo['DisableAvatars']))?>
               </td>
-<?  } ?>
+<?php  } ?>
               <td class="body valign_top">
                 <div id="contentpreview" style="text-align: left;">
                   <div id="preview_<?=$ReplyText->getID()?>"></div>
@@ -96,42 +105,42 @@
               </td>
             </tr>
           </table>
-          <form class="send_form center" name="reply" id="quickpostform" <?=isset($Action)?'action="'.$Action.'"':''?> method="post"<? if (!check_perms('users_mod')) { ?> onsubmit="quickpostform.submit_button.disabled = true;"<? } ?> <? if (!G::$LoggedUser['DisableAutoSave']) { ?>data-autosave-text="quickpost"<? } ?>>
+          <form class="send_form center" name="reply" id="quickpostform" <?=isset($Action)?'action="' . $Action . '"':''?> method="post"<?php if (!check_perms('users_mod')) { ?> onsubmit="quickpostform.submit_button.disabled = true;"<?php } ?> <?php if (!G::$LoggedUser['DisableAutoSave']) { ?>data-autosave-text="quickpost"<?php } ?>>
             <input type="hidden" name="action" value="<?=$InputAction?>" />
             <input type="hidden" name="auth" value="<?=G::$LoggedUser['AuthKey']?>" />
             <input type="hidden" name="<?=$InputName?>" data-autosave-id="<?=$InputID?>" value="<?=$InputID?>" />
             <div id="quickreplytext">
-<?
+<?php
               echo $ReplyText->getBuffer();
 ?>
               <br />
             </div>
             <div class="preview_submit">
-<?
-  if (isset($SubscribeBox) && !isset($ForumID) && Subscriptions::has_subscribed_comments($Document, $InputID) === false) {
-?>
+<?php
+  if (isset($SubscribeBox) && !isset($ForumID) && false === Subscriptions::has_subscribed_comments($Document, $InputID)) {
+      ?>
               <input id="subscribebox" type="checkbox" name="subscribe"<?=!empty($HeavyInfo['AutoSubscribe']) ? ' checked="checked"' : ''?> tabindex="2" />
               <label for="subscribebox">Subscribe</label>
-<?
+<?php
   }
   // Forum thread logic
   // This might use some more abstraction
   if (isset($ForumID)) {
-    if (!Subscriptions::has_subscribed($InputID)) {
-?>
+      if (!Subscriptions::has_subscribed($InputID)) {
+          ?>
               <input id="subscribebox" type="checkbox" name="subscribe"<?=!empty($HeavyInfo['AutoSubscribe']) ? ' checked="checked"' : ''?> tabindex="2" />
               <label for="subscribebox">Subscribe</label>
-<?
-    }
-    if ($ThreadInfo['LastPostAuthorID'] == G::$LoggedUser['ID']
+<?php
+      }
+      if ($ThreadInfo['LastPostAuthorID'] == G::$LoggedUser['ID']
       && (check_perms('site_forums_double_post')
-        || in_array($ForumID, FORUMS_TO_ALLOW_DOUBLE_POST))
+        || in_array($ForumID, FORUMS_TO_ALLOW_DOUBLE_POST, true))
     ) {
-?>
+          ?>
               <input id="mergebox" type="checkbox" name="merge" tabindex="2" />
               <label for="mergebox">Merge</label>
-<?
-    }
+<?php
+      }
   }
 ?>
               <input type="button" value="Preview" class="hidden button_preview_<?=$ReplyText->getID()?>" tabindex="1" />

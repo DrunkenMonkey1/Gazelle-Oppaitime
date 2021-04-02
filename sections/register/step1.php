@@ -1,4 +1,4 @@
-<?
+<?php
 View::show_header('Register');
 echo $Val->GenerateJS('registerform');
 ?>
@@ -7,16 +7,17 @@ echo $Val->GenerateJS('registerform');
 <form class="create_form" name="user" id="registerform" method="post" action="" onsubmit="return formVal();">
 <div style="width: 500px;">
   <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
-<?
+<?php
 
 if (empty($Sent)) {
-  if (!empty($_REQUEST['invite'])) {
-    echo '<input type="hidden" name="invite" value="'.display_str($_REQUEST['invite']).'" />'."\n";
-  }
-  if (!empty($Err)) {
-?>
+    if (!empty($_REQUEST['invite'])) {
+        echo '<input type="hidden" name="invite" value="' . display_str($_REQUEST['invite']) . '" />' . "\n";
+    }
+    if (!empty($Err)) {
+        ?>
   <strong class="important_text"><?=$Err?></strong><br /><br />
-<?  } ?>
+<?php
+    } ?>
   <table class="layout" cellpadding="2" cellspacing="1" border="0" align="center">
     <tr valign="top">
       <td align="right" style="width: 100px;">Username&nbsp;</td>
@@ -47,21 +48,21 @@ if (empty($Sent)) {
     <tr valign="top">
       <td></td>
       <td align="left">
-        <input type="checkbox" name="readrules" id="readrules" value="1"<? if (!empty($_REQUEST['readrules'])) { ?> checked="checked"<? } ?> />
+        <input type="checkbox" name="readrules" id="readrules" value="1"<?php if (!empty($_REQUEST['readrules'])) { ?> checked="checked"<?php } ?> />
         <label for="readrules">I will read the rules.</label>
       </td>
     </tr>
     <tr valign="top">
       <td></td>
       <td align="left">
-        <input type="checkbox" name="readwiki" id="readwiki" value="1"<? if (!empty($_REQUEST['readwiki'])) { ?> checked="checked"<? } ?> />
+        <input type="checkbox" name="readwiki" id="readwiki" value="1"<?php if (!empty($_REQUEST['readwiki'])) { ?> checked="checked"<?php } ?> />
         <label for="readwiki">I will read the wiki.</label>
       </td>
     </tr>
     <tr valign="top">
       <td></td>
       <td align="left">
-        <input type="checkbox" name="agereq" id="agereq" value="1"<? if (!empty($_REQUEST['agereq'])) { ?> checked="checked"<? } ?> />
+        <input type="checkbox" name="agereq" id="agereq" value="1"<?php if (!empty($_REQUEST['agereq'])) { ?> checked="checked"<?php } ?> />
         <label for="agereq">I am 18 years of age or older.</label>
       </td>
     </tr>
@@ -72,14 +73,15 @@ if (empty($Sent)) {
       <td colspan="2" align="right"><input type="submit" name="submit" value="Submit" class="submit" /></td>
     </tr>
   </table>
-<? } else { ?>
+<?php
+} else { ?>
   An email has been sent to the address that you provided. After you confirm your email address, you will be able to log into your account.
 
-<?  if ($NewInstall) {
-      echo "Since this is a new installation, you can log in directly without having to confirm your account.";
+<?php  if ($NewInstall) {
+        echo "Since this is a new installation, you can log in directly without having to confirm your account.";
     }
 } ?>
 </div>
 </form>
-<?
+<?php
 View::show_footer();

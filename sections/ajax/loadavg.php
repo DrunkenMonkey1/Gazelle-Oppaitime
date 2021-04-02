@@ -1,15 +1,13 @@
-<?
+<?php
 
 authorize(true);
 
 print
   json_encode(
-    array(
-      'status' => 'success',
-      'response' => array(
-        'loadAverage' => sys_getloadavg()
-      )
-    )
+      [
+          'status' => 'success',
+          'response' => [
+              'loadAverage' => sys_getloadavg()
+          ]
+      ]
   );
-
-?>

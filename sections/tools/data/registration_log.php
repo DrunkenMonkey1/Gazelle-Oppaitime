@@ -1,26 +1,26 @@
 <?php
 if (!check_perms('users_view_ips') || !check_perms('users_view_email')) {
-  error(403);
+    error(403);
 }
 View::show_header('Registration log');
 define('USERS_PER_PAGE', 50);
-list($Page, $Limit) = Format::page_limit(USERS_PER_PAGE);
+[$Page, $Limit] = Format::page_limit(USERS_PER_PAGE);
 
 $AfterDate = isset($_POST['after_date']) ? $_POST['after_date'] : null;
 $BeforeDate = isset($_POST['before_date']) ? $_POST['before_date'] : null;
 $DateSearch = false;
 if (!empty($AfterDate) && !empty($BeforeDate)) {
-  list($Y, $M, $D) = explode('-', $AfterDate);
-  if (!checkdate($M, $D, $Y)) {
-    error('Incorrect "after" date format');
-  }
-  list($Y, $M, $D) = explode('-', $BeforeDate);
-  if (!checkdate($M, $D, $Y)) {
-    error('Incorrect "before" date format');
-  }
-  $AfterDate = db_string($AfterDate);
-  $BeforeDate = db_string($BeforeDate);
-  $DateSearch = true;
+    [$Y, $M, $D] = explode('-', $AfterDate);
+    if (!checkdate($M, $D, $Y)) {
+        error('Incorrect "after" date format');
+    }
+    [$Y, $M, $D] = explode('-', $BeforeDate);
+    if (!checkdate($M, $D, $Y)) {
+        error('Incorrect "before" date format');
+    }
+    $AfterDate = db_string($AfterDate);
+    $BeforeDate = db_string($BeforeDate);
+    $DateSearch = true;
 }
 
 $RS = "
@@ -66,16 +66,16 @@ $RS = "
     LEFT JOIN users_info AS ii ON i.Inviter = ii.UserID
   WHERE";
 if ($DateSearch) {
-  $RS .= " i.JoinDate BETWEEN '$AfterDate' AND '$BeforeDate' ";
+    $RS .= " i.JoinDate BETWEEN '$AfterDate' AND '$BeforeDate' ";
 } else {
-  $RS .= " i.JoinDate > '".time_minus(3600 * 24 * 3)."'";
+    $RS .= " i.JoinDate > '" . time_minus(3600 * 24 * 3) . "'";
 }
 $RS .= "
   ORDER BY i.Joindate DESC
   LIMIT $Limit";
 $QueryID = $DB->query($RS);
 $DB->query('SELECT FOUND_ROWS()');
-list($Results) = $DB->next_record();
+[$Results] = $DB->next_record();
 $DB->set_query_id($QueryID);
 ?>
 
@@ -86,14 +86,13 @@ $DB->set_query_id($QueryID);
   <input type="submit" />
 </form>
 
-<?
+<?php
 if ($DB->has_results()) {
-?>
+    ?>
   <div class="linkbox">
-<?
+<?php
   $Pages = Format::get_pages($Page, $Results, USERS_PER_PAGE, 11) ;
-  echo $Pages;
-?>
+    echo $Pages; ?>
   </div>
 
   <table width="100%">
@@ -106,14 +105,13 @@ if ($DB->has_results()) {
       <td>Host</td>
       <td>Registered</td>
     </tr>
-<?
-  while (list($UserID, $IP, $IPCC, $Email, $Username, $PermissionID, $Uploaded, $Downloaded, $Enabled, $Donor, $Warned, $Joined, $Uses, $InviterID, $InviterIP, $InviterIPCC, $InviterEmail, $InviterUsername, $InviterPermissionID, $InviterUploaded, $InviterDownloaded, $InviterEnabled, $InviterDonor, $InviterWarned, $InviterJoined, $InviterUses) = $DB->next_record()) {
-  $RowClass = $IP === $InviterIP ? 'warning' : '';
-  $Email = apcu_exists('DBKEY') ? Crypto::decrypt($Email) : '[Encrypted]';
-  $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
-  $InviterEmail = apcu_exists('DBKEY') ? Crypto::decrypt($InviterEmail) : '[Encrypted]';
-  $InviterIP = apcu_exists('DBKEY') ? Crypto::decrypt($InviterIP) : '[Encrypted]';
-?>
+<?php
+  while ([$UserID, $IP, $IPCC, $Email, $Username, $PermissionID, $Uploaded, $Downloaded, $Enabled, $Donor, $Warned, $Joined, $Uses, $InviterID, $InviterIP, $InviterIPCC, $InviterEmail, $InviterUsername, $InviterPermissionID, $InviterUploaded, $InviterDownloaded, $InviterEnabled, $InviterDonor, $InviterWarned, $InviterJoined, $InviterUses] = $DB->next_record()) {
+      $RowClass = $IP === $InviterIP ? 'warning' : '';
+      $Email = apcu_exists('DBKEY') ? Crypto::decrypt($Email) : '[Encrypted]';
+      $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]';
+      $InviterEmail = apcu_exists('DBKEY') ? Crypto::decrypt($InviterEmail) : '[Encrypted]';
+      $InviterIP = apcu_exists('DBKEY') ? Crypto::decrypt($InviterIP) : '[Encrypted]'; ?>
     <tr class="<?=$RowClass?>">
       <td><?=Users::format_username($UserID, true, true, true, true)?><br /><?=Users::format_username($InviterID, true, true, true, true)?></td>
       <td><?=Format::get_ratio_html($Uploaded, $Downloaded)?><br /><?=Format::get_ratio_html($InviterUploaded, $InviterDownloaded)?></td>
@@ -142,15 +140,16 @@ if ($DB->has_results()) {
         <?=time_diff($InviterJoined)?>
       </td>
     </tr>
-<?  } ?>
+<?php
+  } ?>
   </table>
   <div class="linkbox">
-<? echo $Pages; ?>
+<?php echo $Pages; ?>
   </div>
-<?
+<?php
 } else { ?>
   <h2 align="center">There have been no new registrations in the past 72 hours.</h2>
-<?
+<?php
 }
 View::show_footer();
 ?>

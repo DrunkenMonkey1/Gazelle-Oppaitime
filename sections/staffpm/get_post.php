@@ -1,4 +1,5 @@
-<?
+<?php
+
 //TODO: make this use the cache version of the thread, save the db query
 /*********************************************************************\
 //--------------Get Post--------------------------------------------//
@@ -13,7 +14,7 @@ $_GET['post'], which is the ID of the post.
 
 // Quick SQL injection check
 if (!$_GET['post'] || !is_number($_GET['post'])) {
-  error(0);
+    error(0);
 }
 
 // Variables for database input
@@ -26,13 +27,11 @@ $DB->query("
   FROM staff_pm_messages AS m
     JOIN staff_pm_conversations AS c ON m.ConvID = c.ID
   WHERE m.ID = '$PostID'");
-list($Message, $Level, $UserID) = $DB->next_record(MYSQLI_NUM);
+[$Message, $Level, $UserID] = $DB->next_record(MYSQLI_NUM);
 
 if (($LoggedUser['ID'] == $UserID) || ($IsFLS && $LoggedUser['Class'] >= $Level)) {
-  // This gets sent to the browser, which echoes it wherever
-  echo trim($Message);
+    // This gets sent to the browser, which echoes it wherever
+    echo trim($Message);
 } else {
-  error(403);
+    error(403);
 }
-
-?>

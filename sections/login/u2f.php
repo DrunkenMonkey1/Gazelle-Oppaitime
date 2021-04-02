@@ -1,11 +1,11 @@
-<?
+<?php
 if (!empty($LoggedUser['ID'])) {
-  header('Location: login.php');
-  die();
+    header('Location: login.php');
+    die();
 }
 if (!isset($_POST['username']) || !isset($_POST['password']) || !isset($U2FRegs)) {
-  header('Location: login.php');
-  die();
+    header('Location: login.php');
+    die();
 }
 
 $U2FReq = json_encode($U2F->getAuthenticateData($U2FRegs));
@@ -21,4 +21,4 @@ View::show_header('U2F Authentication'); ?>
 
 This account is protected by a Universal Two Factor token. To continue logging in, please insert your U2F token and press it if necessary.
 
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

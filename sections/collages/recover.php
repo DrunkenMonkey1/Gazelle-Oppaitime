@@ -1,27 +1,27 @@
-<?
+<?php
 if (!check_perms('site_collages_recover')) {
-  error(403);
+    error(403);
 }
 
 if ($_POST['collage_id'] && is_number($_POST['collage_id'])) {
-  authorize();
-  $CollageID = $_POST['collage_id'];
+    authorize();
+    $CollageID = $_POST['collage_id'];
 
-  $DB->query("
+    $DB->query("
     SELECT Name
     FROM collages
     WHERE ID = $CollageID");
-  if (!$DB->has_results()) {
-    error('Collage is completely deleted');
-  } else {
-    $DB->query("
+    if (!$DB->has_results()) {
+        error('Collage is completely deleted');
+    } else {
+        $DB->query("
       UPDATE collages
       SET Deleted = '0'
       WHERE ID = $CollageID");
-    $Cache->delete_value("collage_$CollageID");
-    Misc::write_log("Collage $CollageID was recovered by ".$LoggedUser['Username']);
-    header("Location: collages.php?id=$CollageID");
-  }
+        $Cache->delete_value("collage_$CollageID");
+        Misc::write_log("Collage $CollageID was recovered by " . $LoggedUser['Username']);
+        header("Location: collages.php?id=$CollageID");
+    }
 }
 View::show_header('Collage recovery!');
 ?>
@@ -45,5 +45,5 @@ View::show_header('Collage recovery!');
     </div>
   </div>
 </div>
-<?
+<?php
 View::show_footer();

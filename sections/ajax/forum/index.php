@@ -1,30 +1,31 @@
-<?
+<?php
+
 // Already done in /sections/ajax/index.php
 //enforce_login();
 
 if (!empty($LoggedUser['DisableForums'])) {
-  print json_encode(array('status' => 'failure'));
-  die();
+    print json_encode(['status' => 'failure']);
+    die();
 } else {
-  // Replace the old hard-coded forum categories
-  $ForumCats = Forums::get_forum_categories();
+    // Replace the old hard-coded forum categories
+    $ForumCats = Forums::get_forum_categories();
 
-  //This variable contains all our lovely forum data
-  $Forums = Forums::get_forums();
+    //This variable contains all our lovely forum data
+    $Forums = Forums::get_forums();
 
-  if (empty($_GET['type']) || $_GET['type'] == 'main') {
-    include(SERVER_ROOT.'/sections/ajax/forum/main.php');
-  } else {
-    switch ($_GET['type']) {
+    if (empty($_GET['type']) || 'main' == $_GET['type']) {
+        include SERVER_ROOT . '/sections/ajax/forum/main.php';
+    } else {
+        switch ($_GET['type']) {
       case 'viewforum':
-        include(SERVER_ROOT.'/sections/ajax/forum/forum.php');
+        include SERVER_ROOT . '/sections/ajax/forum/forum.php';
         break;
       case 'viewthread':
-        include(SERVER_ROOT.'/sections/ajax/forum/thread.php');
+        include SERVER_ROOT . '/sections/ajax/forum/thread.php';
         break;
       default:
-        print json_encode(array('status' => 'failure'));
+        print json_encode(['status' => 'failure']);
         break;
     }
-  }
+    }
 }

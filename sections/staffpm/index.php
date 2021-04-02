@@ -1,76 +1,76 @@
-<?
+<?php
+
 enforce_login();
 
 if (!isset($_REQUEST['action'])) {
-  $_REQUEST['action'] = '';
+    $_REQUEST['action'] = '';
 }
 
 // Get user level
-$DB->query("
+$DB->query(
+    "
   SELECT
     i.SupportFor,
     p.DisplayStaff
   FROM users_info AS i
     JOIN users_main AS m ON m.ID = i.UserID
     JOIN permissions AS p ON p.ID = m.PermissionID
-  WHERE i.UserID = ".$LoggedUser['ID']
+  WHERE i.UserID = " . $LoggedUser['ID']
 );
-list($SupportFor, $DisplayStaff) = $DB->next_record();
+[$SupportFor, $DisplayStaff] = $DB->next_record();
 // Logged in user is staff
-$IsStaff = ($DisplayStaff == 1);
+$IsStaff = (1 == $DisplayStaff);
 // Logged in user is Staff or FLS
 $IsFLS = ($IsStaff || ($LoggedUser['ExtraClasses'] && $LoggedUser['ExtraClasses'][FLS_TEAM]));
 
 switch ($_REQUEST['action']) {
   case 'viewconv':
-    require('viewconv.php');
+    require 'viewconv.php';
     break;
   case 'takepost':
-    require('takepost.php');
+    require 'takepost.php';
     break;
   case 'resolve':
-    require('resolve.php');
+    require 'resolve.php';
     break;
   case 'unresolve':
-    require('unresolve.php');
+    require 'unresolve.php';
     break;
   case 'multiresolve':
-    require('multiresolve.php');
+    require 'multiresolve.php';
     break;
   case 'assign':
-    require('assign.php');
+    require 'assign.php';
     break;
   case 'make_donor':
-    require('makedonor.php');
+    require 'makedonor.php';
     break;
   case 'responses':
-    require('common_responses.php');
+    require 'common_responses.php';
     break;
   case 'get_response':
-    require('ajax_get_response.php');
+    require 'ajax_get_response.php';
     break;
   case 'delete_response':
-    require('ajax_delete_response.php');
+    require 'ajax_delete_response.php';
     break;
   case 'edit_response':
-    require('ajax_edit_response.php');
+    require 'ajax_edit_response.php';
     break;
   case 'preview':
-    require('ajax_preview_response.php');
+    require 'ajax_preview_response.php';
     break;
   case 'get_post':
-    require('get_post.php');
+    require 'get_post.php';
     break;
   case 'scoreboard':
-    require('scoreboard.php');
+    require 'scoreboard.php';
     break;
   default:
     if ($IsStaff || $IsFLS) {
-      require('staff_inbox.php');
+        require 'staff_inbox.php';
     } else {
-      require('user_inbox.php');
+        require 'user_inbox.php';
     }
     break;
 }
-
-?>

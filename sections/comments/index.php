@@ -1,17 +1,18 @@
-<?
+<?php
+
 enforce_login();
 
 // fix old links
-if ($_REQUEST['action'] == 'artists') {
-  $_REQUEST['action'] = 'artist';
-} elseif ($_REQUEST['action'] == 'my_torrents') {
-  $_REQUEST['action'] = 'torrents';
-  $_REQUEST['type'] = 'uploaded';
+if ('artists' == $_REQUEST['action']) {
+    $_REQUEST['action'] = 'artist';
+} elseif ('my_torrents' == $_REQUEST['action']) {
+    $_REQUEST['action'] = 'torrents';
+    $_REQUEST['type'] = 'uploaded';
 }
 
 $Action = '';
 if (!empty($_REQUEST['action'])) {
-  $Action = $_REQUEST['action'];
+    $Action = $_REQUEST['action'];
 }
 
 switch ($Action) {

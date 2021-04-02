@@ -1,12 +1,13 @@
 <?php
+
 $FriendID = (int)$_POST['friend'];
 $Type = $_POST['type'];
 $ID = (int)$_POST['id'];
 $Note = $_POST['note'];
 
 if (empty($FriendID) || empty($Type) || empty($ID)) {
-  echo json_encode(array('status' => 'error', 'response' => 'Error.'));
-  die();
+    echo json_encode(['status' => 'error', 'response' => 'Error.']);
+    die();
 }
 // Make sure the recipient is on your friends list and not some random dude.
 $DB->query("
@@ -20,8 +21,8 @@ $DB->query("
     AND f.FriendID = '$FriendID'");
 
 if (!$DB->has_results()) {
-  echo json_encode(array('status' => 'error', 'response' => 'Not on friend list.'));
-  die();
+    echo json_encode(['status' => 'error', 'response' => 'Not on friend list.']);
+    die();
 }
 
 $Type = strtolower($Type);
@@ -53,13 +54,13 @@ switch ($Type) {
       WHERE ID = '$ID'");
     break;
 }
-list($Name) = $DB->next_record();
+[$Name] = $DB->next_record();
 $Subject = $LoggedUser['Username'] . " recommended you $Article $Type!";
-$Body = $LoggedUser['Username'] . " recommended you the $Type [url=".site_url()."$Link]$Name".'[/url].';
+$Body = $LoggedUser['Username'] . " recommended you the $Type [url=" . site_url() . "$Link]$Name" . '[/url].';
 if (!empty($Note)) {
-  $Body = "$Body\n\n$Note";
+    $Body = "$Body\n\n$Note";
 }
 
 Misc::send_pm($FriendID, $LoggedUser['ID'], $Subject, $Body);
-echo json_encode(array('status' => 'success', 'response' => 'Sent!'));
+echo json_encode(['status' => 'success', 'response' => 'Sent!']);
 die();

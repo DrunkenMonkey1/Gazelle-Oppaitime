@@ -1,4 +1,5 @@
-<?
+<?php
+
 //------------- Disable unconfirmed users ------------------------------//
 
 // get a list of user IDs for clearing cache keys
@@ -26,8 +27,7 @@ $Cache->decrement('stats_user_count', $DB->affected_rows());
 
 // clear the appropriate cache keys
 foreach ($UserIDs as $UserID) {
-  $Cache->delete_value("user_info_$UserID");
+    $Cache->delete_value("user_info_$UserID");
 }
 
 echo "disabled unconfirmed\n";
-?>

@@ -1,23 +1,23 @@
-<?
+<?php
 View::show_header('Disabled');
 
 if (isset($_POST['email']) && FEATURE_EMAIL_REENABLE) {
-  // Handle auto-enable request
-  if ($_POST['email'] != '') {
-    $Output = AutoEnable::new_request(db_string($_POST['username']), db_string($_POST['email']));
-  } else {
-    $Output = "Please enter a valid email address.";
-  }
+    // Handle auto-enable request
+    if ('' != $_POST['email']) {
+        $Output = AutoEnable::new_request(db_string($_POST['username']), db_string($_POST['email']));
+    } else {
+        $Output = "Please enter a valid email address.";
+    }
 
-  $Output .= "<br><br><a href='login.php?action=disabled'>Back</a>";
+    $Output .= "<br><br><a href='login.php?action=disabled'>Back</a>";
 }
 
 if ((empty($_POST['submit']) || empty($_POST['username'])) && !isset($Output)) {
-?>
+    ?>
 <p class="warning">
 Your account has been disabled.<br>
 This is either due to inactivity or rule violation(s).<br><br></p>
-<? if (FEATURE_EMAIL_REENABLE) { ?>
+<?php if (FEATURE_EMAIL_REENABLE) { ?>
 If you believe your account was in good standing and was disabled for inactivity, you may request it be re-enabled via email using the form below.<br>
 Please use an email service that actually delivers mail. Outlook/Hotmail is known not to.<br>
 Most requests are handled within minutes. If a day or two goes by without a response, try again with a different email or try asking in IRC.<br><br>
@@ -25,7 +25,7 @@ Most requests are handled within minutes. If a day or two goes by without a resp
   <input type="email" class="inputtext" placeholder="Email Address" name="email" required /> <input type="submit" value="Submit" />
   <input type="hidden" name="username" value="<?=$_COOKIE['username']?>" />
 </form><br /><br />
-<? } ?>
+<?php } ?>
 If you are unsure why your account is disabled, or you wish to discuss this with staff, come to our IRC network at: <?=BOT_SERVER?><br>
 And join <?=BOT_DISABLED_CHAN?><br><br>
 <strong>Be honest.</strong> At this point, lying will get you nowhere.<br /><br><br>
@@ -45,7 +45,7 @@ function toggle_visibility(id) {
 </script>
 
 <div id="golden_rules" class="rule_summary" style="width: 35%; font-weight: bold; display: none; text-align: left;">
-<? Rules::display_golden_rules(); ?>
+<?php Rules::display_golden_rules(); ?>
 <br /><br />
 </div>
 
@@ -58,18 +58,17 @@ Please use your <?=SITE_NAME?> username.
   <input type="text" name="nick" width="20" />
   <input type="submit" value="Join WebIRC" />
 </form>
-<?
-} else if (!isset($Output)) {
-  $Nick = $_POST['username'];
-  $Nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $Nick);
-  if (strlen($Nick) == 0) {
-    $Nick = SITE_NAME.'Guest????';
-  } else {
-    if (is_numeric(substr($Nick, 0, 1))) {
-      $Nick = '_' . $Nick;
-    }
-  }
-?>
+<?php
+} elseif (!isset($Output)) {
+        $Nick = $_POST['username'];
+        $Nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $Nick);
+        if (0 == strlen($Nick)) {
+            $Nick = SITE_NAME . 'Guest????';
+        } else {
+            if (is_numeric(substr($Nick, 0, 1))) {
+                $Nick = '_' . $Nick;
+            }
+        } ?>
 <div class="thin">
   <div class="header">
     <h3 id="general">Disabled IRC</h3>
@@ -94,10 +93,10 @@ Please use your <?=SITE_NAME?> username.
     </applet>
   </div>
 </div>
-<?
-} else {
-  echo $Output;
-}
+<?php
+    } else {
+        echo $Output;
+    }
 
 View::show_footer();
 ?>

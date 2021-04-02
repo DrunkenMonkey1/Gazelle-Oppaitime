@@ -1,4 +1,4 @@
-<?
+<?php
 /************************************************************************
 ||------------|| Password reset history page ||------------------------||
 
@@ -12,7 +12,7 @@ user.
 
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
-  error(404);
+    error(404);
 }
 
 $DB->query("
@@ -22,10 +22,10 @@ $DB->query("
   FROM users_main AS um
     LEFT JOIN permissions AS p ON p.ID = um.PermissionID
   WHERE um.ID = $UserID");
-list($Username, $Class) = $DB->next_record();
+[$Username, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_keys', $Class)) {
-  error(403);
+    error(403);
 }
 
 View::show_header("Password reset history for $Username");
@@ -47,14 +47,14 @@ $DB->query("
     <td>Changed</td>
     <td>IP <a href="/userhistory.php?action=ips&amp;userid=<?=$UserID?>" class="brackets">H</a></td>
   </tr>
-<?
-while (list($ChangeTime, $ChangerIP) = $DB->next_record()) {
-  $ChangerIP = (apcu_exists('DBKEY')) ? Crypto::decrypt($ChangerIP) : '[Encrypted]';
-?>
+<?php
+while ([$ChangeTime, $ChangerIP] = $DB->next_record()) {
+    $ChangerIP = (apcu_exists('DBKEY')) ? Crypto::decrypt($ChangerIP) : '[Encrypted]'; ?>
   <tr class="row">
     <td><?=time_diff($ChangeTime)?></td>
     <td><?=display_str($ChangerIP)?> <a href="/user.php?action=search&amp;ip_history=on&amp;ip=<?=display_str($ChangerIP)?>" class="brackets tooltip" title="Search">S</a><br /><?=Tools::get_host_by_ajax($ChangerIP)?></td>
   </tr>
-<? } ?>
+<?php
+} ?>
 </table>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

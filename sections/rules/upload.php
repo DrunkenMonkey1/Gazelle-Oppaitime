@@ -1,4 +1,4 @@
-<?
+<?php
 //Include the header
 View::show_header('Uploading Rules', 'rules');
 ?>
@@ -238,23 +238,23 @@ View::show_header('Uploading Rules', 'rules');
               <ul>
                 <li><strong>Containers:</strong>
                   <ul>
-                    <? foreach($Containers as $Container) {
-                        ?><li><?=$Container?></li><?
-                    } ?>
+                    <?php foreach ($Containers as $Container) {
+    ?><li><?=$Container?></li><?php
+} ?>
                   </ul>
                 </li>
                 <li><strong>Video Codecs:</strong>
                   <ul>
-                    <? foreach($Codecs as $Codec) {
-                        ?><li><?=$Codec?></li><?
-                    } ?>
+                    <?php foreach ($Codecs as $Codec) {
+        ?><li><?=$Codec?></li><?php
+    } ?>
                   </ul>
                 </li>
                 <li><strong>Audio Codecs:</strong>
                   <ul>
-                    <? foreach($AudioFormats as $Audio) {
-                        ?><li><?=$Audio?></li><?
-                    } ?>
+                    <?php foreach ($AudioFormats as $Audio) {
+        ?><li><?=$Audio?></li><?php
+    } ?>
                   </ul>
                 </li>
               </ul>
@@ -342,16 +342,16 @@ View::show_header('Uploading Rules', 'rules');
               <ul>
                 <li><strong>Platforms:</strong>
                   <ul>
-<? foreach ($Platform as $Plat) { ?>
+<?php foreach ($Platform as $Plat) { ?>
 <li><?=$Plat?></li>
-<? } ?>
+<?php } ?>
                   </ul>
                 </li>
                 <li><strong>Containers:</strong>
                   <ul>
-<? foreach ($ContainersGames as $Cont) { ?>
+<?php foreach ($ContainersGames as $Cont) { ?>
   <li><?=$Cont?></li>
-<? } ?>
+<?php } ?>
                   </ul>
                 </li>
               </ul>
@@ -414,8 +414,8 @@ View::show_header('Uploading Rules', 'rules');
         </div>
   </div>
 <!-- END Other Sections -->
-<? include('jump.php'); ?>
+<?php include 'jump.php'; ?>
 </div>
-<?
+<?php
 View::show_footer();
 ?>

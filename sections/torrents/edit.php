@@ -1,4 +1,4 @@
-<?
+<?php
 //**********************************************************************//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Edit form ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // This page relies on the TorrentForm class. All it does is call      //
@@ -8,10 +8,10 @@
 // most members.                                                        //
 //**********************************************************************//
 
-require_once(SERVER_ROOT.'/classes/torrent_form.class.php');
+require_once SERVER_ROOT . '/classes/torrent_form.class.php';
 
 if (!is_number($_GET['id']) || !$_GET['id']) {
-  error(0);
+    error(0);
 }
 
 $TorrentID = $_GET['id'];
@@ -54,15 +54,15 @@ $DB->query("
     LEFT JOIN torrents_bad_files AS bfi ON bfi.TorrentID = t.ID
   WHERE t.ID = '$TorrentID'");
 
-list($Properties) = $DB->to_array(false, MYSQLI_BOTH);
+[$Properties] = $DB->to_array(false, MYSQLI_BOTH);
 if (!$Properties) {
-  error(404);
+    error(404);
 }
 
 $UploadForm = $Categories[$Properties['CategoryID'] - 1];
 
 if (($LoggedUser['ID'] != $Properties['UserID'] && !check_perms('torrents_edit')) || $LoggedUser['DisableWiki']) {
-  error(403);
+    error(403);
 }
 
 View::show_header('Edit torrent', 'upload,torrent,bbcode');
@@ -72,11 +72,11 @@ $TorrentForm = new TorrentForm($Properties, $Err, false);
 $TorrentForm->upload_form();
 
 if (check_perms('torrents_edit') || check_perms('users_mod')) {
-?>
+    ?>
 <div class="thin">
-<?
-  if ($Properties['CategoryID'] != 5) {
-?>
+<?php
+  if (5 != $Properties['CategoryID']) {
+      ?>
   <div class="header">
     <h2>Change group</h2>
   </div>
@@ -141,9 +141,9 @@ if (check_perms('torrents_edit') || check_perms('users_mod')) {
   </form>
   </div>
   <br />
-<?
+<?php
   }
-  if (check_perms('users_mod')) { ?>
+    if (check_perms('users_mod')) { ?>
   <h2>Change category</h2>
   <div class="box pad">
   <form action="torrents.php" method="post">
@@ -158,18 +158,18 @@ if (check_perms('torrents_edit') || check_perms('users_mod')) {
         <td class="label">Change category</td>
         <td>
           <select id="newcategoryid" name="newcategoryid">
-<?    foreach ($Categories as $CatID => $CatName) { ?>
+<?php    foreach ($Categories as $CatID => $CatName) { ?>
             <option value="<?=($CatID + 1)?>"<?Format::selected('CategoryID', $CatID + 1, 'selected', $Properties)?>><?=($CatName)?></option>
-<?    } ?>
+<?php    } ?>
           </select>
         </td>
       <tr id="split_releasetype">
         <td class="label">Release type</td>
         <td>
           <select name="releasetype">
-<?    foreach ($ReleaseTypes as $RTID => $ReleaseType) { ?>
+<?php    foreach ($ReleaseTypes as $RTID => $ReleaseType) { ?>
             <option value="<?=($RTID)?>"><?=($ReleaseType)?></option>
-<?    } ?>
+<?php    } ?>
           </select>
         </td>
       </tr>
@@ -200,11 +200,10 @@ if (check_perms('torrents_edit') || check_perms('users_mod')) {
     <script type="text/javascript">ChangeCategory($('#newcategoryid').raw().value);</script>
   </form>
   </div>
-<?
-  }
-?>
+<?php
+  } ?>
 </div>
-<?
+<?php
 } // if check_perms('torrents_edit')
 
 View::show_footer(); ?>

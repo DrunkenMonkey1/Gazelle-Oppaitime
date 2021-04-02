@@ -1,10 +1,10 @@
-<?
+<?php
 if (!check_perms('site_debug')) {
-  error(403);
+    error(403);
 }
 
-if (!isset($_GET['case']) || !$Analysis = $Cache->get_value('analysis_'.$_GET['case'])) {
-  error(404);
+if (!isset($_GET['case']) || !$Analysis = $Cache->get_value('analysis_' . $_GET['case'])) {
+    error(404);
 }
 
 View::show_header('Case Analysis');
@@ -14,7 +14,7 @@ View::show_header('Case Analysis');
 </div>
 <pre id="debug_report"><?=display_str($Analysis['message'])?></pre>
 <div class="box" style="margin:0px 4px;">
-<?
+<?php
 $Debug->perf_table($Analysis['perf']);
 $Debug->flag_table($Analysis['flags']);
 $Debug->include_table($Analysis['includes']);

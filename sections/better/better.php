@@ -1,4 +1,4 @@
-<?
+<?php
 //Include the header
 View::show_header('Better');
 ?>
@@ -83,4 +83,4 @@ View::show_header('Better');
     </table>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

@@ -1,4 +1,4 @@
-<?
+<?php
 /*
  * This page is for creating a report using AJAX.
  * It should have the following posted fields:
@@ -11,16 +11,16 @@
  */
 
 if (!check_perms('admin_reports')) {
-  error(403);
+    error(403);
 }
 
 authorize();
 
 if (!is_number($_POST['torrentid'])) {
-  echo 'No Torrent ID';
-  die();
+    echo 'No Torrent ID';
+    die();
 } else {
-  $TorrentID = $_POST['torrentid'];
+    $TorrentID = $_POST['torrentid'];
 }
 
 $DB->query("
@@ -29,55 +29,55 @@ $DB->query("
     JOIN torrents AS t ON t.GroupID = tg.ID
   WHERE t.ID = $TorrentID");
 if (!$DB->has_results()) {
-  $Err = 'No torrent with that ID exists!';
+    $Err = 'No torrent with that ID exists!';
 } else {
-  list($CategoryID) = $DB->next_record();
+    [$CategoryID] = $DB->next_record();
 }
 
 if (!isset($_POST['type'])) {
-  echo 'Missing Type';
-  die();
+    echo 'Missing Type';
+    die();
 } elseif (array_key_exists($_POST['type'], $Types[$CategoryID])) {
-  $Type = $_POST['type'];
-  $ReportType = $Types[$CategoryID][$Type];
+    $Type = $_POST['type'];
+    $ReportType = $Types[$CategoryID][$Type];
 } elseif (array_key_exists($_POST['type'], $Types['master'])) {
-  $Type = $_POST['type'];
-  $ReportType = $Types['master'][$Type];
+    $Type = $_POST['type'];
+    $ReportType = $Types['master'][$Type];
 } else {
-  //There was a type but it wasn't an option!
-  echo 'Wrong type';
-  die();
+    //There was a type but it wasn't an option!
+    echo 'Wrong type';
+    die();
 }
 
 
 $ExtraID = (int) $_POST['otherid'];
 
 if (!empty($_POST['extra'])) {
-  $Extra = db_string($_POST['extra']);
+    $Extra = db_string($_POST['extra']);
 } else {
-  $Extra = '';
+    $Extra = '';
 }
 
 if (!empty($Err)) {
-  echo $Err;
-  die();
+    echo $Err;
+    die();
 }
 
 $DB->query("
   SELECT ID
   FROM reportsv2
   WHERE TorrentID = $TorrentID
-    AND ReporterID = ".db_string($LoggedUser['ID'])."
-    AND ReportedTime > '".time_minus(3)."'");
+    AND ReporterID = " . db_string($LoggedUser['ID']) . "
+    AND ReportedTime > '" . time_minus(3) . "'");
 if ($DB->has_results()) {
-  die();
+    die();
 }
 
 $DB->query("
   INSERT INTO reportsv2
     (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, ExtraID)
   VALUES
-    (".db_string($LoggedUser['ID']).", $TorrentID, '$Type', '$Extra', 'New', NOW(), '$ExtraID')");
+    (" . db_string($LoggedUser['ID']) . ", $TorrentID, '$Type', '$Extra', 'New', NOW(), '$ExtraID')");
 
 $ReportID = $DB->inserted_id();
 
@@ -85,4 +85,3 @@ $Cache->delete_value("reports_torrent_$TorrentID");
 $Cache->increment('num_torrent_reportsv2');
 
 echo $ReportID;
-?>

@@ -1,22 +1,26 @@
-<?
+<?php
 if (!check_perms('admin_login_watch')) {
-  error(403);
+    error(403);
 }
 
-if (isset($_POST['submit']) && isset($_POST['ip']) && $_POST['submit'] == 'Unban') {
-  authorize();
-  $Cache->delete_value('login_attempts_'.$_POST['ip']);
+if (isset($_POST['submit']) && isset($_POST['ip']) && 'Unban' == $_POST['submit']) {
+    authorize();
+    $Cache->delete_value('login_attempts_' . $_POST['ip']);
 }
 
 View::show_header('Login Watch');
 
 $AttemptIPs = $Cache->get_value('login_attempts');
 $AllAttempts = [];
-foreach($AttemptIPs as $IP => $Time) {
-  if (time() > $Time) { continue; }
-  list($Attempts, $Banned) = $Cache->get_value('login_attempts_'.$IP);
-  if (!isset($Attempts) && !isset($Banned)) { continue; }
-  $AllAttempts[] = [$IP, $Attempts, $Banned, $Time];
+foreach ($AttemptIPs as $IP => $Time) {
+    if (time() > $Time) {
+        continue;
+    }
+    [$Attempts, $Banned] = $Cache->get_value('login_attempts_' . $IP);
+    if (!isset($Attempts) && !isset($Banned)) {
+        continue;
+    }
+    $AllAttempts[] = [$IP, $Attempts, $Banned, $Time];
 }
 
 ?>
@@ -31,13 +35,13 @@ foreach($AttemptIPs as $IP => $Time) {
       <td>Banned</td>
       <td>Time</td>
       <td>Submit</td>
-<?  if (check_perms('admin_manage_ipbans')) { ?>
+<?php  if (check_perms('admin_manage_ipbans')) { ?>
       <td>Submit</td>
-<?  } ?>
+<?php  } ?>
     </tr>
-<?
-while (list($IP, $Attempts, $Banned, $BannedUntil) = array_shift($AllAttempts)) {
-?>
+<?php
+while ([$IP, $Attempts, $Banned, $BannedUntil] = array_shift($AllAttempts)) {
+    ?>
     <tr class="row">
       <td>
         <?=$IP?>
@@ -59,7 +63,7 @@ while (list($IP, $Attempts, $Banned, $BannedUntil) = array_shift($AllAttempts)) 
           <input type="submit" name="submit" value="Unban" />
         </form>
       </td>
-<? if (check_perms('admin_manage_ipbans')) { ?>
+<?php if (check_perms('admin_manage_ipbans')) { ?>
       <td>
         <form class="manage_form" name="bans" action="" method="post">
           <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
@@ -70,11 +74,11 @@ while (list($IP, $Attempts, $Banned, $BannedUntil) = array_shift($AllAttempts)) 
           <input type="submit" name="submit" value="IP Ban" />
         </form>
       </td>
-<? } ?>
+<?php } ?>
     </tr>
-<?
+<?php
 }
 ?>
   </table>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

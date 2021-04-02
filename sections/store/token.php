@@ -1,4 +1,4 @@
-<?
+<?php
 $Purchase = "1 freeleech token";
 $UserID = $LoggedUser['ID'];
 
@@ -7,24 +7,24 @@ $DB->query("
   FROM users_main
   WHERE ID = $UserID");
 if ($DB->has_results()) {
-  list($Points) = $DB->next_record();
+    [$Points] = $DB->next_record();
 
-  if ($Points >= 10000) {
-    $DB->query("
+    if ($Points >= 10000) {
+        $DB->query("
       UPDATE users_main
       SET BonusPoints = BonusPoints - 10000,
           FLTokens    = FLTokens + 1
       WHERE ID = $UserID");
-    $DB->query("
+        $DB->query("
       UPDATE users_info
-      SET AdminComment = CONCAT('".sqltime()." - Purchased a freeleech token from the store\n\n', AdminComment)
+      SET AdminComment = CONCAT('" . sqltime() . " - Purchased a freeleech token from the store\n\n', AdminComment)
       WHERE UserID = $UserID");
-    $Cache->delete_value('user_info_heavy_'.$UserID);
-    $Worked = true;
-  } else {
-    $Worked = false;
-    $ErrMessage = "Not enough ".BONUS_POINTS.".";
-  }
+        $Cache->delete_value('user_info_heavy_' . $UserID);
+        $Worked = true;
+    } else {
+        $Worked = false;
+        $ErrMessage = "Not enough " . BONUS_POINTS . ".";
+    }
 }
 
 View::show_header('Store'); ?>
@@ -35,4 +35,4 @@ View::show_header('Store'); ?>
     <p><a href="/store.php">Back to Store</a></p>
   </div>
 </div>
-<? View::show_footer(); ?>
+<?php View::show_footer(); ?>

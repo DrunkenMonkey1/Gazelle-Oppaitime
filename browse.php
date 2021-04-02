@@ -1,1 +1,3 @@
-<? header('Location: torrents.php');
+<?php
+
+header('Location: torrents.php');
