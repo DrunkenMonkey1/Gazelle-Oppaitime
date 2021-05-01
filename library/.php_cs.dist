@@ -1,0 +1,50 @@
+<?php
+
+/**
+ * @see https://github.com/mlocati/php-cs-fixer-configurator
+ */
+
+$config = new PhpCsFixer\Config();
+
+return $config->setRules([
+    '@PSR1' => true,
+    '@PSR2' => true,
+    'psr4' => true,
+    'strict_param' => true,
+    'array_syntax' => ['syntax' => 'short'],
+    'array_indentation' => true,
+    'concat_space' => ['spacing' => 'one'],
+    'yoda_style' => ['always_move_variable' => false, 'equal' => true, 'identical' => true],
+    'no_whitespace_before_comma_in_array' => true,
+    'normalize_index_brace' => true,
+    'whitespace_after_comma_in_array' => true,
+    'list_syntax' => ['syntax' => 'short'],
+    'trim_array_spaces' => true,
+    'blank_line_after_namespace' => true,
+    'blank_line_after_opening_tag' => true,
+    'braces' => true,
+    'full_opening_tag' => true,
+    'include' => true,
+    'unary_operator_spaces' => true,
+    'phpdoc_indent' => true,
+    'phpdoc_align' => true,
+    'phpdoc_scalar' => true,
+    'lowercase_keywords' => true,
+    'new_with_braces' => true,
+    'no_blank_lines_after_class_opening' => true,
+    'single_class_element_per_statement' => ['elements' =>  ['const', 'property']],
+    'single_import_per_statement' => true,
+    'ordered_imports' => ['sort_algorithm' => 'length'],
+    'single_blank_line_at_eof' => true,
+    'declare_strict_types' => true,
+
+
+])
+    ->setRiskyAllowed(true)
+    ->setUsingCache(false)
+    ->setFinder(
+        PhpCsFixer\Finder::create()
+            ->in(__DIR__)
+            ->exclude('library')
+    );
+

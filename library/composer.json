@@ -1,0 +1,32 @@
+{
+  "name": "drunkenmonkey1/desi",
+  "description": "desi a fork of gazelle",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "DrunkenMonkey",
+      "email": "email@example.com"
+    }
+  ],
+  "require": {
+    "ext-gd": "*",
+    "ext-json": "*",
+    "ext-apcu": "*",
+    "ext-mysqli": "*",
+    "ext-memcached": "*",
+    "ext-mbstring": "*",
+    "filp/whoops": "^2.12",
+    "robmorgan/phinx": "^0.12.6",
+    "php-http/curl-client": "^2.2",
+    "typesense/typesense-php": "^4.5",
+    "symfony/http-client": "^5.2",
+    "imdbphp/imdbphp": "^6.5"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^0.12.82",
+    "friendsofphp/php-cs-fixer": "^2.18",
+    "odan/phinx-migrations-generator": "^5.4",
+    "rector/rector-prefixed": "^0.10.6"
+  }
+}

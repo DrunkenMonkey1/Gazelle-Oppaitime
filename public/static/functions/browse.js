@@ -1,0 +1,276 @@
+function show_peers (TorrentID, Page) {
+    if (Page > 0) {
+        ajax.get('torrents.php?action=peerlist&page=' + Page + '&torrentid=' + TorrentID, function (response) {
+            $('#peers_' + TorrentID).gshow().raw().innerHTML = response;
+        });
+    } else {
+        if ($('#peers_' + TorrentID).raw().innerHTML === '') {
+            $('#peers_' + TorrentID).gshow().raw().innerHTML = '<h4>Loading...</h4>';
+            ajax.get('torrents.php?action=peerlist&torrentid=' + TorrentID, function (response) {
+                $('#peers_' + TorrentID).gshow().raw().innerHTML = response;
+            });
+        } else {
+            $('#peers_' + TorrentID).gtoggle();
+        }
+    }
+    $('#snatches_' + TorrentID).ghide();
+    $('#downloads_' + TorrentID).ghide();
+    $('#files_' + TorrentID).ghide();
+    $('#reported_' + TorrentID).ghide();
+}
+
+function show_snatches (TorrentID, Page) {
+    if (Page > 0) {
+        ajax.get('torrents.php?action=snatchlist&page=' + Page + '&torrentid=' + TorrentID, function (response) {
+            $('#snatches_' + TorrentID).gshow().raw().innerHTML = response;
+        });
+    } else {
+        if ($('#snatches_' + TorrentID).raw().innerHTML === '') {
+            $('#snatches_' + TorrentID).gshow().raw().innerHTML = '<h4>Loading...</h4>';
+            ajax.get('torrents.php?action=snatchlist&torrentid=' + TorrentID, function (response) {
+                $('#snatches_' + TorrentID).gshow().raw().innerHTML = response;
+            });
+        } else {
+            $('#snatches_' + TorrentID).gtoggle();
+        }
+    }
+    $('#peers_' + TorrentID).ghide();
+    $('#downloads_' + TorrentID).ghide();
+    $('#files_' + TorrentID).ghide();
+    $('#reported_' + TorrentID).ghide();
+}
+
+function show_downloads (TorrentID, Page) {
+    if (Page > 0) {
+        ajax.get('torrents.php?action=downloadlist&page=' + Page + '&torrentid=' + TorrentID, function (response) {
+            $('#downloads_' + TorrentID).gshow().raw().innerHTML = response;
+        });
+    } else {
+        if ($('#downloads_' + TorrentID).raw().innerHTML === '') {
+            $('#downloads_' + TorrentID).gshow().raw().innerHTML = '<h4>Loading...</h4>';
+            ajax.get('torrents.php?action=downloadlist&torrentid=' + TorrentID, function (response) {
+                $('#downloads_' + TorrentID).raw().innerHTML = response;
+            });
+        } else {
+            $('#downloads_' + TorrentID).gtoggle();
+        }
+    }
+    $('#peers_' + TorrentID).ghide();
+    $('#snatches_' + TorrentID).ghide();
+    $('#files_' + TorrentID).ghide();
+    $('#reported_' + TorrentID).ghide();
+}
+
+function show_files (TorrentID) {
+    $('#files_' + TorrentID).gtoggle();
+    $('#peers_' + TorrentID).ghide();
+    $('#snatches_' + TorrentID).ghide();
+    $('#downloads_' + TorrentID).ghide();
+    $('#reported_' + TorrentID).ghide();
+}
+
+function show_reported (TorrentID) {
+    $('#files_' + TorrentID).ghide();
+    $('#peers_' + TorrentID).ghide();
+    $('#snatches_' + TorrentID).ghide();
+    $('#downloads_' + TorrentID).ghide();
+    $('#reported_' + TorrentID).gtoggle();
+}
+
+function add_tag (tag) {
+    if ($('#tags').raw().value == '') {
+        $('#tags').raw().value = tag;
+    } else {
+        $('#tags').raw().value = $('#tags').raw().value + ', ' + tag;
+    }
+}
+
+function toggle_group (groupid, link, event) {
+    window.getSelection().removeAllRanges();
+    const toToggle = (event.shiftKey) ? $('.group_torrent') : $('.groupid_' + groupid);
+    const toReButton = (event.shiftKey) ? $('.hide_torrents, .show_torrents') : [link.parentNode];
+    if (link.parentNode.className == 'hide_torrents') {
+        for (const i = 0; i < toToggle.length; i++) {
+            toToggle[i].classList.add('hidden');
+        }
+        for (const i = 0; i < toReButton.length; i++) {
+            toReButton[i].className = 'show_torrents';
+        }
+    } else {
+        for (const i = 0; i < toToggle.length; i++) {
+            toToggle[i].classList.remove('hidden');
+        }
+        for (const i = 0; i < toReButton.length; i++) {
+            toReButton[i].className = 'hide_torrents';
+        }
+    }
+}
+
+/*
+function toggle_group(groupid, link, event) {
+  const clickedRow = link;
+  while (clickedRow.nodeName != 'TR') {
+    clickedRow = clickedRow.parentNode;
+  }
+  const group_rows = clickedRow.parentNode.children;
+  const showing = $(clickedRow).nextElementSibling().has_class('hidden');
+  const allGroups = event.ctrlKey;
+
+  // for dealing with Mac OS X
+  // http://stackoverflow.com/a/3922353
+  const allGroupsMac = (
+        event.keyCode == 91 // WebKit (left apple)
+        || event.keyCode == 93 // WebKit (right apple)
+        || event.keyCode == 224 // Firefox
+        || event.keyCode == 17 // Opera
+        ) ? 91 : null;
+
+  for (const i = 0; i < group_rows.length; i++) {
+    const row = $(group_rows[i]);
+    if (row.has_class('colhead_dark')) {
+      continue;
+    }
+    if (row.has_class('colhead')) {
+      continue;
+    }
+    const relevantRow = row.has_class('group') ? $(group_rows[i + 1]) : row;
+    if (allGroups || allGroupsMac || relevantRow.has_class('groupid_' + groupid)) {
+      row = $(group_rows[i]); // idk why we need this :S
+      if (row.has_class('group')) {
+        const section;
+        if (location.pathname.search('/artist.php$') !== -1) {
+          section = 'in this release type.';
+        } else {
+          section = 'on this page.';
+        }
+        const tooltip = showing
+          ? 'Collapse this group. Hold "Ctrl" while clicking to collapse all groups '+section
+          : 'Expand this group. Hold "Ctrl" while clicking to expand all groups '+section;
+        $('a.show_torrents_link', row).updateTooltip(tooltip);
+        $('a.show_torrents_link', row).raw().parentNode.className = (showing) ? 'hide_torrents' : 'show_torrents';
+      } else {
+        if (showing) {
+          // show the row depending on whether the edition it's in is collapsed or not
+          if (row.has_class('edition')) {
+            row.gshow();
+            const showRow = ($('a', row.raw()).raw().innerHTML != '+');
+          } else {
+            if (showRow) {
+              row.gshow();
+            } else {
+              row.ghide();
+            }
+          }
+        } else {
+          row.ghide();
+        }
+      }
+    }
+  }
+  if (event.preventDefault) {
+    event.preventDefault();
+  } else {
+    // for IE < 9 support
+    event.returnValue = false;
+  }
+}
+*/
+
+function toggle_edition (groupid, editionid, lnk, event) {
+    const clickedRow = lnk;
+    while (clickedRow.nodeName != 'TR') {
+        clickedRow = clickedRow.parentNode;
+    }
+    //const showing = has_class(nextElementSibling(clickedRow), 'hidden');
+    const showing = $(clickedRow).nextElementSibling().has_class('hidden');
+    const allEditions = event.ctrlKey;
+    const group_rows = $('tr.groupid_' + groupid);
+    for (const i = 0; i < group_rows.length; i++) {
+        const row = $(group_rows.raw(i));
+        if (row.has_class('edition') && (allEditions || row.raw(0) == clickedRow)) {
+            const tooltip = showing
+                ? 'Collapse this edition. Hold "Ctrl" while clicking to collapse all editions in this torrent group.'
+                : 'Expand this edition. Hold "Ctrl" while clicking to expand all editions in this torrent group.';
+            $('a', row).raw().innerHTML = (showing) ? '&minus;' : '+';
+            $('a', row).updateTooltip(tooltip);
+            continue;
+        }
+        if (allEditions || row.has_class('edition_' + editionid)) {
+            if (showing && !row.has_class('torrentdetails')) {
+                row.gshow();
+            } else {
+                row.ghide();
+            }
+        }
+    }
+    if (event.preventDefault) {
+        event.preventDefault();
+    } else {
+        // for IE < 9 support
+        event.returnValue = false;
+    }
+}
+
+function toggleTorrentSearch (mode) {
+    if (mode == 0) {
+        const link = $('#ft_toggle').raw();
+        $('#ft_container').gtoggle();
+        link.innerHTML = link.textContent == 'Hide' ? 'Show' : 'Hide';
+    }
+    if (mode == 'basic') {
+        $('.fti_advanced').disable();
+        $('.fti_basic').enable();
+        $('.ftr_advanced').ghide(true);
+        $('.ftr_basic').gshow();
+        $('#ft_advanced').ghide();
+        $('#ft_basic').gshow();
+        $('#ft_type').raw().value = 'basic';
+    } else if (mode == 'advanced') {
+        $('.fti_advanced').enable();
+        $('.fti_basic').disable();
+        $('.ftr_advanced').gshow();
+        $('.ftr_basic').ghide();
+        $('#ft_advanced').gshow();
+        $('#ft_basic').ghide();
+        $('#ft_type').raw().value = 'advanced';
+    }
+    return false;
+}
+
+const coverFieldCount = 0;
+const hasCoverAddButton = false;
+
+function addCoverField () {
+    if (coverFieldCount >= 100) {
+        return;
+    }
+    const x = $('#add_cover').raw();
+    x.appendChild(document.createElement('br'));
+    const field = document.createElement('input');
+    field.type = 'text';
+    field.name = 'image[]';
+    field.placeholder = 'URL';
+    x.appendChild(field);
+    x.appendChild(document.createTextNode(' '));
+    const summary = document.createElement('input');
+    summary.type = 'text';
+    summary.name = 'summary[]';
+    summary.placeholder = 'Summary';
+    x.appendChild(summary);
+    coverFieldCount++;
+
+    if (!hasCoverAddButton) {
+        x = $('#add_covers_form').raw();
+        field = document.createElement('input');
+        field.type = 'submit';
+        field.value = 'Add';
+        x.appendChild(field);
+        hasCoverAddButton = true;
+    }
+}
+
+function ToggleEditionRows () {
+    $('#edition_title').gtoggle();
+    $('#edition_label').gtoggle();
+    $('#edition_catalogue').gtoggle();
+}
