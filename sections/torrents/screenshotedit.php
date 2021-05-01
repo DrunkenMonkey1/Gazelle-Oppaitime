@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!$_POST['groupid'] || !is_number($_POST['groupid'])) {
@@ -12,16 +14,15 @@ if (!check_perms('torrents_edit') && !check_perms('screenshots_add') && !check_p
     SELECT UserID
     FROM torrents
     WHERE GroupID = ?", $GroupID);
-    if (!in_array($LoggedUser['ID'], $DB->collect('UserID'), true)) {
+    $DBCollect = $DB->collect('UserID');
+    if (!in_array($LoggedUser['ID'], $DBCollect, true)) {
         error(403);
     }
 }
 
 $Screenshots = $_POST['screenshots'] ?? [];
 $Screenshots = array_map("trim", $Screenshots);
-$Screenshots = array_filter($Screenshots, function ($s) {
-    return preg_match('/^' . IMAGE_REGEX . '$/i', $s);
-});
+$Screenshots = array_filter($Screenshots, fn ($s) => preg_match('/^' . IMAGE_REGEX . '$/i', $s));
 $Screenshots = array_unique($Screenshots);
 
 if (count($Screenshots) > 10) {
@@ -98,4 +99,4 @@ if (!empty($New)) {
 }
 
 $Cache->delete_value("torrents_details_" . $GroupID);
-header("Location: torrents.php?id=$GroupID");
+header(sprintf('Location: torrents.php?id=%s', $GroupID));

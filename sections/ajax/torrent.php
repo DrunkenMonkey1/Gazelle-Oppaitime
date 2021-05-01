@@ -1,20 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 require SERVER_ROOT . '/sections/torrents/functions.php';
 
-$TorrentID = (int)$_GET['id'];
-$TorrentHash = (string)$_GET['hash'];
+$TorrentID = (int) $_GET['id'];
+$TorrentHash = (string) $_GET['hash'];
 
 if ($TorrentID && $TorrentHash) {
     json_die("failure", "bad parameters");
 }
 
-if ($TorrentHash) {
+if ('' !== $TorrentHash) {
     if (!is_valid_torrenthash($TorrentHash)) {
         json_die("failure", "bad hash parameter");
     } else {
-        $TorrentID = (int)torrenthash_to_torrentid($TorrentHash);
-        if (!$TorrentID) {
+        $TorrentID = (int) torrenthash_to_torrentid($TorrentHash);
+        if (0 === $TorrentID) {
             json_die("failure", "bad hash parameter");
         }
     }
@@ -40,30 +42,25 @@ $GroupID = $TorrentDetails['ID'];
 
 $Artists = pullmediainfo(Artists::get_artist($GroupID));
 
-if (0 == $TorrentDetails['CategoryID']) {
-    $CategoryName = "Unknown";
-} else {
-    $CategoryName = $Categories[$TorrentDetails['CategoryID'] - 1];
-}
+$CategoryName = 0 == $TorrentDetails['CategoryID'] ? "Unknown" : $Categories[$TorrentDetails['CategoryID'] - 1];
 
-$TagList = explode('|', $TorrentDetails['GROUP_CONCAT(DISTINCT tags.Name SEPARATOR \'|\')']);
+$TagList = explode('|', $TorrentDetails["GROUP_CONCAT(DISTINCT tags.Name SEPARATOR '|')"]);
 
 $JsonTorrentDetails = [
-    'wikiBody'        => Text::full_format($TorrentDetails['WikiBody']),
-    'wikiImage'       => $TorrentDetails['WikiImage'],
-    'id'              => (int)$TorrentDetails['ID'],
-    'name'            => $TorrentDetails['Name'],
-    'namejp'          => $TorrentDetails['NameJP'],
-    'artists'         => $Artists,
-    'year'            => (int)$TorrentDetails['Year'],
+    'wikiBody' => Text::full_format($TorrentDetails['WikiBody']),
+    'wikiImage' => $TorrentDetails['WikiImage'],
+    'id' => (int) $TorrentDetails['ID'],
+    'name' => $TorrentDetails['Name'],
+    'artists' => $Artists,
+    'year' => (int) $TorrentDetails['Year'],
     'catalogueNumber' => $TorrentDetails['CatalogueNumber'],
-    'pages'           => (int)$TorrentDetails['Pages'],
-    'categoryId'      => (int)$TorrentDetails['CategoryID'],
-    'categoryName'    => $CategoryName,
-    'dlsiteId'        => $TorrentDetails['DLSiteID'],
-    'time'            => $TorrentDetails['Time'],
-    'isBookmarked'    => Bookmarks::has_bookmarked('torrent', $GroupID),
-    'tags'            => $TagList
+    'pages' => (int) $TorrentDetails['Pages'],
+    'categoryId' => (int) $TorrentDetails['CategoryID'],
+    'categoryName' => $CategoryName,
+    'dlsiteId' => $TorrentDetails['DLSiteID'],
+    'time' => $TorrentDetails['Time'],
+    'isBookmarked' => Bookmarks::has_bookmarked('torrent', $GroupID),
+    'tags' => $TagList
 ];
 
 $Torrent = $TorrentList[$TorrentID];
@@ -80,32 +77,32 @@ unset($File);
 $FileList = implode('|||', $FileList);
 $Userinfo = Users::user_info($Torrent['UserID']);
 $JsonTorrentList[] = [
-    'id'          => (int)$Torrent['ID'],
-    'infoHash'    => $Torrent['InfoHash'],
-    'media'       => $Torrent['Media'],
-    'container'   => $Torrent['Container'],
-    'codec'       => $Torrent['Codec'],
-    'resolution'  => $Torrent['Resolution'],
+    'id' => (int) $Torrent['ID'],
+    'infoHash' => $Torrent['InfoHash'],
+    'media' => $Torrent['Media'],
+    'container' => $Torrent['Container'],
+    'codec' => $Torrent['Codec'],
+    'resolution' => $Torrent['Resolution'],
     'audioFormat' => $Torrent['AudioFormat'],
-    'subbing'     => $Torrent['Subbing'],
-    'subber'      => $Torrent['Subber'],
-    'language'    => $Torrent['Language'],
-    'censored'    => (bool)$Torrent['Censored'],
-    'archive'     => $Torrent['Archive'],
-    'fileCount'   => (int)$Torrent['FileCount'],
-    'size'        => (int)$Torrent['Size'],
-    'seeders'     => (int)$Torrent['Seeders'],
-    'leechers'    => (int)$Torrent['Leechers'],
-    'snatched'    => (int)$Torrent['Snatched'],
+    'subbing' => $Torrent['Subbing'],
+    'subber' => $Torrent['Subber'],
+    'language' => $Torrent['Language'],
+    'censored' => (bool) $Torrent['Censored'],
+    'archive' => $Torrent['Archive'],
+    'fileCount' => (int) $Torrent['FileCount'],
+    'size' => (int) $Torrent['Size'],
+    'seeders' => (int) $Torrent['Seeders'],
+    'leechers' => (int) $Torrent['Leechers'],
+    'snatched' => (int) $Torrent['Snatched'],
     'freeTorrent' => (1 == $Torrent['FreeTorrent']),
-    'reported'    => (bool)$Torrent['Reported'],
-    'time'        => $Torrent['Time'],
+    'reported' => (bool) $Torrent['Reported'],
+    'time' => $Torrent['Time'],
     'description' => $Torrent['Description'],
-    'mediaInfo'   => $Torrent['MediaInfo'],
-    'fileList'    => $FileList,
-    'filePath'    => $Torrent['FilePath'],
-    'userId'      => (int)($Torrent['Anonymous'] ? 0 : $Torrent['UserID']),
-    'username'    => ($Torrent['Anonymous'] ? 'Anonymous' : $Userinfo['Username'])
+    'mediaInfo' => $Torrent['MediaInfo'],
+    'fileList' => $FileList,
+    'filePath' => $Torrent['FilePath'],
+    'userId' => (int) ($Torrent['Anonymous'] ? 0 : $Torrent['UserID']),
+    'username' => ($Torrent['Anonymous'] ? 'Anonymous' : $Userinfo['Username'])
 ];
 
 json_die("success", ['group' => $JsonTorrentDetails, 'torrent' => array_pop($JsonTorrentList)]);

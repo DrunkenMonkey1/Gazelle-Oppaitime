@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!empty($LoggedUser['DisableTagging'])) {
     error(403);
@@ -14,7 +16,7 @@ if (!is_number($GroupID) || !$GroupID) {
 
 //Delete cached tag used for undos
 if (isset($_POST['undo'])) {
-    $Cache->delete_value("deleted_tags_$GroupID" . '_' . $LoggedUser['ID']);
+    $Cache->delete_value(sprintf('deleted_tags_%s', $GroupID) . '_' . $LoggedUser['ID']);
 }
 
 $Tags = explode(',', $_POST['tagname']);
@@ -27,13 +29,13 @@ foreach ($Tags as $TagName) {
         $DB->query("
       SELECT ID
       FROM tags
-      WHERE Name LIKE '$TagName'");
+      WHERE Name LIKE '{$TagName}'");
         [$TagID] = $DB->next_record();
 
         if (!$TagID) { // Tag doesn't exist yet - create tag
             $DB->query("
         INSERT INTO tags (Name, UserID)
-        VALUES ('$TagName', $UserID)");
+        VALUES ('{$TagName}', {$UserID})");
             $TagID = $DB->inserted_id();
         }
 
@@ -41,14 +43,14 @@ foreach ($Tags as $TagName) {
       INSERT INTO torrents_tags
         (TagID, GroupID, UserID)
       VALUES
-        ('$TagID', '$GroupID', '$UserID')
+        ('{$TagID}', '{$GroupID}', '{$UserID}')
       ON DUPLICATE KEY UPDATE TagID=TagID");
 
         $DB->query("
       INSERT INTO group_log
         (GroupID, UserID, Time, Info)
       VALUES
-        ('$GroupID', " . $LoggedUser['ID'] . ", NOW(), '" . db_string("Tag \"$TagName\" added to group") . "')");
+        ('{$GroupID}', " . $LoggedUser['ID'] . ", NOW(), '" . db_string(sprintf('Tag "%s" added to group', $TagName)) . "')");
     }
 }
 

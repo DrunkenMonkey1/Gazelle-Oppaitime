@@ -1,9 +1,11 @@
 <?php
+
+declare(strict_types=1);
 /*
 User post history page
 */
 
-function error_out($reason = '')
+function error_out($reason = ''): void
 {
     $error = ['status' => 'failure'];
     if ('' !== $reason) {
@@ -22,11 +24,7 @@ if (!is_number($UserID)) {
     error_out('User does not exist!');
 }
 
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+$PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
 
 [$Page, $Limit] = Format::page_limit($PerPage);
 
@@ -59,7 +57,7 @@ if ($ShowGrouped) {
     $SQL .= "
     GROUP BY t.ID
     ORDER BY p.ID DESC
-    LIMIT $Limit";
+    LIMIT {$Limit}";
     $PostIDs = $DB->query($SQL);
     $DB->query('SELECT FOUND_ROWS()');
     [$Results] = $DB->next_record();
@@ -87,7 +85,7 @@ if ($ShowGrouped) {
         LEFT JOIN users_main AS ed ON ed.ID = p.EditedUserID
         JOIN forums_topics AS t ON t.ID = p.TopicID
         JOIN forums AS f ON f.ID = t.ForumID
-        LEFT JOIN forums_last_read_topics AS l ON l.UserID = $UserID AND l.TopicID = t.ID
+        LEFT JOIN forums_last_read_topics AS l ON l.UserID = {$UserID} AND l.TopicID = t.ID
       WHERE p.ID IN (" . implode(',', $PostIDs) . ')
       ORDER BY p.ID DESC';
         $Posts = $DB->query($SQL);
@@ -125,8 +123,8 @@ if ($ShowGrouped) {
         LEFT JOIN users_main AS ed ON ed.ID = p.EditedUserID
         JOIN forums_topics AS t ON t.ID = p.TopicID
         JOIN forums AS f ON f.ID = t.ForumID
-        LEFT JOIN forums_last_read_topics AS l ON l.UserID = $UserID AND l.TopicID = t.ID
-      WHERE p.AuthorID = $UserID
+        LEFT JOIN forums_last_read_topics AS l ON l.UserID = {$UserID} AND l.TopicID = t.ID
+      WHERE p.AuthorID = {$UserID}
         AND " . Forums::user_forums_sql();
 
     if ($ShowUnread) {
@@ -147,7 +145,7 @@ if ($ShowGrouped) {
     }
 
     $SQL .= "
-    LIMIT $Limit";
+    LIMIT {$Limit}";
     $Posts = $DB->query($SQL);
 
     $DB->query('SELECT FOUND_ROWS()');

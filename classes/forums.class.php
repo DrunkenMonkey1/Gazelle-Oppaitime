@@ -1,16 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 class Forums
 {
     /**
      * Get information on a thread.
      *
-     * @param  int     $ThreadID       the thread ID.
-     * @param  bool    $Return         indicates whether thread info should be returned.
-     * @param  Boolean $SelectiveCache cache thread info.
+     * @param int     $ThreadID       the thread ID.
+     * @param bool    $Return         indicates whether thread info should be returned.
+     * @param Boolean $SelectiveCache cache thread info.
+     *
      * @return array   holding thread information.
      */
-    public static function get_thread_info($ThreadID, $Return = true, $SelectiveCache = false)
+    public static function get_thread_info(int $ThreadID, bool $Return = true, bool $SelectiveCache = false)
     {
         if ((!$ThreadInfo = G::$Cache->get_value('thread_' . $ThreadID . '_info')) || !isset($ThreadInfo['Ranking'])) {
             $QueryID = G::$DB->get_query_id();
@@ -33,6 +36,7 @@ class Forums
         GROUP BY fp.TopicID", $ThreadID);
             if (!G::$DB->has_results()) {
                 G::$DB->set_query_id($QueryID);
+                
                 return null;
             }
             $ThreadInfo = G::$DB->next_record(MYSQLI_ASSOC, false);
@@ -65,93 +69,37 @@ class Forums
             return $ThreadInfo;
         }
     }
-
+    
     /**
      * Checks whether user has permissions on a forum.
      *
-     * @param  int    $ForumID the forum ID.
-     * @param  string $Perm    the permissision to check, defaults to 'Read'
+     * @param int    $ForumID the forum ID.
+     * @param string $Perm    the permissision to check, defaults to 'Read'
+     *
      * @return bool   true if user has permission
      */
-    public static function check_forumperm($ForumID, $Perm = 'Read')
+    public static function check_forumperm(int $ForumID, string $Perm = 'Read'): bool
     {
-        $Forums = self::get_forums();
         if (isset(G::$LoggedUser['CustomForums'][$ForumID]) && 1 == G::$LoggedUser['CustomForums'][$ForumID]) {
             return true;
         }
         if (DONOR_FORUM == $ForumID && Donations::has_donor_forum(G::$LoggedUser['ID'])) {
             return true;
         }
+        $Forums = self::get_forums();
         if ($Forums[$ForumID]['MinClass' . $Perm] > G::$LoggedUser['Class'] && (!isset(G::$LoggedUser['CustomForums'][$ForumID]) || 0 == G::$LoggedUser['CustomForums'][$ForumID])) {
             return false;
         }
-        if (isset(G::$LoggedUser['CustomForums'][$ForumID]) && 0 == G::$LoggedUser['CustomForums'][$ForumID]) {
-            return false;
-        }
-        return true;
+        
+        return !(isset(G::$LoggedUser['CustomForums'][$ForumID]) && 0 == G::$LoggedUser['CustomForums'][$ForumID]);
     }
-
-    /**
-     * Gets basic info on a forum.
-     *
-     * @param int $ForumID the forum ID.
-     */
-    public static function get_forum_info($ForumID)
-    {
-        $Forum = G::$Cache->get_value("ForumInfo_$ForumID");
-        if (!$Forum) {
-            $QueryID = G::$DB->get_query_id();
-            G::$DB->query("
-        SELECT
-          Name,
-          MinClassRead,
-          MinClassWrite,
-          MinClassCreate,
-          COUNT(forums_topics.ID) AS Topics
-        FROM forums
-          LEFT JOIN forums_topics ON forums_topics.ForumID = forums.ID
-        WHERE forums.ID = ?
-        GROUP BY ForumID", $ForumID);
-            if (!G::$DB->has_results()) {
-                return false;
-            }
-            // Makes an array, with $Forum['Name'], etc.
-            $Forum = G::$DB->next_record(MYSQLI_ASSOC);
-
-            G::$DB->set_query_id($QueryID);
-
-            G::$Cache->cache_value("ForumInfo_$ForumID", $Forum, 86400);
-        }
-        return $Forum;
-    }
-
-    /**
-     * Get the forum categories
-     * @return array ForumCategoryID => Name
-     */
-    public static function get_forum_categories()
-    {
-        $ForumCats = G::$Cache->get_value('forums_categories');
-        if (false === $ForumCats) {
-            $QueryID = G::$DB->get_query_id();
-            G::$DB->query("
-        SELECT ID, Name
-        FROM forums_categories");
-            $ForumCats = [];
-            while ([$ID, $Name] = G::$DB->next_record()) {
-                $ForumCats[$ID] = $Name;
-            }
-            G::$DB->set_query_id($QueryID);
-            G::$Cache->cache_value('forums_categories', $ForumCats, 0);
-        }
-        return $ForumCats;
-    }
-
+    
     /**
      * Get the forums
+     *
      * @return array ForumID => (various information about the forum)
      */
-    public static function get_forums()
+    public static function get_forums(): array
     {
         if (!$Forums = G::$Cache->get_value('forums_list')) {
             $QueryID = G::$DB->get_query_id();
@@ -180,7 +128,7 @@ class Forums
         GROUP BY f.ID
         ORDER BY fc.Sort, fc.Name, f.CategoryID, f.Sort");
             $Forums = G::$DB->to_array('ID', MYSQLI_ASSOC, false);
-
+            
             G::$DB->query("
         SELECT ForumID, ThreadID
         FROM forums_specific_rules");
@@ -190,55 +138,86 @@ class Forums
             }
             G::$DB->set_query_id($QueryID);
             foreach ($Forums as $ForumID => &$Forum) {
-                if (isset($SpecificRules[$ForumID])) {
-                    $Forum['SpecificRules'] = $SpecificRules[$ForumID];
-                } else {
-                    $Forum['SpecificRules'] = [];
-                }
+                $Forum['SpecificRules'] = isset($SpecificRules[$ForumID]) ? $SpecificRules[$ForumID] : [];
             }
             G::$Cache->cache_value('forums_list', $Forums, 0);
         }
+        
         return $Forums;
     }
-
+    
     /**
-     * Get all forums that the current user has special access to ("Extra forums" in the profile)
-     * @return array Array of ForumIDs
+     * Gets basic info on a forum.
+     *
+     * @param int $ForumID the forum ID.
+     *
+     * @return bool|mixed
      */
-    public static function get_permitted_forums()
+    public static function get_forum_info(int $ForumID)
     {
-        if (isset(G::$LoggedUser['CustomForums'])) {
-            return (array)array_keys(G::$LoggedUser['CustomForums'], 1, true);
-        } else {
-            return [];
+        $Forum = G::$Cache->get_value("ForumInfo_$ForumID");
+        if (!$Forum) {
+            $QueryID = G::$DB->get_query_id();
+            G::$DB->query("
+        SELECT
+          Name,
+          MinClassRead,
+          MinClassWrite,
+          MinClassCreate,
+          COUNT(forums_topics.ID) AS Topics
+        FROM forums
+          LEFT JOIN forums_topics ON forums_topics.ForumID = forums.ID
+        WHERE forums.ID = ?
+        GROUP BY ForumID", $ForumID);
+            if (!G::$DB->has_results()) {
+                return false;
+            }
+            // Makes an array, with $Forum['Name'], etc.
+            $Forum = G::$DB->next_record(MYSQLI_ASSOC);
+            
+            G::$DB->set_query_id($QueryID);
+            
+            G::$Cache->cache_value("ForumInfo_$ForumID", $Forum, 86400);
         }
+        
+        return $Forum;
     }
-
+    
     /**
-     * Get all forums that the current user does not have access to ("Restricted forums" in the profile)
-     * @return array Array of ForumIDs
+     * Get the forum categories
+     *
+     * @return array ForumCategoryID => Name
      */
-    public static function get_restricted_forums()
+    public static function get_forum_categories(): array
     {
-        if (isset(G::$LoggedUser['CustomForums'])) {
-            return (array)array_keys(G::$LoggedUser['CustomForums'], 0, true);
-        } else {
-            return [];
+        $ForumCats = G::$Cache->get_value('forums_categories');
+        if (false === $ForumCats) {
+            $QueryID = G::$DB->get_query_id();
+            G::$DB->query("
+        SELECT ID, Name
+        FROM forums_categories");
+            $ForumCats = [];
+            while ([$ID, $Name] = G::$DB->next_record()) {
+                $ForumCats[$ID] = $Name;
+            }
+            G::$DB->set_query_id($QueryID);
+            G::$Cache->cache_value('forums_categories', $ForumCats, 0);
         }
+        
+        return $ForumCats;
     }
-
+    
     /**
      * Get the last read posts for the current user
-     * @param  array $Forums Array of forums as returned by self::get_forums()
-     * @return array TopicID => array(TopicID, PostID, Page) where PostID is the ID of the last read post and Page is the page on which that post is
+     *
+     * @param array $Forums Array of forums as returned by self::get_forums()
+     *
+     * @return array TopicID => array(TopicID, PostID, Page) where PostID is the ID of the last read post and Page is
+     *               the page on which that post is
      */
-    public static function get_last_read($Forums)
+    public static function get_last_read(array $Forums): array
     {
-        if (isset(G::$LoggedUser['PostsPerPage'])) {
-            $PerPage = G::$LoggedUser['PostsPerPage'];
-        } else {
-            $PerPage = POSTS_PER_PAGE;
-        }
+        $PerPage = G::$LoggedUser['PostsPerPage'] ?? POSTS_PER_PAGE;
         $TopicIDs = [];
         foreach ($Forums as $Forum) {
             if (!empty($Forum['LastPostTopicID'])) {
@@ -268,17 +247,14 @@ class Forums
         } else {
             $LastRead = [];
         }
+        
         return $LastRead;
     }
-
+    
     /**
      * Add a note to a topic.
-     * @param  int      $TopicID
-     * @param  string   $Note
-     * @param  int|null $UserID
-     * @return bool
      */
-    public static function add_topic_note($TopicID, $Note, $UserID = null)
+    public static function add_topic_note(int $TopicID, string $Note, ?int $UserID = null): bool
     {
         if (null === $UserID) {
             $UserID = G::$LoggedUser['ID'];
@@ -290,30 +266,29 @@ class Forums
       VALUES
         (?, ?, NOW(), ?)", $TopicID, $UserID, $Note);
         G::$DB->set_query_id($QueryID);
-        return (bool)G::$DB->affected_rows();
+        
+        return (bool) G::$DB->affected_rows();
     }
-
+    
     /**
      * Determine if a thread is unread
-     * @param  bool   $Locked
-     * @param  bool   $Sticky
-     * @param  int    $LastPostID
-     * @param  array  $LastRead    An array as returned by self::get_last_read
-     * @param  int    $LastTopicID TopicID of the thread where the most recent post was made
-     * @param  string $LastTime    Datetime of the last post
+     *
+     * @param array  $LastRead    An array as returned by self::get_last_read
+     * @param int    $LastTopicID TopicID of the thread where the most recent post was made
+     * @param string $LastTime    Datetime of the last post
+     *
      * @return bool
      */
-    public static function is_unread($Locked, $Sticky, $LastPostID, $LastRead, $LastTopicID, $LastTime)
+    public static function is_unread($Locked, $Sticky, $LastPostID, array $LastRead, int $LastTopicID, $LastTime)
     {
-        return (!$Locked || $Sticky) && 0 != $LastPostID && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID) && strtotime($LastTime) > G::$LoggedUser['CatchupTime']);
+        return (!$Locked || $Sticky) && 0 !== $LastPostID && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID) && strtotime($LastTime) > G::$LoggedUser['CatchupTime']);
     }
-
+    
     /**
      * Create the part of WHERE in the sql queries used to filter forums for a
      * specific user (MinClassRead, restricted and permitted forums).
-     * @return string
      */
-    public static function user_forums_sql()
+    public static function user_forums_sql(): string
     {
         // I couldn't come up with a good name, please rename this if you can. -- Y
         $RestrictedForums = self::get_restricted_forums();
@@ -322,14 +297,42 @@ class Forums
             $PermittedForums[] = DONOR_FORUM;
         }
         $SQL = "((f.MinClassRead <= '" . G::$LoggedUser['Class'] . "'";
-        if (count($RestrictedForums)) {
+        if ([] !== $RestrictedForums) {
             $SQL .= " AND f.ID NOT IN ('" . implode("', '", $RestrictedForums) . "')";
         }
         $SQL .= ')';
-        if (count($PermittedForums)) {
+        if ([] !== $PermittedForums) {
             $SQL .= " OR f.ID IN ('" . implode("', '", $PermittedForums) . "')";
         }
-        $SQL .= ')';
-        return $SQL;
+        
+        return $SQL . ')';
+    }
+    
+    /**
+     * Get all forums that the current user does not have access to ("Restricted forums" in the profile)
+     *
+     * @return array Array of ForumIDs
+     */
+    public static function get_restricted_forums()
+    {
+        if (isset(G::$LoggedUser['CustomForums'])) {
+            return (array) array_keys(G::$LoggedUser['CustomForums'], 0, true);
+        }
+        
+        return [];
+    }
+    
+    /**
+     * Get all forums that the current user has special access to ("Extra forums" in the profile)
+     *
+     * @return array Array of ForumIDs
+     */
+    public static function get_permitted_forums()
+    {
+        if (isset(G::$LoggedUser['CustomForums'])) {
+            return (array) array_keys(G::$LoggedUser['CustomForums'], 1, true);
+        }
+        
+        return [];
     }
 }

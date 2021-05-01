@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $P = db_array($_POST);
 enforce_login();
 if (!empty($_REQUEST['friendid']) && !is_number($_REQUEST['friendid'])) {

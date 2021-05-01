@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------------- Ratio requirements -----------------------//
 
 // Clear old seed time history
@@ -72,16 +74,16 @@ foreach (RATIO_REQUIREMENTS as $Requirement) {
 
     $DB->query("
     UPDATE users_main
-    SET RequiredRatio = RequiredRatioWork * $Ratio
-    WHERE Downloaded >= $Download
-      AND Downloaded < $DownloadBarrier");
+    SET RequiredRatio = RequiredRatioWork * {$Ratio}
+    WHERE Downloaded >= {$Download}
+      AND Downloaded < {$DownloadBarrier}");
 
     $DB->query("
     UPDATE users_main
-    SET RequiredRatio = $MinRatio
-    WHERE Downloaded >= $Download
-      AND Downloaded < $DownloadBarrier
-      AND RequiredRatio < $MinRatio");
+    SET RequiredRatio = {$MinRatio}
+    WHERE Downloaded >= {$Download}
+      AND Downloaded < {$DownloadBarrier}
+      AND RequiredRatio < {$MinRatio}");
 
     $DownloadBarrier = $Download;
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //resource_type://username:password@domain:port/path?query_string#anchor
 define('RESOURCE_REGEX', '(https?|ftps?):\/\/');
 define('IP_REGEX', '(\d{1,3}\.){3}\d{1,3}');

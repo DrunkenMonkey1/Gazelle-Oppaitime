@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!Calendar::can_view()) {
     error(404);
@@ -11,12 +11,13 @@ if ($_GET['id']) {
     $Month = $_GET['month'];
     $Day = $_GET['day'];
     if ($Month < 10) {
-        $Month = "0$Month";
+        $Month = sprintf('0%s', $Month);
     }
     if ($Day < 10) {
-        $Day = "0$Day";
+        $Day = sprintf('0%s', $Day);
     }
-    $StartDate = $EndDate = "$Year-$Month-$Day";
+    $StartDate = sprintf('%s-%s-%s', $Year, $Month, $Day);
+    $EndDate = "{$Year}-{$Month}-{$Day}";
 }
 ?>
 <form id="event_form" name="event_form" method="post" action="">

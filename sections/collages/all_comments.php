@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**********|| Page to show individual threads || ********************************\
 
 Things to expect in $_GET:
@@ -21,11 +21,11 @@ $CollageID = (int)$_GET['collageid'];
 $DB->query("
   SELECT Name
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$Name] = $DB->next_record();
 
 // Start printing
-View::show_header("Comments for collage $Name", 'comments,bbcode,subscriptions');
+View::show_header(sprintf('Comments for collage %s', $Name), 'comments,bbcode,subscriptions');
 ?>
 <div class="thin">
   <div class="header">
@@ -46,18 +46,16 @@ if ($Pages) {
 <?php
 
 //---------- Begin printing
-CommentsView::render_comments($Thread, $LastRead, "collages.php?action=comments&amp;collageid=$CollageID");
-if (!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) {
-    if ($ThreadInfo['MinClassWrite'] <= $LoggedUser['Class'] && !$LoggedUser['DisablePosting']) {
-        View::parse('generic/reply/quickreply.php', [
-            'InputName' => 'pageid',
-            'InputID' => $CollageID,
-            'Action' => 'comments.php?page=collages',
-            'InputAction' => 'take_post',
-            'TextareaCols' => 90,
-            'SubscribeBox' => true
-        ]);
-    }
+CommentsView::render_comments($Thread, $LastRead, sprintf('collages.php?action=comments&amp;collageid=%s', $CollageID));
+if ((!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) && ($ThreadInfo['MinClassWrite'] <= $LoggedUser['Class'] && !$LoggedUser['DisablePosting'])) {
+    View::parse('generic/reply/quickreply.php', [
+        'InputName' => 'pageid',
+        'InputID' => $CollageID,
+        'Action' => 'comments.php?page=collages',
+        'InputAction' => 'take_post',
+        'TextareaCols' => 90,
+        'SubscribeBox' => true
+    ]);
 }
 ?>
   <div class="linkbox">

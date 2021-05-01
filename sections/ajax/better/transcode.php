@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!isset($_GET['type']) || !is_number($_GET['type']) || $_GET['type'] > 3) {
     error(0);
 }
@@ -18,12 +20,12 @@ if ('3' === $_GET['type']) {
 }
 $SphQL = new SphinxqlQuery();
 $SphQL->select('id, groupid')
-  ->from('better_transcode')
-  ->where('logscore', 100)
-  ->where_match('FLAC', 'format')
-  ->where_match($List, 'encoding', false)
-  ->order_by('RAND()')
-  ->limit(0, TORRENTS_PER_PAGE, TORRENTS_PER_PAGE);
+    ->from('better_transcode')
+    ->where('logscore', 100)
+    ->where_match('FLAC', 'format')
+    ->where_match($List, 'encoding', false)
+    ->order_by('RAND()')
+    ->limit(0, TORRENTS_PER_PAGE, TORRENTS_PER_PAGE);
 if (!empty($_GET['search'])) {
     $SphQL->where_match($_GET['search'], '(groupname,artistname,year,taglist)');
 }
@@ -45,7 +47,8 @@ foreach ($Groups as $GroupID => $Group) {
         continue;
     }
     foreach ($Group['Torrents'] as $Torrent) {
-        $TorRemIdent = "$Torrent[Media] $Torrent[RemasterYear] $Torrent[RemasterTitle] $Torrent[RemasterRecordLabel] $Torrent[RemasterCatalogueNumber]";
+        $TorRemIdent = sprintf('%s %s %s %s %s', $Torrent[Media], $Torrent[RemasterYear], $Torrent[RemasterTitle],
+            $Torrent[RemasterRecordLabel], $Torrent[RemasterCatalogueNumber]);
         if (!isset($TorrentGroups[$Group['ID']])) {
             $TorrentGroups[$Group['ID']] = [
                 $TorRemIdent => [
@@ -87,7 +90,7 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
     $GroupName = $GroupInfo['Name'];
     $GroupRecordLabel = $GroupInfo['RecordLabel'];
     $ReleaseType = $GroupInfo['ReleaseType'];
-
+    
     if (!empty($ExtendedArtists[1]) || !empty($ExtendedArtists[4]) || !empty($ExtendedArtists[5]) || !empty($ExtendedArtists[6])) {
         unset($ExtendedArtists[2]);
         unset($ExtendedArtists[3]);
@@ -95,27 +98,27 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
     } else {
         $ArtistNames = '';
     }
-
+    
     $TagList = [];
     $TagList = explode(' ', str_replace('_', '.', $GroupInfo['TagList']));
     $TorrentTags = [];
     foreach ($TagList as $Tag) {
-        $TorrentTags[] = "<a href=\"torrents.php?taglist=$Tag\">$Tag</a>";
+        $TorrentTags[] = sprintf('<a href="torrents.php?taglist=%s">%s</a>', $Tag, $Tag);
     }
     $TorrentTags = implode(', ', $TorrentTags);
     foreach ($Editions as $RemIdent => $Edition) {
         if (!$Edition['FlacID']
-        || !empty($Edition['Formats']) && '3' === $_GET['type']
-        || true == $Edition['Formats'][$Encodings[$_GET['type']]]) {
+            || !empty($Edition['Formats']) && '3' === $_GET['type']
+            || $Edition['Formats'][$Encodings[$_GET['type']]]) {
             continue;
         }
-
+        
         $JsonResults[] = [
-            'torrentId' => (int)$Edition['FlacID'],
-            'groupId' => (int)$GroupID,
+            'torrentId' => (int) $Edition['FlacID'],
+            'groupId' => (int) $GroupID,
             'artist' => $ArtistNames,
             'groupName' => $GroupName,
-            'groupYear' => (int)$GroupYear,
+            'groupYear' => (int) $GroupYear,
             'missingV2' => !isset($Edition['Formats']['V2 (VBR)']),
             'missingV0' => !isset($Edition['Formats']['V0 (VBR)']),
             'missing320' => !isset($Encodings['Formats']['320']),
@@ -124,9 +127,7 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
     }
 }
 
-print json_encode(
-    [
-        'status' => 'success',
-        'response' => $JsonResults
-    ]
-);
+print json_encode([
+    'status' => 'success',
+    'response' => $JsonResults
+], JSON_THROW_ON_ERROR);

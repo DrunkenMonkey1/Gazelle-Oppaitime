@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 
 authorize();
 
@@ -66,7 +68,7 @@ if (isset($_POST['p_collagecontribs_l'])) {
     $_POST['p_collages_c'] = 'on';
 }
 
-if (isset($_POST['p_snatched_c']) && isset($_POST['p_seeding_c']) && isset($_POST['p_downloaded'])) {
+if (isset($_POST['p_snatched_c'], $_POST['p_seeding_c'], $_POST['p_downloaded'])) {
     $_POST['p_requiredratio'] = 'on';
 }
 
@@ -74,31 +76,31 @@ if (isset($_POST['p_snatched_c']) && isset($_POST['p_seeding_c']) && isset($_POS
 $StatsShown = 0;
 $Stats = ['downloaded', 'uploaded', 'ratio'];
 foreach ($Stats as $S) {
-    if (isset($_POST["p_$S"])) {
-        $StatsShown++;
+    if (isset($_POST[sprintf('p_%s', $S)])) {
+        ++$StatsShown;
     }
 }
 
 if (2 == $StatsShown) {
     foreach ($Stats as $S) {
-        $_POST["p_$S"] = 'on';
+        $_POST[sprintf('p_%s', $S)] = 'on';
     }
 }
 
 $Paranoia = [];
 $Checkboxes = ['downloaded', 'uploaded', 'ratio', 'lastseen', 'requiredratio', 'invitedcount', 'artistsadded', 'notifications'];
 foreach ($Checkboxes as $C) {
-    if (!isset($_POST["p_$C"])) {
+    if (!isset($_POST[sprintf('p_%s', $C)])) {
         $Paranoia[] = $C;
     }
 }
 
 $SimpleSelects = ['torrentcomments', 'collages', 'collagecontribs', 'uploads', 'uniquegroups', 'perfectflacs', 'seeding', 'leeching', 'snatched'];
 foreach ($SimpleSelects as $S) {
-    if (!isset($_POST["p_$S" . '_c']) && !isset($_POST["p_$S" . '_l'])) {
+    if (!isset($_POST[sprintf('p_%s', $S) . '_c']) && !isset($_POST[sprintf('p_%s', $S) . '_l'])) {
         // Very paranoid - don't show count or list
-        $Paranoia[] = "$S+";
-    } elseif (!isset($_POST["p_$S" . '_l'])) {
+        $Paranoia[] = sprintf('%s+', $S);
+    } elseif (!isset($_POST[sprintf('p_%s', $S) . '_l'])) {
         // A little paranoid - show count, don't show list
         $Paranoia[] = $S;
     }
@@ -106,17 +108,17 @@ foreach ($SimpleSelects as $S) {
 
 $Bounties = ['requestsfilled', 'requestsvoted'];
 foreach ($Bounties as $B) {
-    if (isset($_POST["p_$B" . '_list'])) {
-        $_POST["p_$B" . '_count'] = 'on';
-        $_POST["p_$B" . '_bounty'] = 'on';
+    if (isset($_POST[sprintf('p_%s', $B) . '_list'])) {
+        $_POST[sprintf('p_%s', $B) . '_count'] = 'on';
+        $_POST[sprintf('p_%s', $B) . '_bounty'] = 'on';
     }
-    if (!isset($_POST["p_$B" . '_list'])) {
+    if (!isset($_POST[sprintf('p_%s', $B) . '_list'])) {
         $Paranoia[] = $B . '_list';
     }
-    if (!isset($_POST["p_$B" . '_count'])) {
+    if (!isset($_POST[sprintf('p_%s', $B) . '_count'])) {
         $Paranoia[] = $B . '_count';
     }
-    if (!isset($_POST["p_$B" . '_bounty'])) {
+    if (!isset($_POST[sprintf('p_%s', $B) . '_bounty'])) {
         $Paranoia[] = $B . '_bounty';
     }
 }
@@ -139,7 +141,7 @@ $DB->query("
   WHERE ID = ?", $UserID);
 [$CurEmail, $CurPassHash, $CurIRCKey] = $DB->next_record();
 
-function require_password($Setting = false)
+function require_password($Setting = false): void
 {
     global $CurPassHash;
     if (empty($_POST['cur_pass'])) {
@@ -153,12 +155,12 @@ function require_password($Setting = false)
 // Email change
 $CurEmail = Crypto::decrypt($CurEmail);
 if ($CurEmail != $_POST['email']) {
-
-  // Non-admins have to authenticate to change email
+    
+    // Non-admins have to authenticate to change email
     if (!check_perms('users_edit_profiles')) {
         require_password("Change Email");
     }
-
+    
     // Update the time of their last email change to the current time *not* the current change.
     $DB->query("
     UPDATE users_history_emails
@@ -192,23 +194,23 @@ if ($LoggedUser['DisableAvatar'] && $_POST['avatar'] != $U['Avatar']) {
 if (!empty($LoggedUser['DefaultSearch'])) {
     $Options['DefaultSearch'] = $LoggedUser['DefaultSearch'];
 }
-$Options['DisableGrouping2']    = (!empty($_POST['disablegrouping']) ? 0 : 1);
-$Options['TorrentGrouping']     = (!empty($_POST['torrentgrouping']) ? 1 : 0);
+$Options['DisableGrouping2']    = (empty($_POST['disablegrouping']) ? 1 : 0);
+$Options['TorrentGrouping']     = (empty($_POST['torrentgrouping']) ? 0 : 1);
 $Options['PostsPerPage']        = (int)$_POST['postsperpage'];
 $Options['CollageCovers']       = (empty($_POST['collagecovers']) ? 0 : $_POST['collagecovers']);
 $Options['ShowTorFilter']       = (empty($_POST['showtfilter']) ? 0 : 1);
-$Options['ShowTags']            = (!empty($_POST['showtags']) ? 1 : 0);
-$Options['AutoSubscribe']       = (!empty($_POST['autosubscribe']) ? 1 : 0);
-$Options['DisableSmileys']      = (!empty($_POST['disablesmileys']) ? 1 : 0);
+$Options['ShowTags']            = (empty($_POST['showtags']) ? 0 : 1);
+$Options['AutoSubscribe']       = (empty($_POST['autosubscribe']) ? 0 : 1);
+$Options['DisableSmileys']      = (empty($_POST['disablesmileys']) ? 0 : 1);
 $Options['AutoloadCommStats']   = (check_perms('users_mod') && !empty($_POST['autoload_comm_stats']) ? 1 : 0);
 $Options['DisableAvatars']      = db_string($_POST['disableavatars']);
-$Options['Identicons']          = (!empty($_POST['identicons']) ? (int)$_POST['identicons'] : 0);
-$Options['DisablePMAvatars']    = (!empty($_POST['disablepmavatars']) ? 1 : 0);
-$Options['NotifyOnQuote']       = (!empty($_POST['notifications_Quotes_popup']) ? 1 : 0);
-$Options['ListUnreadPMsFirst']  = (!empty($_POST['list_unread_pms_first']) ? 1 : 0);
-$Options['ShowSnatched']        = (!empty($_POST['showsnatched']) ? 1 : 0);
-$Options['ShowMagnets']         = (!empty($_POST['showmagnets']) ? 1 : 0);
-$Options['DisableAutoSave']     = (!empty($_POST['disableautosave']) ? 1 : 0);
+$Options['Identicons']          = (empty($_POST['identicons']) ? 0 : (int)$_POST['identicons']);
+$Options['DisablePMAvatars']    = (empty($_POST['disablepmavatars']) ? 0 : 1);
+$Options['NotifyOnQuote']       = (empty($_POST['notifications_Quotes_popup']) ? 0 : 1);
+$Options['ListUnreadPMsFirst']  = (empty($_POST['list_unread_pms_first']) ? 0 : 1);
+$Options['ShowSnatched']        = (empty($_POST['showsnatched']) ? 0 : 1);
+$Options['ShowMagnets']         = (empty($_POST['showmagnets']) ? 0 : 1);
+$Options['DisableAutoSave']     = (empty($_POST['disableautosave']) ? 0 : 1);
 $Options['CoverArt']            = (int)!empty($_POST['coverart']);
 $Options['ShowExtraCovers']     = (int)!empty($_POST['show_extra_covers']);
 $Options['HideLolicon']         = (int)!empty($_POST['hide_lolicon']);
@@ -238,21 +240,14 @@ if (check_perms('site_advanced_search')) {
 }
 
 //TODO: Remove the following after a significant amount of time
-unset($Options['ArtistNoRedirect']);
-unset($Options['ShowQueryList']);
-unset($Options['ShowCacheList']);
+unset($Options['ArtistNoRedirect'], $Options['ShowQueryList'], $Options['ShowCacheList']);
 
 $UnseededAlerts = isset($_POST['unseededalerts']) ? 1 : 0;
 
 Donations::update_rewards($UserID);
 NotificationsManager::save_settings($UserID);
 
-// Begin Badge settings
-if (!empty($_POST['badges'])) {
-    $BadgeIDs = array_slice($_POST['badges'], 0, 5);
-} else {
-    $BadgeIDs = [];
-}
+$BadgeIDs = empty($_POST['badges']) ? [] : array_slice($_POST['badges'], 0, 5);
 
 $NewBadges = [];
 $BadgesChanged = false;
@@ -272,7 +267,7 @@ foreach ($Badges as $BadgeID => $OldDisplayed) {
 }
 // End Badge settings
 
-$Cache->begin_transaction("user_info_$UserID");
+$Cache->begin_transaction(sprintf('user_info_%s', $UserID));
 $Cache->update_row(false, [
     'Avatar' => display_str($_POST['avatar']),
     'Paranoia' => $Paranoia,
@@ -280,7 +275,7 @@ $Cache->update_row(false, [
 ]);
 $Cache->commit_transaction(0);
 
-$Cache->begin_transaction("user_info_heavy_$UserID");
+$Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
 $Cache->update_row(false, [
     'StyleID' => $_POST['stylesheet'],
     'StyleURL' => display_str($_POST['styleurl'])
@@ -288,7 +283,7 @@ $Cache->update_row(false, [
 $Cache->update_row(false, $Options);
 $Cache->commit_transaction(0);
 
-
+$UserID = db_string($UserID);
 $SQL = "
   UPDATE users_main AS m
     JOIN users_info AS i ON m.ID = i.UserID
@@ -300,7 +295,7 @@ $SQL = "
     i.NotifyOnQuote = '" . db_string($Options['NotifyOnQuote']) . "',
     i.Info = '" . db_string($_POST['info']) . "',
     i.InfoTitle = '" . db_string($_POST['profile_title']) . "',
-    i.UnseededAlerts = '$UnseededAlerts',
+    i.UnseededAlerts = '{$UnseededAlerts}',
     m.Email = '" . Crypto::encrypt($_POST['email']) . "',
     m.IRCKey = '" . db_string($_POST['irckey']) . "',
     m.Paranoia = '" . db_string(json_encode($Paranoia)) . "'";
@@ -321,7 +316,7 @@ if (isset($_POST['resetpasskey'])) {
     $OldPassKey = $UserInfo['torrent_pass'];
     $NewPassKey = Users::make_secret();
     $ChangerIP = Crypto::encrypt($LoggedUser['IP']);
-    $SQL .= ",m.torrent_pass = '$NewPassKey'";
+    $SQL .= sprintf(',m.torrent_pass = \'%s\'', $NewPassKey);
     $DB->query(
         "
     INSERT INTO users_history_passkeys
@@ -333,16 +328,18 @@ if (isset($_POST['resetpasskey'])) {
         $NewPassKey,
         $ChangerIP
     );
-    $Cache->begin_transaction("user_info_heavy_$UserID");
+    $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
     $Cache->update_row(false, ['torrent_pass' => $NewPassKey]);
     $Cache->commit_transaction(0);
-    $Cache->delete_value("user_$OldPassKey");
-
+    $Cache->delete_value(sprintf('user_%s', $OldPassKey));
     Tracker::update_tracker('change_passkey', ['oldpasskey' => $OldPassKey, 'newpasskey' => $NewPassKey]);
 }
 
+
 $SQL .= "WHERE m.ID = '" . db_string($UserID) . "'";
 $DB->query($SQL);
+Users::update_site_options(1,['rio' => 'rio']);
+die(var_dump($DB->query($SQL)));
 
 if ($BadgesChanged) {
     $DB->query("
@@ -353,7 +350,7 @@ if ($BadgesChanged) {
         $DB->query("
       UPDATE users_badges
       SET Displayed = 1
-      WHERE UserID = $UserID
+      WHERE UserID = {$UserID}
         AND BadgeID IN (" . db_string(implode(',', $BadgeIDs)) . ")");
     }
 }
@@ -362,4 +359,4 @@ if ($ResetPassword) {
     logout_all_sessions();
 }
 
-header("Location: user.php?action=edit&userid=$UserID");
+header(sprintf('Location: user.php?action=edit&userid=%s', $UserID));

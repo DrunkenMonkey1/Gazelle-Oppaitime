@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (check_perms('users_mod') || $OwnProfile || Donations::is_visible($UserID)) { ?>
   <div class="box box_info box_userinfo_donor_stats">
     <div class="head colhead_dark">Donor Statistics</div>

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(403);
 }
@@ -9,7 +9,7 @@ define('USERS_PER_PAGE', 50);
 $SearchQuery = '';
 if ($_GET['username']) {
     $SearchString = db_string($_GET['username']);
-    $SearchQuery = " WHERE Username LIKE '%$SearchString%' ";
+    $SearchQuery = sprintf(' WHERE Username LIKE \'%%s%\' ', $SearchString);
 }
 
 $Title = "Donor Rewards";
@@ -30,9 +30,9 @@ $DB->query("
   FROM users_donor_ranks AS d
     LEFT JOIN users_main AS u ON u.ID = d.UserID
     LEFT JOIN donor_rewards AS r ON r.UserID = d.UserID
-  $SearchQuery
+  {$SearchQuery}
   ORDER BY d.Rank DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 
 $Users = $DB->to_array();
 $DB->query('SELECT FOUND_ROWS()');

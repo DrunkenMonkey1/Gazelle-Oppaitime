@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $LoggedUser['ID'];
 
 $DB->query("
@@ -17,7 +17,7 @@ $DB->query("
   JOIN torrents AS t ON s.TorrentID = t.ID
   JOIN torrents_group AS g ON g.ID = t.GroupID
   LEFT JOIN xbt_files_users AS f ON s.TorrentID = f.fid AND s.UserID = f.uid
-  WHERE s.UserID = $UserID");
+  WHERE s.UserID = {$UserID}");
 if ($DB->has_results()) {
     $Torrents = $DB->to_array(false, MYSQLI_ASSOC, false);
 }
@@ -39,11 +39,11 @@ View::show_header('Snatch List');
     </tr>
 <?php
 foreach ($Torrents as $Torrent) {
-    $DisplayName = "<a href=\"torrents.php?id=$Torrent[ID]&torrentid=$Torrent[TorrentID]\" ";
+    $DisplayName = sprintf('<a href="torrents.php?id=%s&torrentid=%s" ', $Torrent[ID], $Torrent[TorrentID]);
     if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
         $DisplayName .= 'data-cover="' . ImageTools::process($Torrent['WikiImage'], 'thumb') . '" ';
     }
-    $DisplayName .= "dir=\"ltr\">$Torrent[Name]</a>";
+    $DisplayName .= sprintf('dir="ltr">%s</a>', $Torrent[Name]);
 
     $HnR = false;
     if ($Torrent['SeedTime'] < (2*24*60*60) &&

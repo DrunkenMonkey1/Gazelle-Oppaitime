@@ -1,26 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 
 /**********|| Page to show individual forums || ********************************\
-
-Things to expect in $_GET:
-  ForumID: ID of the forum curently being browsed
-  page: The page the user's on.
-  page = 1 is the same as no page
-
-********************************************************************************/
+ *
+ * Things to expect in $_GET:
+ * ForumID: ID of the forum curently being browsed
+ * page: The page the user's on.
+ * page = 1 is the same as no page
+ ********************************************************************************/
 
 //---------- Things to sort out before it can start printing/generating content
 
 // Check for lame SQL injection attempts
 $ForumID = $_GET['forumid'];
 if (!is_number($ForumID)) {
-    print json_encode(['status' => 'failure']);
+    print json_encode(['status' => 'failure'], JSON_THROW_ON_ERROR);
     die();
 }
 
 if (isset($_GET['pp'])) {
-    $PerPage = intval($_GET['pp']);
+    $PerPage = (int) $_GET['pp'];
 } elseif (isset($LoggedUser['PostsPerPage'])) {
     $PerPage = $LoggedUser['PostsPerPage'];
 } else {
@@ -34,7 +35,10 @@ if (isset($_GET['pp'])) {
 // Caching anything beyond the first page of any given forum is just wasting ram
 // users are more likely to search then to browse to page 2
 if (1 == $Page) {
-    [$Forum, , , $Stickies] = $Cache->get_value("forums_$ForumID");
+    /**
+     * @var \Cache $Cache
+     */
+    [$Forum, , , $Stickies] = $Cache->get_value(sprintf('forums_%s', $ForumID));
 }
 if (!isset($Forum) || !is_array($Forum)) {
     $DB->query("
@@ -49,29 +53,27 @@ if (!isset($Forum) || !is_array($Forum)) {
       LastPostTime,
       LastPostAuthorID
     FROM forums_topics
-    WHERE ForumID = '$ForumID'
+    WHERE ForumID = '{$ForumID}'
     ORDER BY IsSticky DESC, LastPostTime DESC
-    LIMIT $Limit"); // Can be cached until someone makes a new post
+    LIMIT {$Limit}"); // Can be cached until someone makes a new post
     $Forum = $DB->to_array('ID', MYSQLI_ASSOC, false);
     if (1 == $Page) {
         $DB->query("
       SELECT COUNT(ID)
       FROM forums_topics
-      WHERE ForumID = '$ForumID'
+      WHERE ForumID = '{$ForumID}'
         AND IsSticky = '1'");
         [$Stickies] = $DB->next_record();
-        $Cache->cache_value("forums_$ForumID", [$Forum, '', 0, $Stickies], 0);
+        $Cache->cache_value(sprintf('forums_%s', $ForumID), [$Forum, '', 0, $Stickies], 0);
     }
 }
 
 if (!isset($Forums[$ForumID])) {
-    json_die("failure");
+    json_die("failure", 'Not Found');
 }
 // Make sure they're allowed to look at the page
-if (!check_perms('site_moderate_forums')) {
-    if (isset($LoggedUser['CustomForums'][$ForumID]) && 0 === $LoggedUser['CustomForums'][$ForumID]) {
-        json_die("failure", "insufficient permissions to view page");
-    }
+if (!check_perms('site_moderate_forums') && (isset($LoggedUser['CustomForums'][$ForumID]) && 0 === $LoggedUser['CustomForums'][$ForumID])) {
+    json_die("failure", "insufficient permissions to view page");
 }
 if (1 != $LoggedUser['CustomForums'][$ForumID] && $Forums[$ForumID]['MinClassRead'] > $LoggedUser['Class']) {
     json_die("failure", "insufficient permissions to view page");
@@ -82,7 +84,7 @@ $JsonSpecificRules = [];
 foreach ($Forums[$ForumID]['SpecificRules'] as $ThreadIDs) {
     $Thread = Forums::get_thread_info($ThreadIDs);
     $JsonSpecificRules[] = [
-        'threadId' => (int)$ThreadIDs,
+        'threadId' => (int) $ThreadIDs,
         'thread' => display_str($Thread['Title'])
     ];
 }
@@ -91,15 +93,14 @@ $Pages = Format::get_pages($Page, $Forums[$ForumID]['NumTopics'], TOPICS_PER_PAG
 
 if (0 === count($Forum)) {
     print
-    json_encode(
-        [
+        json_encode([
             'status' => 'success',
             'forumName' => $ForumName,
             'threads' => []
-        ]
-    );
+        ], JSON_THROW_ON_ERROR);
 } else {
     // forums_last_read_topics is a record of the last post a user read in a topic, and what page that was on
+    
     $DB->query("
     SELECT
       l.TopicID,
@@ -110,27 +111,37 @@ if (0 === count($Forum)) {
           FROM forums_posts AS p
           WHERE p.TopicID = l.TopicID
             AND p.ID <= l.PostID
-        ) / $PerPage
+        ) / {$PerPage}
       ) AS Page
     FROM forums_last_read_topics AS l
     WHERE l.TopicID IN(" . implode(', ', array_keys($Forum)) . ')
-      AND l.UserID = \'' . $LoggedUser['ID'] . '\'');
-
+      AND l.UserID = \'' . $LoggedUser['ID'] . "'");
+    
     // Turns the result set into a multi-dimensional array, with
     // forums_last_read_topics.TopicID as the key.
     // This is done here so we get the benefit of the caching, and we
     // don't have to make a database query for each topic on the page
     $LastRead = $DB->to_array('TopicID');
-
+    
     $JsonTopics = [];
     foreach ($Forum as $Topic) {
-        [$TopicID, $Title, $AuthorID, $Locked, $Sticky, $PostCount, $LastID, $LastTime, $LastAuthorID] = array_values($Topic);
-
+        [
+            $TopicID,
+            $Title,
+            $AuthorID,
+            $Locked,
+            $Sticky,
+            $PostCount,
+            $LastID,
+            $LastTime,
+            $LastAuthorID
+        ] = array_values($Topic);
+        
         // handle read/unread posts - the reason we can't cache the whole page
         if ((!$Locked || $Sticky)
-        && ((empty($LastRead[$TopicID]) || $LastRead[$TopicID]['PostID'] < $LastID)
-          && strtotime($LastTime) > $LoggedUser['CatchupTime'])
-    ) {
+            && ((empty($LastRead[$TopicID]) || $LastRead[$TopicID]['PostID'] < $LastID)
+                && strtotime($LastTime) > $LoggedUser['CatchupTime'])
+        ) {
             $Read = 'unread';
         } else {
             $Read = 'read';
@@ -143,36 +154,34 @@ if (0 === count($Forum)) {
         if (!$LastTime) {
             $LastTime = '';
         }
-
+        
         $JsonTopics[] = [
-            'topicId' => (int)$TopicID,
+            'topicId' => (int) $TopicID,
             'title' => display_str($Title),
-            'authorId' => (int)$AuthorID,
+            'authorId' => (int) $AuthorID,
             'authorName' => $AuthorName,
             'locked' => 1 == $Locked,
             'sticky' => 1 == $Sticky,
-            'postCount' => (int)$PostCount,
-            'lastID' => (null == $LastID) ? 0 : (int)$LastID,
+            'postCount' => (int) $PostCount,
+            'lastID' => (null == $LastID) ? 0 : (int) $LastID,
             'lastTime' => $LastTime,
-            'lastAuthorId' => (null == $LastAuthorID) ? 0 : (int)$LastAuthorID,
+            'lastAuthorId' => (null == $LastAuthorID) ? 0 : (int) $LastAuthorID,
             'lastAuthorName' => (null == $LastAuthorName) ? '' : $LastAuthorName,
-            'lastReadPage' => (null == $LastRead[$TopicID]['Page']) ? 0 : (int)$LastRead[$TopicID]['Page'],
-            'lastReadPostId' => (null == $LastRead[$TopicID]['PostID']) ? 0 : (int)$LastRead[$TopicID]['PostID'],
+            'lastReadPage' => (null == $LastRead[$TopicID]['Page']) ? 0 : (int) $LastRead[$TopicID]['Page'],
+            'lastReadPostId' => (null == $LastRead[$TopicID]['PostID']) ? 0 : (int) $LastRead[$TopicID]['PostID'],
             'read' => 'read' == $Read
         ];
     }
-
+    
     print
-    json_encode(
-        [
+        json_encode([
             'status' => 'success',
             'response' => [
                 'forumName' => $ForumName,
                 'specificRules' => $JsonSpecificRules,
-                'currentPage' => (int)$Page,
+                'currentPage' => (int) $Page,
                 'pages' => ceil($Forums[$ForumID]['NumTopics'] / TOPICS_PER_PAGE),
                 'threads' => $JsonTopics
             ]
-        ]
-    );
+        ], JSON_THROW_ON_ERROR);
 }

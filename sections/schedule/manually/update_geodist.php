@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $IPs = [];
 $DB->query("SELECT IP FROM users_main WHERE Enabled = '1'");
 while ([$EncIP] = $DB->next_record()) {

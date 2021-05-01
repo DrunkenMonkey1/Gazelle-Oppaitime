@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!($ContestSettings = $Cache->get_value("contest_settings"))) {
     $DB->query("
   SELECT

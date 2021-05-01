@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms("users_mod")) {
@@ -14,7 +16,7 @@ if (!is_number($ID)) {
 
 G::$DB->query("
   DELETE FROM staff_answers
-  WHERE QuestionID = '$ID'
+  WHERE QuestionID = '{$ID}'
     AND UserID = '$LoggedUser[ID]'");
 
 header("Location: questions.php");

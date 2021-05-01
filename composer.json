@@ -12,5 +12,13 @@
   "require-dev": {
     "phpstan/phpstan": "^0.12.82",
     "friendsofphp/php-cs-fixer": "^2.18"
+  },
+  "require": {
+    "ext-openssl": "*",
+    "ext-mysqli": "*",
+    "ext-apcu": "*",
+    "ext-curl": "*",
+    "ext-memcached": "*",
+    "ext-gd": "*"
   }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $Servers = array_diff(scandir(SERVER_ROOT . '/misc/heartbeat', 1), ['.', '..']);
 View::show_header('Network status');
 

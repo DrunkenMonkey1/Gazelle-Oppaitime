@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $UserID = $LoggedUser['ID'];
@@ -21,8 +23,8 @@ $ConvIDs = implode(',', $Messages);
 $DB->query("
   SELECT COUNT(ConvID)
   FROM pm_conversations_users
-  WHERE ConvID IN ($ConvIDs)
-    AND UserID=$UserID");
+  WHERE ConvID IN ({$ConvIDs})
+    AND UserID={$UserID}");
 [$MessageCount] = $DB->next_record();
 if ($MessageCount != count($Messages)) {
     error(0);
@@ -36,20 +38,20 @@ if (isset($_POST['delete'])) {
       InSentbox = '0',
       Sticky = '0',
       UnRead = '0'
-    WHERE ConvID IN($ConvIDs)
-      AND UserID = $UserID");
+    WHERE ConvID IN({$ConvIDs})
+      AND UserID = {$UserID}");
 } elseif (isset($_POST['unread'])) {
     $DB->query("
     UPDATE pm_conversations_users
     SET Unread = '1'
-    WHERE ConvID IN($ConvIDs)
+    WHERE ConvID IN({$ConvIDs})
     AND InInbox = '1'
-    AND UserID = $UserID");
+    AND UserID = {$UserID}");
 } elseif (isset($_POST['read'])) {
     $DB->query("
     UPDATE pm_conversations_users
     SET Unread = '0'
-    WHERE ConvID IN($ConvIDs) AND UserID = $UserID");
+    WHERE ConvID IN({$ConvIDs}) AND UserID = {$UserID}");
 }
 $Cache->delete_value('inbox_new_' . $UserID);
 

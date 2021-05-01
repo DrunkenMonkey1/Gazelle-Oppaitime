@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //Include the header
 View::show_header('Ratio Requirements');
 ?>
@@ -195,7 +195,7 @@ $GB = 1024*1024*1024;
     <br />
     <br />
   </div>
-<?php include 'jump.php'; ?>
+<?php include __DIR__ . '/jump.php'; ?>
 </div>
 <?php
   View::show_footer();

@@ -1,11 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 $Purchase = "1 invite";
 $UserID = $LoggedUser['ID'];
 
 $DB->query("
   SELECT BonusPoints
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 if ($DB->has_results()) {
     [$Points] = $DB->next_record();
 
@@ -14,11 +14,11 @@ if ($DB->has_results()) {
       UPDATE users_main
       SET BonusPoints = BonusPoints - 100000,
           Invites     = Invites + 1
-      WHERE ID = $UserID");
+      WHERE ID = {$UserID}");
         $DB->query("
       UPDATE users_info
       SET AdminComment = CONCAT('" . sqltime() . " - Purchased an invite from the store\n\n', AdminComment)
-      WHERE UserID = $UserID");
+      WHERE UserID = {$UserID}");
         $Cache->delete_value('user_info_heavy_' . $UserID);
         $Worked = true;
     } else {

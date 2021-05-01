@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid']) || !check_perms('site_view_torrent_snatchlist')) {
     error(404);
 }
@@ -18,9 +18,9 @@ $DB->query("
     UserID,
     Time
   FROM users_downloads
-  WHERE TorrentID = '$TorrentID'
+  WHERE TorrentID = '{$TorrentID}'
   ORDER BY Time DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 $UserIDs = $DB->collect('UserID');
 $Results = $DB->to_array('UserID', MYSQLI_ASSOC);
 
@@ -32,16 +32,16 @@ if (count($UserIDs) > 0) {
     $DB->query("
     SELECT uid
     FROM xbt_snatched
-    WHERE fid = '$TorrentID'
-      AND uid IN($UserIDs)");
+    WHERE fid = '{$TorrentID}'
+      AND uid IN({$UserIDs})");
     $Snatched = $DB->to_array('uid');
 
     $DB->query("
     SELECT uid
     FROM xbt_files_users
-    WHERE fid = '$TorrentID'
+    WHERE fid = '{$TorrentID}'
       AND Remaining = 0
-      AND uid IN($UserIDs)");
+      AND uid IN({$UserIDs})");
     $Seeding = $DB->to_array('uid');
 }
 ?>
@@ -80,7 +80,7 @@ foreach ($Results as $ID=>$Data) {
     <td><?=$User?></td>
     <td><?=time_diff($Timestamp)?></td>
 <?php
-  $i++;
+  ++$i;
 }
 ?>
   </tr>

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
     if (in_array($_GET['details'], ['ut', 'ur'], true)) {
@@ -21,7 +21,7 @@ View::show_header('Top 10 Tags');
 <?php
 
 // defaults to 10 (duh)
-$Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+$Limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 10;
 $Limit = in_array($Limit, [10, 100, 250], true) ? $Limit : 10;
 
 if ('all' == $Details || 'ut' == $Details) {
@@ -35,7 +35,7 @@ if ('all' == $Details || 'ut' == $Details) {
         JOIN torrents_tags AS tt ON tt.TagID=t.ID
       GROUP BY tt.TagID
       ORDER BY Uses DESC
-      LIMIT $Limit");
+      LIMIT {$Limit}");
         $TopUsedTags = $DB->to_array();
         $Cache->cache_value('topusedtag_' . $Limit, $TopUsedTags, 3600 * 12);
     }
@@ -54,7 +54,7 @@ if ('all' == $Details || 'ur' == $Details) {
         JOIN requests_tags AS r ON r.TagID=t.ID
       GROUP BY r.TagID
       ORDER BY Uses DESC
-      LIMIT $Limit");
+      LIMIT {$Limit}");
         $TopRequestTags = $DB->to_array();
         $Cache->cache_value('toprequesttag_' . $Limit, $TopRequestTags, 3600 * 12);
     }
@@ -67,13 +67,9 @@ View::show_footer();
 exit;
 
 // generate a table based on data from most recent query to $DB
-function generate_tag_table($Caption, $Tag, $Details, $Limit, $RequestsTable = false)
+function generate_tag_table($Caption, $Tag, $Details, $Limit, $RequestsTable = false): void
 {
-    if ($RequestsTable) {
-        $URLString = 'requests.php?tags=';
-    } else {
-        $URLString = 'torrents.php?taglist=';
-    } ?>
+    $URLString = $RequestsTable ? 'requests.php?tags=' : 'torrents.php?taglist='; ?>
   <h3>Top <?=$Limit . ' ' . $Caption?>
     <small class="top10_quantity_links">
 <?php
@@ -115,7 +111,7 @@ function generate_tag_table($Caption, $Tag, $Details, $Limit, $RequestsTable = f
   }
     $Rank = 0;
     foreach ($Details as $Detail) {
-        $Rank++;
+        ++$Rank;
         $Split = Tags::get_name_and_class($Detail['Name']);
         $DisplayName = $Split['name'];
         $Class = $Split['class'];

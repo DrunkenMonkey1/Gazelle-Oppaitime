@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!empty($_GET['userid']) && is_number($_GET['userid'])) {
     $UserID = $_GET['userid'];
 } else {
@@ -23,7 +25,7 @@ if (empty($_GET['type'])) {
       if (!check_paranoia('uploads', $User['Paranoia'], $UserClass, $UserID)) {
           error(403);
       }
-      $SQL = "WHERE t.UserID = '$UserID'";
+      $SQL = sprintf('WHERE t.UserID = \'%s\'', $UserID);
       $Month = "t.Time";
       break;
     case 'snatches':
@@ -32,7 +34,7 @@ if (empty($_GET['type'])) {
       }
       $SQL = "
           JOIN xbt_snatched AS x ON t.ID = x.fid
-        WHERE x.uid = '$UserID'";
+        WHERE x.uid = '{$UserID}'";
       $Month = "FROM_UNIXTIME(x.tstamp)";
       break;
     case 'seeding':
@@ -41,7 +43,7 @@ if (empty($_GET['type'])) {
       }
       $SQL = "
           JOIN xbt_files_users AS xfu ON t.ID = xfu.fid
-        WHERE xfu.uid = '$UserID'
+        WHERE xfu.uid = '{$UserID}'
           AND xfu.remaining = 0";
       $Month = "FROM_UNIXTIME(xfu.mtime)";
       break;
@@ -53,7 +55,7 @@ if (empty($_GET['type'])) {
 $DownloadsQ = $DB->query("
   SELECT
     t.ID AS TorrentID,
-    DATE_FORMAT($Month, '%Y - %m') AS Month,
+    DATE_FORMAT({$Month}, '%Y - %m') AS Month,
     t.GroupID,
     t.Media,
     t.Container,
@@ -68,10 +70,10 @@ $DownloadsQ = $DB->query("
     t.Size
   FROM torrents AS t
     JOIN torrents_group AS tg ON t.GroupID = tg.ID
-  $SQL
+  {$SQL}
   GROUP BY TorrentID");
 
-$Collector = new TorrentsDL($DownloadsQ, "$Username's " . ucfirst($_GET['type']));
+$Collector = new TorrentsDL($DownloadsQ, sprintf('%s\'s ', $Username) . ucfirst($_GET['type']));
 
 while ([$Downloads, $GroupIDs] = $Collector->get_downloads('TorrentID')) {
     $Artists = Artists::get_artists($GroupIDs);

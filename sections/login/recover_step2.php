@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header('Recover Password');
 ?>
 <script src="<?=(STATIC_SERVER)?>functions/validate.js" type="text/javascript"></script>

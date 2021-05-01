@@ -1,7 +1,7 @@
-<?php
+<?php declare(strict_types=1);
 if (isset($_POST['target']) && isset($_POST['amount'])) {
-    $TargetID = abs(intval($_POST['target']));
-    $Amount = abs(intval($_POST['amount']));
+    $TargetID = abs((int) $_POST['target']);
+    $Amount = abs((int) $_POST['amount']);
 
     $UserID = $LoggedUser['ID'];
 
@@ -9,7 +9,7 @@ if (isset($_POST['target']) && isset($_POST['amount'])) {
     SELECT u.BonusPoints, p.Level
     FROM users_main AS u
     LEFT JOIN permissions AS p ON u.PermissionID=p.ID
-    WHERE u.ID = $UserID");
+    WHERE u.ID = {$UserID}");
     if ($DB->has_results()) {
         [$Points, $PLevel] = $DB->next_record();
 
@@ -22,7 +22,7 @@ if (isset($_POST['target']) && isset($_POST['amount'])) {
         if ($PLevel < 200) {
             error('Insufficient class');
         }
-        $DB->query("SELECT COUNT(*) FROM slaves WHERE OwnerID = $UserID");
+        $DB->query(sprintf('SELECT COUNT(*) FROM slaves WHERE OwnerID = %s', $UserID));
         if ($DB->next_record()[0] >= 6) {
             error('You own too many users already');
         }
@@ -35,12 +35,12 @@ if (isset($_POST['target']) && isset($_POST['amount'])) {
              COUNT(t.UserID)
       FROM users_main AS u
       LEFT JOIN torrents AS t ON u.ID=t.UserID
-      WHERE u.ID = $TargetID");
+      WHERE u.ID = {$TargetID}");
         if (!$DB->has_results()) {
             error('User does not exist');
         }
         [$Upload, $Download, $Points, $Uploads] = $DB->next_record();
-        $AdjLevel = intval(((($Uploads**0.35)*1.5)+1) * max(($Upload+($Points*1000000)-$Download)/(1024**3), 1) * 1000);
+        $AdjLevel = (int) (((($Uploads**0.35)*1.5)+1) * max(($Upload+($Points*1_000_000)-$Download)/(1024**3), 1) * 1000);
         if ($Amount <= $AdjLevel) {
             error('You need to spend more points to have any chance of catching this user!');
         }
@@ -48,15 +48,15 @@ if (isset($_POST['target']) && isset($_POST['amount'])) {
 
         $DB->query("
       UPDATE users_main
-      SET BonusPoints = BonusPoints - $Amount
-      WHERE ID = $UserID");
+      SET BonusPoints = BonusPoints - {$Amount}
+      WHERE ID = {$UserID}");
         $Cache->delete_value('user_info_heavy_' . $UserID);
 
         if ($Captured) {
             $DB->query("
         INSERT INTO slaves
         (UserID, OwnerID)
-        Values($TargetID, $UserID)");
+        Values({$TargetID}, {$UserID})");
         }
     }
 

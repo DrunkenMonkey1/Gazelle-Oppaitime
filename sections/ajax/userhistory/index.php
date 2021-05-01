@@ -1,18 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 if ($_GET['type']) {
-    switch ($_GET['type']) {
-    case 'posts':
-      // Load post history page
-      include 'post_history.php';
-      break;
-    default:
-      print json_encode(
-          ['status' => 'failure']
-      );
-  }
+    if ('posts' == $_GET['type']) {
+        // Load post history page
+        include __DIR__ . '/post_history.php';
+    } else {
+        print json_encode(['status' => 'failure'], JSON_THROW_ON_ERROR);
+    }
 } else {
-    print json_encode(
-        ['status' => 'failure']
-    );
+    print json_encode(['status' => 'failure'], JSON_THROW_ON_ERROR);
 }

@@ -1,17 +1,17 @@
-<?php
+<?php declare(strict_types=1);
 $GroupID = $_GET['groupid'];
 if (!is_number($GroupID)) {
     error(404);
 }
 
-View::show_header("History for Group $GroupID");
+View::show_header(sprintf('History for Group %s', $GroupID));
 
 $Groups = Torrents::get_groups([$GroupID], true, true, false);
 if (!empty($Groups[$GroupID])) {
     $Group = $Groups[$GroupID];
-    $Title = Artists::display_artists($Group['ExtendedArtists']) . '<a href="torrents.php?id=' . $GroupID . '">' . ($Group['Name'] ? $Group['Name'] : ($Group['NameRJ'] ? $Group['NameRJ']: $Group['NameJP'])) . '</a>';
+    $Title = Artists::display_artists($Group['ExtendedArtists']) . '<a href="torrents.php?id=' . $GroupID . '">' . $Group['Name'] . '</a>';
 } else {
-    $Title = "Group $GroupID";
+    $Title = sprintf('Group %s', $GroupID);
 }
 ?>
 
@@ -45,7 +45,7 @@ if (!empty($Groups[$GroupID])) {
           $DB->query("
           SELECT Container, AudioFormat, Media
           FROM torrents
-          WHERE ID = $TorrentID");
+          WHERE ID = {$TorrentID}");
           [$Container, $AudioFormat, $Media] = $DB->next_record();
           if (!$DB->has_results()) { ?>
           <td><a href="torrents.php?torrentid=<?=$TorrentID?>"><?=$TorrentID?></a> (Deleted)</td><?php

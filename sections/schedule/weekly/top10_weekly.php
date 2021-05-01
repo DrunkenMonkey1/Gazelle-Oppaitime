@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 //------------------- Weekly Top 10 History -----------------//
 
 $DB->query("
   INSERT INTO top10_history (Date, Type)
-  VALUES ('$sqltime', 'Weekly')");
+  VALUES ('{$sqltime}', 'Weekly')");
 $HistoryID = $DB->inserted_id();
 
 $Top10 = $Cache->get_value('top10tor_week_10');
@@ -26,7 +28,7 @@ if (false === $Top10) {
     FROM torrents AS t
       LEFT JOIN torrents_group AS g ON g.ID = t.GroupID
     WHERE t.Seeders > 0
-      AND t.Time > ('$sqltime' - INTERVAL 1 WEEK)
+      AND t.Time > ('{$sqltime}' - INTERVAL 1 WEEK)
     ORDER BY (t.Seeders + t.Leechers) DESC
     LIMIT 10;");
 
@@ -50,7 +52,7 @@ foreach ($Top10 as $Torrent) {
     $DisplayName .= $GroupName;
 
     if (1 == $GroupCategoryID && $GroupYear > 0) {
-        $DisplayName .= " [$GroupYear]";
+        $DisplayName .= sprintf(' [%s]', $GroupYear);
     }
 
     // append extra info to torrent title
@@ -65,10 +67,10 @@ foreach ($Top10 as $Torrent) {
         $AddExtra = ' ';
     }
     if ('' != $ExtraInfo) {
-        $ExtraInfo = "- [$ExtraInfo]";
+        $ExtraInfo = sprintf('- [%s]', $ExtraInfo);
     }
 
-    $TitleString = "$DisplayName $ExtraInfo";
+    $TitleString = sprintf('%s %s', $DisplayName, $ExtraInfo);
 
     $TagString = str_replace('|', ' ', $TorrentTags);
 
@@ -76,6 +78,6 @@ foreach ($Top10 as $Torrent) {
     INSERT INTO top10_history_torrents
       (HistoryID, Rank, TorrentID, TitleString, TagString)
     VALUES
-      ($HistoryID, $i, $TorrentID, '" . db_string($TitleString) . "', '" . db_string($TagString) . "')");
-    $i++;
+      ({$HistoryID}, {$i}, {$TorrentID}, '" . db_string($TitleString) . "', '" . db_string($TagString) . "')");
+    ++$i;
 }

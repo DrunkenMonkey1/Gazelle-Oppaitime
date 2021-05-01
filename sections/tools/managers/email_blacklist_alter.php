@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!check_perms('users_view_email')) {
     error(403);
 }

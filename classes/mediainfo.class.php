@@ -1,11 +1,13 @@
 <?php
+declare(strict_types=1);
 
 class MediaInfo
 {
-    public static function parse($string, $raw=false)
+    public static function parse($string, $raw = false): array|string
     {
         $t = new ParseManager($string);
         $t->parse();
+        
         return $raw ? $t->output_raw() : $t->output();
     }
 }
@@ -18,15 +20,16 @@ class ParseManager
     protected $parsers;
     protected $output;
     protected $available_parsers = [
-        'general'=> 'GeneralSectionParser',
-        'video'=> 'VideoSectionParser',
-        'audio'=> 'AudioSectionParser',
-        'text'=> 'TextSectionParser',
+        'general' => 'GeneralSectionParser',
+        'video' => 'VideoSectionParser',
+        'audio' => 'AudioSectionParser',
+        'text' => 'TextSectionParser',
     ];
-
-    const GENERIC_PARSER = 'generic_parser';
-    const MEDIAINFO_START = 'general';
-    public function __construct($string='')
+    
+    public const GENERIC_PARSER = 'generic_parser';
+    public const MEDIAINFO_START = 'general';
+    
+    public function __construct($string = '')
     {
         $this->index = 0;
         $this->output = '';
@@ -35,19 +38,19 @@ class ParseManager
         $p = new SectionParser();
         $this->add_parser($p);
     }
-
+    
     protected function set_string($string)
     {
         $string = trim($string);
         $string = static::strip_escaped_tags($string);
         $lines = preg_split("/\r\n|\n|\r/", $string);
         array_walk($lines, function (&$l) {
-            $l=trim($l);
+            $l = trim($l);
         });
         $this->lines = $lines;
     }
-
-    protected function add_parser($p, $name='')
+    
+    protected function add_parser($p, $name = '')
     {
         $p->set_lines($this->lines, $this->index);
         if (!$name) {
@@ -55,58 +58,60 @@ class ParseManager
         }
         $this->parsers[$name][] = $p;
     }
-
+    
     public function parse()
     {
         // get the next section
         while ($this->index < count($this->lines) &&
-          !($line = $this->parsers[static::GENERIC_PARSER][0]->parse_line()));
+            !($line = $this->parsers[static::GENERIC_PARSER][0]->parse_line())) {
+            ;
+        }
         $section = SectionParser::section_name($line);
         $this->index--; // go back to line we just read
-
+        
         // we can have multiple mediainfo files inside the block, so handle that case here
-        if (self::MEDIAINFO_START == $section && isset($this->parsers[$section])) {
+        if ($section == self::MEDIAINFO_START && isset($this->parsers[$section])) {
             $this->new_mediainfo();
         }
         if (isset($this->available_parsers[$section])) {
-            $parser = new $this->available_parsers[$section]();
+            $parser = new $this->available_parsers[$section];
             $this->add_parser($parser, $section);
             // parse section using the parser
             while ($line = $parser->parse_line()) {
                 $this->parsed_lines[] = $line;
             }
-
+            
             $this->parsed_lines[] = '';
         } else {
             // skip until the next blank line or until the next general section
             while ($line = $this->parsers[static::GENERIC_PARSER][0]->parse_line()) {
                 $section = SectionParser::section_name($line);
-                if (self::MEDIAINFO_START == $section) {
+                if ($section == self::MEDIAINFO_START) {
                     $this->index--; // go back to line we just read
                     break;
                 }
             }
         }
-
+        
         // keep iterating until the last line
         if ($this->index < count($this->lines)) {
             $this->parse();
         }
     }
-
-    public function output($cummulative=true)
+    
+    public function output($cummulative = true)
     {
         $string = implode("<br />\n", $this->parsed_lines);
         if (!isset($this->parsers['general'])) {
             return $string;
         }
-
+        
         $midiv_start = '<div class="spoilerContainer hideContainer">
             <input type="button" class="spoilerButton" value="Show ' .
             $this->parsers['general'][0]->filename .
             '" /><blockquote class="spoiler hidden">';
         $midiv_end = "</blockquote></div>";
-
+        
         $output = '<table class="mediainfo"><tbody><tr><td>';
         $output .= $this->parsers['general'][0]->output();
         if (isset($this->parsers['video'])) {
@@ -117,7 +122,7 @@ class ParseManager
             $output .= '</td><td>';
             $output .= '<table><caption>Audio</caption><tbody>';
             foreach ($this->parsers['audio'] as $index => $ap) {
-                $output .= sprintf('<tr><td>#%d: &nbsp;</td><td>%s</td></tr>', intval($index+1), $ap->output());
+                $output .= sprintf('<tr><td>#%d: &nbsp;</td><td>%s</td></tr>', intval($index + 1), $ap->output());
             }
             $output .= '</tbody></table>';
         }
@@ -126,7 +131,7 @@ class ParseManager
             $output .= '<br />';
             $output .= '<table><caption>Subtitles</caption><tbody>';
             foreach ($this->parsers['text'] as $index => $tp) {
-                $output .= sprintf('<tr><td>#%d: &nbsp;</td><td>%s</td></tr>', intval($index+1), $tp->output());
+                $output .= sprintf('<tr><td>#%d: &nbsp;</td><td>%s</td></tr>', intval($index + 1), $tp->output());
             }
             $output .= '</tbody></table>';
         }
@@ -135,14 +140,15 @@ class ParseManager
         if ($cummulative) {
             $output = $this->output . $output;
         }
-        return  $output;
+        
+        return $output;
     }
-
+    
     public function output_raw()
     {
         $output = [];
         $sections = ['general', 'video', 'audio', 'text'];
-
+        
         foreach ($sections as $section) {
             if (isset($this->parsers[$section])) {
                 $output[$section] = [];
@@ -151,32 +157,33 @@ class ParseManager
                 }
             }
         }
+        
         return $output;
     }
-
+    
     // strip escaped html tags
     // this is not done for security, just to beautify things (html should already be escaped)
     public static function strip_escaped_tags($string)
     {
         // use the php function first
         $string = strip_tags($string);
-
+        
         $gt = '&gt;|&#62;|>';
         $lt = '&lt;|&#60;|<';
-
+        
         // there is no opening tag, so don't go through the rest of the regexes
         if (!preg_match("($lt)", $string)) {
             return $string;
         }
-
+        
         $tag_match = "/(?:$lt)(?P<tag>(?:(?!$gt).)*)(?:$gt)/ims";
-
+        
         // this should match and remove tags
         $string = preg_replace($tag_match, '', $string);
-
+        
         return $string;
     }
-
+    
     protected function new_mediainfo()
     {
         $this->output .= $this->output(false);
@@ -187,23 +194,26 @@ class ParseManager
             }
         }
     }
+    
 }
 
 class SectionParser
 {
     protected $lines;
     protected $index;
-
-
-    public function __construct(&$lines=[], &$i=0)
+    
+    
+    public function __construct(&$lines = [], &$i = 0)
     {
         $this->set_lines($lines, $i);
     }
-    public function set_lines(&$lines=[], &$i=0)
+    
+    public function set_lines(&$lines = [], &$i = 0)
     {
         $this->lines = &$lines;
         $this->index = &$i;
     }
+    
     // should always return the read line
     public function parse_line()
     {
@@ -213,56 +223,71 @@ class SectionParser
         $line = $this->lines[$this->index++];
         $pair = static::property_value_pair($line);
         $this->handle_cases($pair['property'], $pair['value']);
+        
         return $line;
     }
+    
     public function output()
     {
     }
+    
     protected function handle_cases($property, $value)
     {
     }
+    
     public static function section_name($string)
     {
         if (!$string) {
             return false;
         }
-        $mistart="/^(?:general$|unique id|complete name)/i";
+        $mistart = "/^(?:general$|unique id|complete name)/i";
         if (preg_match($mistart, $string)) {
             return ParseManager::MEDIAINFO_START;
         }
         $words = explode(' ', $string);
+        
         return strtolower($words[0]);
     }
+    
     public static function property_value_pair($string)
     {
         $pair = explode(":", $string, 2);
-        return ['property'=>strtolower(trim($pair[0])), 'value'=>trim($pair[1]??'')];
+        
+        return ['property' => strtolower(trim($pair[0])), 'value' => trim($pair[1] ?? '')];
     }
+    
     public static function strip_path($string)
     { // remove filepath
         $string = str_replace("\\", "/", $string);
         $path_parts = pathinfo($string);
+        
         return $path_parts['basename'];
     }
+    
     public static function parse_size($string)
     {
         return str_replace(['pixels', ' '], null, $string);
     }
+    
     protected static function table_head($caption)
     {
         return "<table class='nobr'><caption>$caption</caption><tbody>";
     }
+    
     protected static function table_row($property, $value)
     {
         if ($value) {
             return "<tr><td>$property:&nbsp;&nbsp;</td><td>$value</td></tr>";
         }
+        
         return '';
     }
+    
     protected static function table_tail()
     {
         return '</tbody></table>';
     }
+    
 }
 
 class AudioSectionParser extends SectionParser
@@ -276,7 +301,7 @@ class AudioSectionParser extends SectionParser
     protected $audioprofile;
     protected $form_audioformat;
     protected $form_audiochannels;
-
+    
     protected function handle_cases($property, $value)
     {
         switch ($property) {
@@ -303,38 +328,50 @@ class AudioSectionParser extends SectionParser
                 break;
         }
     }
+    
     public function output()
     {
         $this->process_vars();
         $output = $this->audiolang . ' ' . $this->channels() . ' ' . $this->format();
         $output .= ($this->audiobitrate) ? " @ $this->audiobitrate" : '';
         $output .= ($this->audiotitle) ? " ($this->audiotitle)" : '';
+        
         return $output;
     }
+    
     public function output_raw()
     {
         $this->process_vars();
         $output = [];
         $properties = [
-            'audioformat', 'audiobitrate', 'audiochannels',
-            'audiochannelpositions', 'audiotitle', 'audiolang', 'audioprofile',
-            'form_audioformat', 'form_audiochannels'
+            'audioformat',
+            'audiobitrate',
+            'audiochannels',
+            'audiochannelpositions',
+            'audiotitle',
+            'audiolang',
+            'audioprofile',
+            'form_audioformat',
+            'form_audiochannels'
         ];
         foreach ($properties as $property) {
             if ($this->$property) {
                 $output[$property] = $this->$property;
             }
         }
+        
         return $output;
     }
+    
     protected function process_vars()
     {
         $this->form_audioformat = $this->form_format();
         $this->form_audiochannels = $this->form_channels();
     }
+    
     protected function format()
     {
-        if ('mpeg audio' === strtolower($this->audioformat)) {
+        if (strtolower($this->audioformat) === 'mpeg audio') {
             switch (strtolower($this->audioprofile)) {
                 case 'layer 3':
                     return 'MP3';
@@ -344,9 +381,11 @@ class AudioSectionParser extends SectionParser
                     return 'MP1';
             }
         }
+        
         return $this->audioformat;
     }
-    protected function form_format()
+    
+    protected function form_format(): string
     {
         // Not implemented: Real Audio, DTS-HD
         switch (strtolower($this->format())) {
@@ -371,7 +410,6 @@ class AudioSectionParser extends SectionParser
                     default:
                         return 'DTS';
                 }
-                // no break
             case 'flac':
                 return 'FLAC';
             case 'pcm':
@@ -379,25 +417,25 @@ class AudioSectionParser extends SectionParser
             case 'wma':
                 return 'WMA';
         }
+        return '';
     }
+    
     protected function channels()
     {
         if (isset($this->audiochannels)) {
             $chans = preg_replace('/^(\d).*$/', '$1', $this->audiochannels);
-
-            if (isset($this->audiochannelpositions) && preg_match(
-                '/LFE/',
-                $this->audiochannelpositions
-            )) {
+            
+            if (isset($this->audiochannelpositions) && str_contains($this->audiochannelpositions, "LFE")) {
                 $chans -= .9;
             } else {
                 $chans = $chans . '.0';
             }
-
+            
             return $chans . 'ch';
         }
     }
-    protected function form_channels()
+    
+    protected function form_channels(): array|string|null
     {
         return preg_replace('/ch/', '', $this->channels());
     }
@@ -411,7 +449,7 @@ class GeneralSectionParser extends SectionParser
     protected $filesize;
     protected $form_codec;
     protected $form_releasegroup;
-
+    
     protected function handle_cases($property, $value)
     {
         switch ($property) {
@@ -419,7 +457,7 @@ class GeneralSectionParser extends SectionParser
                 // Remove autodetected urls
                 $value = preg_replace('#\[autourl(?:=.+)?\](.+)\[/autourl\]#', '$1', $value);
                 $this->filename = static::strip_path($value);
-                $this->lines[$this->index-1] = "Complete name : " . $this->filename;
+                $this->lines[$this->index - 1] = "Complete name : " . $this->filename;
                 $this->filename = substr($this->filename, 0, 150);
                 break;
             case "format":
@@ -433,7 +471,8 @@ class GeneralSectionParser extends SectionParser
                 break;
         }
     }
-    public function output()
+    
+    public function output(): string
     {
         $this->process_vars();
         $output = static::table_head('General');
@@ -446,14 +485,20 @@ class GeneralSectionParser extends SectionParser
             $output .= static::table_row($property, $this->$value);
         }
         $output .= static::table_tail();
-        return  $output;
+        
+        return $output;
     }
+    
     public function output_raw()
     {
         $this->process_vars();
         $output = [];
         $properties = [
-            'filename', 'generalformat', 'duration', 'filesize', 'form_codec',
+            'filename',
+            'generalformat',
+            'duration',
+            'filesize',
+            'form_codec',
             'form_releasegroup'
         ];
         foreach ($properties as $property) {
@@ -461,25 +506,19 @@ class GeneralSectionParser extends SectionParser
                 $output[$property] = $this->$property;
             }
         }
+        
         return $output;
     }
+    
     protected function process_vars()
     {
-        switch (strtolower($this->generalformat)) {
-            case 'mpeg-ts':
-                $this->form_codec = 'MPEG-TS';
-                break;
-            // We can't determine if it's DVD5 or DVD9, so don't guess.
-            case 'mpeg-ps':
-                $this->form_codec = '---';
-                break;
-        }
+        $this->form_codec = match (strtolower($this->generalformat)) {
+            'mpeg-ts' => 'MPEG-TS',
+            'mpeg-ps' => '---',
+        };
         $matches = [];
-        preg_match(
-            '/(?:^|.*\\|\/)\[(.*?)\].*$/',
-            $this->filename,
-            $matches
-        );
+        preg_match('/(?:^|.*\\|\/)\[(.*?)\].*$/',
+            $this->filename, $matches);
         $this->form_releasegroup = $matches ? $matches[1] : '';
     }
 }
@@ -492,7 +531,7 @@ class TextSectionParser extends SectionParser
     protected $default;
     protected $processed_language;
     protected $form_format;
-
+    
     protected function handle_cases($property, $value)
     {
         switch ($property) {
@@ -506,11 +545,12 @@ class TextSectionParser extends SectionParser
                 $this->format = $value;
                 break;
             case 'default':
-                $this->default = ('Yes' == $value);
+                $this->default = ($value == 'Yes');
                 break;
         }
     }
-    public function output()
+    
+    public function output(): string
     {
         $this->process_vars();
         $language = $this->processed_language;
@@ -521,14 +561,20 @@ class TextSectionParser extends SectionParser
         if ($this->default) {
             $output .= ' (default)';
         }
+        
         return $output;
     }
-    public function output_raw()
+    
+    public function output_raw(): array
     {
         $this->process_vars();
         $output = [];
         $properties = [
-            'title', 'language', 'format', 'default', 'processed_language',
+            'title',
+            'language',
+            'format',
+            'default',
+            'processed_language',
             'form_format'
         ];
         foreach ($properties as $property) {
@@ -536,12 +582,13 @@ class TextSectionParser extends SectionParser
                 $output[$property] = $this->$property;
             }
         }
+        
         return $output;
     }
+    
     protected function process_vars()
     {
-        $this->processed_language = ($this->language) ?
-            $this->language : 'Unknown';
+        $this->processed_language = ($this->language) ?: 'Unknown';
         $this->form_format = 'Softsubbed';
     }
 }
@@ -567,7 +614,7 @@ class VideoSectionParser extends SectionParser
     protected $processed_framerate;
     protected $form_codec;
     protected $form_resolution;
-
+    
     protected function handle_cases($property, $value)
     {
         switch ($property) {
@@ -616,7 +663,8 @@ class VideoSectionParser extends SectionParser
                 break;
         }
     }
-    public function output()
+    
+    public function output(): string
     {
         $this->process_vars();
         $output = static::table_head('Video');
@@ -633,37 +681,56 @@ class VideoSectionParser extends SectionParser
             $output .= static::table_row($property, $this->$value);
         }
         $output .= static::table_tail();
-        return  $output;
+        
+        return $output;
     }
-    public function output_raw()
+    
+    public function output_raw(): array
     {
         $this->process_vars();
         $output = [];
         $properties = [
-            'videoformat', 'videoformatversion', 'codec', 'width', 'height',
-            'writinglibrary', 'frameratemode', 'framerate', 'aspectratio',
-            'bitrate', 'bitratemode', 'nominalbitrate', 'bpp', 'bitdepth',
-            'processed_codec', 'processed_resolution', 'processed_framerate',
-            'form_codec', 'form_resolution'
+            'videoformat',
+            'videoformatversion',
+            'codec',
+            'width',
+            'height',
+            'writinglibrary',
+            'frameratemode',
+            'framerate',
+            'aspectratio',
+            'bitrate',
+            'bitratemode',
+            'nominalbitrate',
+            'bpp',
+            'bitdepth',
+            'processed_codec',
+            'processed_resolution',
+            'processed_framerate',
+            'form_codec',
+            'form_resolution'
         ];
         foreach ($properties as $property) {
             if ($this->$property) {
                 $output[$property] = $this->$property;
             }
         }
+        
         return $output;
     }
+    
     protected function process_vars()
     {
         $this->processed_codec = $this->compute_codec();
         $this->processed_resolution = ($this->width) ?
             $this->width . 'x' . $this->height : '';
-        $this->processed_framerate = ("constant" !=
-            strtolower($this->frameratemode) && $this->frameratemode) ?
+        $this->processed_framerate = (strtolower($this->frameratemode) !=
+            "constant" && $this->frameratemode) ?
             $this->frameratemode : $this->framerate;
         $this->form_codec = $this->compute_form_codec();
         $this->form_resolution = $this->compute_form_resolution();
     }
+    
     protected function compute_codec()
     {
         switch (strtolower($this->videoformat)) {
@@ -674,9 +741,10 @@ class VideoSectionParser extends SectionParser
                     case "version 1":
                         return "MPEG-1";
                 }
+                
                 return $this->videoformat;
         }
-
+        
         switch (strtolower($this->codec)) {
             case "div3":
                 return "DivX 3";
@@ -688,22 +756,27 @@ class VideoSectionParser extends SectionParser
             case "x264":
                 return "x264";
         }
-
+        
         $chk = strtolower($this->codec);
         $wl = strtolower($this->writinglibrary);
-        if (("v_mpeg4/iso/avc" === $chk || "avc1" === $chk) && false === strpos($wl, "x264 core")) {
-            return "H264";
-        } elseif (("v_mpeg4/iso/avc" === $chk || "avc1" === $chk) && strpos($wl, "x264 core") > -1) {
-            return "x264";
-        } elseif ("avc" === strtolower($this->videoformat) && false === strpos($wl, "x264 core")) {
+        if (($chk === "v_mpeg4/iso/avc" || $chk === "avc1") && strpos($wl, "x264 core") === false) {
             return "H264";
         }
-
-        if (('v_mpegh/iso/hevc' === $chk) || ('hevc' === $wl)) {
+    
+        if (($chk === "v_mpeg4/iso/avc" || $chk === "avc1") && strpos($wl, "x264 core") > -1) {
+            return "x264";
+        }
+    
+        if (strtolower($this->videoformat) === "avc" && strpos($wl, "x264 core") === false) {
+            return "H264";
+        }
+    
+        if (($chk === 'v_mpegh/iso/hevc') || ($wl === 'hevc')) {
             return 'H265';
         }
     }
-    protected function compute_form_codec()
+    
+    protected function compute_form_codec(): string
     {
         // Not implemented: DVD5, DVD9, WMV, Real Video
         // MPEG-TS set as GeneralSectionParser::$form_codec if found
@@ -713,7 +786,7 @@ class VideoSectionParser extends SectionParser
         switch (strtolower($codec)) {
             case 'x264':
             case 'h264':
-                return '10 bits' == strtolower($this->bitdepth) ?
+                return strtolower($this->bitdepth) == '10 bits' ?
                     'h264 10-bit' : 'h264';
             case 'h265':
                 return 'h265';
@@ -740,7 +813,8 @@ class VideoSectionParser extends SectionParser
                 return 'MPEG-4 v3';
         }
     }
-    protected function compute_form_resolution()
+    
+    protected function compute_form_resolution(): ?string
     {
         global $Resolutions;
         $closest = null;
@@ -748,11 +822,12 @@ class VideoSectionParser extends SectionParser
             $resolutions = $Resolutions;
             foreach ($resolutions as $resolution) {
                 if (!isset($closest) || abs($this->height - $resolution) <
-                        abs($this->height - $closest)) {
+                    abs($this->height - $closest)) {
                     $closest = $resolution;
                 }
             }
         }
+        
         return $closest;
     }
 }

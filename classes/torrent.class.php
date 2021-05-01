@@ -1,106 +1,99 @@
 <?php
+
+declare(strict_types=1);
+
 /*******************************************************************************
-|~~~~ Gazelle bencode parser                         ~~~~|
---------------------------------------------------------------------------------
-
-Welcome to the Gazelle bencode parser. bencoding is the way of encoding data
-that bittorrent uses in torrent files. When we read the torrent files, we get
-one long string that must be parsed into a format we can easily edit - that's
-where this file comes into play.
-
-There are 4 data types in bencode:
-* String
-* Int
-* List - array without keys
-  - like array('value', 'value 2', 'value 3', 'etc')
-* Dictionary - array with string keys
-  - like array['key 1'] = 'value 1'; array['key 2'] = 'value 2';
-
-Before you go any further, we recommend reading the sections on bencoding and
-metainfo file structure here: http://wiki.theory.org/BitTorrentSpecification
-
-//----- How we store the data -----//
-
-* Strings
-  - Stored as php strings. Not difficult to remember.
-
-* Integers
-  - Stored as php ints
-  - must be casted with (int)
-
-* Lists
-  - Stored as a BENCODE_LIST object.
-  - The actual list is in BENCODE_LIST::$Val, as an array with incrementing integer indices
-  - The list in BENCODE_LIST::$Val is populated by the BENCODE_LIST::dec() function
-
-* Dictionaries
-  - Stored as a BENCODE_DICT object.
-  - The actual list is in BENCODE_DICT::$Val, as an array with string indices
-  - The list in BENCODE_DICT::$Val is populated by the BENCODE_DICT::dec() function
-
-//----- BENCODE_* Objects -----//
-
-Lists and dictionaries are stored as objects. They each have the following
-functions:
-
-* decode(Type, $Key)
-  - Decodes ANY bencoded element, given the type and the key
-  - Gets the position and string from $this
-
-* encode($Val)
-  - Encodes ANY non-bencoded element, given the value
-
-* dec()
-  - Decodes either a dictionary or a list, depending on where it's called from
-  - Uses the decode() function quite a bit
-
-* enc()
-  - Encodes either a dictionary or a list, depending on where it's called from
-  - Relies mostly on the encode() function
-
-Finally, as all torrents are just large dictionaries, the TORRENT class extends
-the BENCODE_DICT class.
-
-
-*******************************************************************************/
+ * |~~~~ Gazelle bencode parser                         ~~~~|
+ * --------------------------------------------------------------------------------
+ *
+ * Welcome to the Gazelle bencode parser. bencoding is the way of encoding data
+ * that bittorrent uses in torrent files. When we read the torrent files, we get
+ * one long string that must be parsed into a format we can easily edit - that's
+ * where this file comes into play.
+ *
+ * There are 4 data types in bencode:
+ * String
+ * Int
+ * List - array without keys
+ * - like array('value', 'value 2', 'value 3', 'etc')
+ * Dictionary - array with string keys
+ * - like array['key 1'] = 'value 1'; array['key 2'] = 'value 2';
+ *
+ * Before you go any further, we recommend reading the sections on bencoding and
+ * metainfo file structure here: http://wiki.theory.org/BitTorrentSpecification
+ *
+ * //----- How we store the data -----//
+ * Strings
+ * - Stored as php strings. Not difficult to remember.
+ * Integers
+ * - Stored as php ints
+ * - must be casted with (int)
+ * Lists
+ * - Stored as a BENCODE_LIST object.
+ * - The actual list is in BENCODE_LIST::$Val, as an array with incrementing integer indices
+ * - The list in BENCODE_LIST::$Val is populated by the BENCODE_LIST::dec() function
+ * Dictionaries
+ * - Stored as a BENCODE_DICT object.
+ * - The actual list is in BENCODE_DICT::$Val, as an array with string indices
+ * - The list in BENCODE_DICT::$Val is populated by the BENCODE_DICT::dec() function
+ *
+ * //----- BENCODE_* Objects -----//
+ *
+ * Lists and dictionaries are stored as objects. They each have the following
+ * functions:
+ * decode(Type, $Key)
+ * - Decodes ANY bencoded element, given the type and the key
+ * - Gets the position and string from $this
+ * encode($Val)
+ * - Encodes ANY non-bencoded element, given the value
+ * dec()
+ * - Decodes either a dictionary or a list, depending on where it's called from
+ * - Uses the decode() function quite a bit
+ * enc()
+ * - Encodes either a dictionary or a list, depending on where it's called from
+ * - Relies mostly on the encode() function
+ *
+ * Finally, as all torrents are just large dictionaries, the TORRENT class extends
+ * the BENCODE_DICT class.
+ *******************************************************************************/
 class BENCODE2
 {
-    public $Val; // Decoded array
-  public $Pos = 1; // Pointer that indicates our position in the string
-  public $Str = ''; // Torrent string
-
-  public function __construct($Val, $IsParsed = false)
-  {
-      if (!$IsParsed) {
-          $this->Str = $Val;
-          $this->dec();
-      } else {
-          $this->Val = $Val;
-      }
-  }
-
+    public ?array $Val = null;
+    public int $Pos = 1;
+    public string $Str = ''; // Torrent string
+    
+    public function __construct(string $Val, $IsParsed = false)
+    {
+        if (!$IsParsed) {
+            $this->Str = $Val;
+            $this->dec();
+        } else {
+            $this->Val = $Val;
+        }
+    }
+    
     // Decode an element based on the type. The type is really just an indicator.
-    public function decode($Type, $Key)
+    public function decode($Type, $Key): void
     {
         if (is_number($Type)) { // Element is a string
             // Get length of string
             $StrLen = $Type;
             while (':' != $this->Str[$this->Pos + 1]) {
                 $this->Pos++;
-                $StrLen.=$this->Str[$this->Pos];
+                $StrLen .= $this->Str[$this->Pos];
             }
             $this->Val[$Key] = substr($this->Str, $this->Pos + 2, $StrLen);
-
+            
             $this->Pos += $StrLen;
             $this->Pos += 2;
         } elseif ('i' == $Type) { // Element is an int
             $this->Pos++;
-
+            
             // Find end of integer (first occurance of 'e' after position)
             $End = strpos($this->Str, 'e', $this->Pos);
-
+            
             // Get the integer, and - IMPORTANT - cast it as an int, so we know later that it's an int and not a string
-            $this->Val[$Key] = (int)substr($this->Str, $this->Pos, $End-$this->Pos);
+            $this->Val[$Key] = (int) substr($this->Str, $this->Pos, $End - $this->Pos);
             $this->Pos = $End + 1;
         } elseif ('l' == $Type) { // Element is a list
             $this->Val[$Key] = new BENCODE_LIST(substr($this->Str, $this->Pos));
@@ -116,7 +109,10 @@ class BENCODE2
             die('Invalid torrent file');
         }
     }
-
+    
+    /**
+     * @return string|mixed|void
+     */
     public function encode($Val)
     {
         if (is_int($Val)) { // Integer
@@ -133,7 +129,7 @@ class BENCODE2
 
 class BENCODE_LIST extends BENCODE2
 {
-    public function enc()
+    public function enc(): string
     {
         if (empty($this->Val)) {
             return 'le';
@@ -141,12 +137,17 @@ class BENCODE_LIST extends BENCODE2
         $Str = 'l';
         reset($this->Val);
         foreach ($this->Val as $Value) {
-            $Str.=$this->encode($Value);
+            $Str .= $this->encode($Value);
         }
+        
         return $Str . 'e';
     }
-
+    
     // Decode a list
+    
+    /**
+     * @return void|bool
+     */
     public function dec()
     {
         $Key = 0; // Array index
@@ -155,25 +156,27 @@ class BENCODE_LIST extends BENCODE2
             $Type = $this->Str[$this->Pos];
             // $Type now indicates what type of element we're dealing with
             // It's either an integer (string), 'i' (an integer), 'l' (a list), 'd' (a dictionary), or 'e' (end of dictionary/list)
-
+            
             if ('e' == $Type) { // End of list
                 $this->Pos += 1;
                 unset($this->Str); // Since we're finished parsing the string, we don't need to store it anymore. Benchmarked - this makes the parser run way faster.
+                
                 return;
             }
-
+            
             // Decode the bencoded element.
             // This function changes $this->Pos and $this->Val, so you don't have to.
             $this->decode($Type, $Key);
             ++$Key;
         }
+        
         return true;
     }
 }
 
 class BENCODE_DICT extends BENCODE2
 {
-    public function enc()
+    public function enc(): string
     {
         if (empty($this->Val)) {
             return 'de';
@@ -181,48 +184,55 @@ class BENCODE_DICT extends BENCODE2
         $Str = 'd';
         reset($this->Val);
         foreach ($this->Val as $Key => $Value) {
-            $Str.=strlen($Key) . ':' . $Key . $this->encode($Value);
+            $Str .= strlen($Key) . ':' . $Key . $this->encode($Value);
         }
+        
         return $Str . 'e';
     }
-
+    
     // Decode a dictionary
+    
+    /**
+     * @return void|bool
+     */
     public function dec()
     {
         $Length = strlen($this->Str);
-        while ($this->Pos<$Length) {
+        while ($this->Pos < $Length) {
             if ('e' == $this->Str[$this->Pos]) { // End of dictionary
                 $this->Pos += 1;
                 unset($this->Str); // Since we're finished parsing the string, we don't need to store it anymore. Benchmarked - this makes the parser run way faster.
+                
                 return;
             }
-
+            
             // Get the dictionary key
             // Length of the key, in bytes
             $KeyLen = $this->Str[$this->Pos];
-
+            
             // Allow for multi-digit lengths
             while (':' != $this->Str[$this->Pos + 1] && $this->Pos + 1 < $Length) {
                 $this->Pos++;
-                $KeyLen.=$this->Str[$this->Pos];
+                $KeyLen .= $this->Str[$this->Pos];
             }
             // $this->Pos is now on the last letter of the key length
             // Adding 2 brings it past that character and the ':' to the beginning of the string
             $this->Pos += 2;
-
+            
             // Get the name of the key
             $Key = substr($this->Str, $this->Pos, $KeyLen);
-
+            
             // Move the position past the key to the beginning of the element
             $this->Pos += $KeyLen;
             $Type = $this->Str[$this->Pos];
             // $Type now indicates what type of element we're dealing with
             // It's either an integer (string), 'i' (an integer), 'l' (a list), 'd' (a dictionary), or 'e' (end of dictionary/list)
-
+            
             // Decode the bencoded element.
             // This function changes $this->Pos and $this->Val, so you don't have to.
             $this->decode($Type, $Key);
         }
+        
         return true;
     }
 }
@@ -230,19 +240,19 @@ class BENCODE_DICT extends BENCODE2
 
 class TORRENT extends BENCODE_DICT
 {
-    public function dump()
+    public function dump(): void
     {
         // Convenience function used for testing and figuring out how we store the data
         print_r($this->Val);
     }
-
-    public function dump_data()
+    
+    public function dump_data(): string
     {
         // Function which serializes $this->Val for storage
         return base64_encode(serialize($this->Val));
     }
-
-    public function set_announce_list($UrlsList)
+    
+    public function set_announce_list($UrlsList): void
     {
         $AnnounceList = new BENCODE_LIST([], true);
         foreach ($UrlsList as $Urls) {
@@ -252,17 +262,20 @@ class TORRENT extends BENCODE_DICT
         }
         $this->Val['announce-list'] = $AnnounceList;
     }
-
-    public function set_announce_url($Announce)
+    
+    public function set_announce_url($Announce): void
     {
         $this->Val['announce'] = $Announce;
         ksort($this->Val);
     }
-
+    
     // Returns an array of:
     //  * the files in the torrent
     //  * the total size of files described therein
-    public function file_list()
+    /**
+     * @return mixed[]
+     */
+    public function file_list(): array
     {
         $FileList = [];
         if (!isset($this->Val['info']->Val['files'])) { // Single file mode
@@ -273,15 +286,11 @@ class TORRENT extends BENCODE_DICT
             $FileSizes = [];
             $TotalSize = 0;
             $Files = $this->Val['info']->Val['files']->Val;
-            if (isset($Files[0]->Val['path.utf-8'])) {
-                $PathKey = 'path.utf-8';
-            } else {
-                $PathKey = 'path';
-            }
+            $PathKey = isset($Files[0]->Val['path.utf-8']) ? 'path.utf-8' : 'path';
             foreach ($Files as $File) {
                 $FileSize = $File->Val['length'];
                 $TotalSize += $FileSize;
-
+                
                 $FileName = ltrim(implode('/', $File->Val[$PathKey]->Val), '/');
                 $FileSizes[] = $FileSize;
                 $FileNames[] = $FileName;
@@ -291,9 +300,13 @@ class TORRENT extends BENCODE_DICT
                 $FileList[] = [$FileSizes[$Index], $FileName];
             }
         }
+        
         return [$TotalSize, $FileList];
     }
-
+    
+    /**
+     * @return mixed|void
+     */
     public function get_name()
     {
         if (isset($this->Val['info']->Val['name.utf-8'])) {
@@ -302,27 +315,30 @@ class TORRENT extends BENCODE_DICT
             return $this->Val['info']->Val['name'];
         }
     }
-
+    
+    /**
+     * @return bool|void
+     */
     public function make_private()
     {
         //----- The following properties do not affect the infohash:
-
+        
         // anounce-list is an unofficial extension to the protocol
         // that allows for multiple trackers per torrent
         unset($this->Val['announce-list']);
-
+        
         // Bitcomet & Azureus cache peers in here
         unset($this->Val['nodes']);
-
+        
         // Azureus stores the dht_backup_enable flag here
         unset($this->Val['azureus_properties']);
-
+        
         // Remove web-seeds
         unset($this->Val['url-list']);
-
+        
         // Remove libtorrent resume info
         unset($this->Val['libtorrent_resume']);
-
+        
         //----- End properties that do not affect the infohash
         if ($this->Val['info']->Val['private']) {
             return true; // Torrent is private
@@ -331,6 +347,7 @@ class TORRENT extends BENCODE_DICT
             // add private tracker flag and sort info dictionary
             $this->Val['info']->Val['private'] = 1;
             ksort($this->Val['info']->Val);
+            
             return false;
         }
     }

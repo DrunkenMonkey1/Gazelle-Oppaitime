@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 ini_set('memory_limit', -1);
 //~~~~~~~~~~~ Main bookmarks page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 
 
 function compare($X, $Y)
 {
-    return($Y['count'] - $X['count']);
+    return ($Y['count'] - $X['count']);
 }
 
 if (!empty($_GET['userid'])) {
@@ -17,10 +19,13 @@ if (!empty($_GET['userid'])) {
     if (!is_number($UserID)) {
         error(404);
     }
+    /**
+     * @var \DB_MYSQL $DB
+     */
     $DB->query("
     SELECT Username
     FROM users_main
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
     [$Username] = $DB->next_record();
 } else {
     $UserID = $LoggedUser['ID'];
@@ -39,12 +44,12 @@ foreach ($GroupIDs as $GroupID) {
     $JsonTorrents = [];
     foreach ($Group['Torrents'] as $Torrent) {
         $JsonTorrents[] = [
-            'id' => (int)$Torrent['ID'],
-            'groupId' => (int)$Torrent['GroupID'],
+            'id' => (int) $Torrent['ID'],
+            'groupId' => (int) $Torrent['GroupID'],
             'media' => $Torrent['Media'],
             'format' => $Torrent['Format'],
             'encoding' => $Torrent['Encoding'],
-            'remasterYear' => (int)$Torrent['RemasterYear'],
+            'remasterYear' => (int) $Torrent['RemasterYear'],
             'remastered' => 1 == $Torrent['Remastered'],
             'remasterTitle' => $Torrent['RemasterTitle'],
             'remasterRecordLabel' => $Torrent['RemasterRecordLabel'],
@@ -52,21 +57,21 @@ foreach ($GroupIDs as $GroupID) {
             'scene' => 1 == $Torrent['Scene'],
             'hasLog' => 1 == $Torrent['HasLog'],
             'hasCue' => 1 == $Torrent['HasCue'],
-            'logScore' => (float)$Torrent['LogScore'],
-            'fileCount' => (int)$Torrent['FileCount'],
+            'logScore' => (float) $Torrent['LogScore'],
+            'fileCount' => (int) $Torrent['FileCount'],
             'freeTorrent' => 1 == $Torrent['FreeTorrent'],
-            'size' => (float)$Torrent['Size'],
-            'leechers' => (int)$Torrent['Leechers'],
-            'seeders' => (int)$Torrent['Seeders'],
-            'snatched' => (int)$Torrent['Snatched'],
+            'size' => (float) $Torrent['Size'],
+            'leechers' => (int) $Torrent['Leechers'],
+            'seeders' => (int) $Torrent['Seeders'],
+            'snatched' => (int) $Torrent['Snatched'],
             'time' => $Torrent['Time'],
-            'hasFile' => (int)$Torrent['HasFile']
+            'hasFile' => (int) $Torrent['HasFile']
         ];
     }
     $JsonBookmarks[] = [
-        'id' => (int)$Group['ID'],
+        'id' => (int) $Group['ID'],
         'name' => $Group['Name'],
-        'year' => (int)$Group['Year'],
+        'year' => (int) $Group['Year'],
         'recordLabel' => $Group['RecordLabel'],
         'catalogueNumber' => $Group['CatalogueNumber'],
         'tagList' => $Group['TagList'],
@@ -78,11 +83,9 @@ foreach ($GroupIDs as $GroupID) {
 }
 
 print
-  json_encode(
-      [
-          'status' => 'success',
-          'response' => [
-              'bookmarks' => $JsonBookmarks
-          ]
-      ]
-  );
+    json_encode([
+        'status' => 'success',
+        'response' => [
+            'bookmarks' => $JsonBookmarks
+        ]
+    ], JSON_THROW_ON_ERROR);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 header('Content-Type: application/json; charset=utf-8');
 
 $FullName = rawurldecode($_GET['query']);
@@ -8,7 +10,7 @@ $MaxKeySize = 4;
 $KeySize = min($MaxKeySize, max(1, strlen($FullName)));
 
 $Letters = strtolower(substr($FullName, 0, $KeySize));
-$AutoSuggest = $Cache->get("autocomplete_tags_{$KeySize}_$Letters");
+$AutoSuggest = $Cache->get(sprintf('autocomplete_tags_%s_%s', $KeySize, $Letters));
 
 if (!$AutoSuggest) {
     $Limit = (($KeySize === $MaxKeySize) ? 250 : 10);
@@ -19,9 +21,9 @@ if (!$AutoSuggest) {
       AND Name LIKE '" . db_string(str_replace('\\', '\\\\', $Letters), true) . "%'
       AND (Uses > 700 OR TagType = 'genre')
     ORDER BY TagType = 'genre' DESC, Uses DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
     $AutoSuggest = $DB->to_array(false, MYSQLI_NUM, false);
-    $Cache->cache_value("autocomplete_tags_{$KeySize}_$Letters", $AutoSuggest, 1800 + 7200 * ($MaxKeySize - $KeySize)); // Can't cache things for too long in case names are edited
+    $Cache->cache_value(sprintf('autocomplete_tags_%s_%s', $KeySize, $Letters), $AutoSuggest, 1800 + 7200 * ($MaxKeySize - $KeySize)); // Can't cache things for too long in case names are edited
 }
 
 $Matched = 0;

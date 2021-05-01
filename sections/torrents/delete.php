@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $TorrentID = $_GET['torrentid'];
 if (!$TorrentID || !is_number($TorrentID)) {
     error(404);
@@ -12,14 +12,15 @@ $DB->query("
     COUNT(x.uid)
   FROM torrents AS t
     LEFT JOIN xbt_snatched AS x ON x.fid = t.ID
-  WHERE t.ID = $TorrentID
+  WHERE t.ID = {$TorrentID}
   GROUP BY t.UserID");
 
 if (!$DB->has_results()) {
     error('Torrent already deleted.');
 }
+$CacheGet_value = $Cache->get_value('torrent_' . $TorrentID . '_lock');
 
-if ($Cache->get_value('torrent_' . $TorrentID . '_lock')) {
+if ($CacheGet_value) {
     error('Torrent cannot be deleted because the upload process is not completed yet. Please try again later.');
 }
 
@@ -146,7 +147,7 @@ if (check_perms('admin_reports')) {
         LEFT JOIN torrents_artists AS ta ON ta.GroupID = tg.ID
         LEFT JOIN artists_group AS ag ON ag.ArtistID = ta.ArtistID
         LEFT JOIN users_main AS uploader ON uploader.ID = t.UserID
-      WHERE t.ID = $TorrentID");
+      WHERE t.ID = {$TorrentID}");
 
     if (!$DB->has_results()) {
         die();
@@ -168,17 +169,17 @@ if (check_perms('admin_reports')) {
     $RemasterDisplayString = Reports::format_reports_remaster_info($Remastered, $RemasterTitle, $RemasterYear);
 
     if (0 == $ArtistID && empty($ArtistName)) {
-        $RawName = $GroupName . ($Year ? " ($Year)" : '') . ($Format || $Encoding || $Media ? " [$Format/$Encoding/$Media]" : '') . $RemasterDisplayString . ($HasLog ? " ({$LogScore}%)" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $LinkName = "<a href=\"torrents.php?id=$GroupID\">$GroupName" . ($Year ? " ($Year)" : '') . "</a> <a href=\"torrents.php?torrentid=$TorrentID\">" . ($Format || $Encoding || $Media ? " [$Format/$Encoding/$Media]" : '') . "$RemasterDisplayString</a>" . ($HasLog ? " <a href=\"torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID\">(Log: {$LogScore}%)</a>" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $BBName = "[url=torrents.php?id=$GroupID]$GroupName" . ($Year ? " ($Year)" : '') . "[/url] [url=torrents.php?torrentid=$TorrentID][$Format/$Encoding/$Media]{$RemasterDisplayString}[/url] " . ($HasLog ? " [url=torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID](Log: {$LogScore}%)[/url]" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $RawName = $GroupName . ($Year ? sprintf(' (%s)', $Year) : '') . ($Format || $Encoding || $Media ? sprintf(' [%s/%s/%s]', $Format, $Encoding, $Media) : '') . $RemasterDisplayString . ($HasLog ? sprintf(' (%s%)', $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $LinkName = sprintf('<a href="torrents.php?id=%s">%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s">', $TorrentID) . ($Format || $Encoding || $Media ? sprintf(' [%s/%s/%s]', $Format, $Encoding, $Media) : '') . sprintf('%s</a>', $RemasterDisplayString) . ($HasLog ? sprintf(' <a href="torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s">(Log: %s%)</a>', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $BBName = sprintf('[url=torrents.php?id=%s]%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('[/url] [url=torrents.php?torrentid=%s][%s/%s/%s]%s[/url] ', $TorrentID, $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' [url=torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s](Log: %s%)[/url]', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
     } elseif (0 == $ArtistID && 'Various Artists' == $ArtistName) {
-        $RawName = "Various Artists - $GroupName" . ($Year ? " ($Year)" : '') . " [$Format/$Encoding/$Media]$RemasterDisplayString" . ($HasLog ? " ({$LogScore}%)" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $LinkName = "Various Artists - <a href=\"torrents.php?id=$GroupID\">$GroupName" . ($Year ? " ($Year)" : '') . "</a> <a href=\"torrents.php?torrentid=$TorrentID\"> [$Format/$Encoding/$Media]$RemasterDisplayString</a> " . ($HasLog ? " <a href=\"torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID\">(Log: {$LogScore}%)</a>" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $BBName = "Various Artists - [url=torrents.php?id=$GroupID]$GroupName" . ($Year ? " ($Year)" : '') . "[/url] [url=torrents.php?torrentid=$TorrentID][$Format/$Encoding/$Media]{$RemasterDisplayString}[/url] " . ($HasLog ? " [url=torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID](Log: {$LogScore}%)[/url]" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $RawName = sprintf('Various Artists - %s', $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf(' [%s/%s/%s]%s', $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' (%s%)', $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $LinkName = sprintf('Various Artists - <a href="torrents.php?id=%s">%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [%s/%s/%s]%s</a> ', $TorrentID, $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' <a href="torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s">(Log: %s%)</a>', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $BBName = sprintf('Various Artists - [url=torrents.php?id=%s]%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('[/url] [url=torrents.php?torrentid=%s][%s/%s/%s]%s[/url] ', $TorrentID, $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' [url=torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s](Log: %s%)[/url]', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
     } else {
-        $RawName = "$ArtistName - $GroupName" . ($Year ? " ($Year)" : '') . " [$Format/$Encoding/$Media]$RemasterDisplayString" . ($HasLog ? " ({$LogScore}%)" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $LinkName = "<a href=\"artist.php?id=$ArtistID\">$ArtistName</a> - <a href=\"torrents.php?id=$GroupID\">$GroupName" . ($Year ? " ($Year)" : '') . "</a> <a href=\"torrents.php?torrentid=$TorrentID\"> [$Format/$Encoding/$Media]$RemasterDisplayString</a> " . ($HasLog ? " <a href=\"torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID\">(Log: {$LogScore}%)</a>" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
-        $BBName = "[url=artist.php?id=$ArtistID]" . $ArtistName . "[/url] - [url=torrents.php?id=$GroupID]$GroupName" . ($Year ? " ($Year)" : '') . "[/url] [url=torrents.php?torrentid=$TorrentID][$Format/$Encoding/$Media]{$RemasterDisplayString}[/url] " . ($HasLog ? " [url=torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID](Log: {$LogScore}%)[/url]" : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $RawName = sprintf('%s - %s', $ArtistName, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf(' [%s/%s/%s]%s', $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' (%s%)', $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $LinkName = sprintf('<a href="artist.php?id=%s">%s</a> - <a href="torrents.php?id=%s">%s', $ArtistID, $ArtistName, $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [%s/%s/%s]%s</a> ', $TorrentID, $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' <a href="torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s">(Log: %s%)</a>', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+        $BBName = sprintf('[url=artist.php?id=%s]', $ArtistID) . $ArtistName . sprintf('[/url] - [url=torrents.php?id=%s]%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('[/url] [url=torrents.php?torrentid=%s][%s/%s/%s]%s[/url] ', $TorrentID, $Format, $Encoding, $Media, $RemasterDisplayString) . ($HasLog ? sprintf(' [url=torrents.php?action=viewlog&amp;torrentid=%s&amp;groupid=%s](Log: %s%)[/url]', $TorrentID, $GroupID, $LogScore) : '') . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
     } ?>
   <div id="report<?=$ReportID?>" class="report">
     <form class="create_form" name="report" id="reportform_<?=$ReportID?>" action="reports.php" method="post">
@@ -216,12 +217,12 @@ if (check_perms('admin_reports')) {
         FROM reportsv2 AS r
           LEFT JOIN torrents AS t ON t.ID = r.TorrentID
         WHERE r.Status != 'Resolved'
-          AND t.GroupID = $GroupID");
+          AND t.GroupID = {$GroupID}");
       $GroupOthers = ($DB->has_results());
 
       if ($GroupOthers > 0) { ?>
             <div style="text-align: right;">
-              <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers reports" : "is 1 other report")?> for torrent(s) in this group</a>
+              <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? sprintf('are %s reports', $GroupOthers) : "is 1 other report")?> for torrent(s) in this group</a>
             </div>
 <?php      }
 
@@ -230,12 +231,12 @@ if (check_perms('admin_reports')) {
         FROM reportsv2 AS r
           JOIN torrents AS t ON t.ID = r.TorrentID
         WHERE r.Status != 'Resolved'
-          AND t.UserID = $UploaderID");
+          AND t.UserID = {$UploaderID}");
       $UploaderOthers = ($DB->has_results());
 
       if ($UploaderOthers > 0) { ?>
             <div style="text-align: right;">
-              <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+              <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? sprintf('are %s reports', $UploaderOthers) : "is 1 other report")?> for torrent(s) uploaded by this user</a>
             </div>
 <?php      }
 
@@ -246,7 +247,7 @@ if (check_perms('admin_reports')) {
           req.TimeFilled
         FROM requests AS req
           JOIN users_main AS um ON um.ID = req.FillerID
-        AND req.TorrentID = $TorrentID");
+        AND req.TorrentID = {$TorrentID}");
       $Requests = ($DB->has_results());
       if ($Requests > 0) {
           while ([$RequestID, $FillerID, $FillerName, $FilledTime] = $DB->next_record()) {
@@ -289,7 +290,7 @@ $TypeList = $Types['master'] + $Types[$CategoryID];
               <span class="tooltip" title="Warning length in weeks">
                 <label for="warning<?=$ReportID?>"><strong>Warning</strong></label>
                 <select name="warning" id="warning<?=$ReportID?>">
-<?php  for ($i = 0; $i < 9; $i++) { ?>
+<?php  for ($i = 0; $i < 9; ++$i) { ?>
                   <option value="<?=$i?>"<?=(($ReportType['resolve_options']['warn'] == $i) ? ' selected="selected"' : '')?>><?=$i?></option>
 <?php  } ?>
                 </select>

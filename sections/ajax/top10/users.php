@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 if (isset($_GET['details'])) {
     if (in_array($_GET['details'], ['ul', 'dl', 'numul', 'uls', 'dls'], true)) {
         $Details = $_GET['details'];
     } else {
-        print json_encode(['status' => 'failure']);
+        print json_encode(['status' => 'failure'], JSON_THROW_ON_ERROR);
         die();
     }
 } else {
@@ -12,7 +14,7 @@ if (isset($_GET['details'])) {
 }
 
 // defaults to 10 (duh)
-$Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+$Limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 10;
 $Limit = in_array($Limit, [10, 100, 250], true) ? $Limit : 10;
 
 $BaseQuery = "
@@ -37,61 +39,61 @@ $BaseQuery = "
 $OuterResults = [];
 
 if ('all' == $Details || 'ul' == $Details) {
-    if (!$TopUserUploads = $Cache->get_value("topuser_ul_$Limit")) {
+    if (!$TopUserUploads = $Cache->get_value(sprintf('topuser_ul_%s', $Limit))) {
         $DB->query("
-      $BaseQuery
+      {$BaseQuery}
       ORDER BY u.Uploaded DESC
-      LIMIT $Limit;");
+      LIMIT {$Limit};");
         $TopUserUploads = $DB->to_array();
-        $Cache->cache_value("topuser_ul_$Limit", $TopUserUploads, 3600 * 12);
+        $Cache->cache_value(sprintf('topuser_ul_%s', $Limit), $TopUserUploads, 3600 * 12);
     }
     $OuterResults[] = generate_user_json('Uploaders', 'ul', $TopUserUploads, $Limit);
 }
 
 if ('all' == $Details || 'dl' == $Details) {
-    if (!$TopUserDownloads = $Cache->get_value("topuser_dl_$Limit")) {
+    if (!$TopUserDownloads = $Cache->get_value(sprintf('topuser_dl_%s', $Limit))) {
         $DB->query("
-      $BaseQuery
+      {$BaseQuery}
       ORDER BY u.Downloaded DESC
-      LIMIT $Limit;");
+      LIMIT {$Limit};");
         $TopUserDownloads = $DB->to_array();
-        $Cache->cache_value("topuser_dl_$Limit", $TopUserDownloads, 3600 * 12);
+        $Cache->cache_value(sprintf('topuser_dl_%s', $Limit), $TopUserDownloads, 3600 * 12);
     }
     $OuterResults[] = generate_user_json('Downloaders', 'dl', $TopUserDownloads, $Limit);
 }
 
 if ('all' == $Details || 'numul' == $Details) {
-    if (!$TopUserNumUploads = $Cache->get_value("topuser_numul_$Limit")) {
+    if (!$TopUserNumUploads = $Cache->get_value(sprintf('topuser_numul_%s', $Limit))) {
         $DB->query("
-      $BaseQuery
+      {$BaseQuery}
       ORDER BY NumUploads DESC
-      LIMIT $Limit;");
+      LIMIT {$Limit};");
         $TopUserNumUploads = $DB->to_array();
-        $Cache->cache_value("topuser_numul_$Limit", $TopUserNumUploads, 3600 * 12);
+        $Cache->cache_value(sprintf('topuser_numul_%s', $Limit), $TopUserNumUploads, 3600 * 12);
     }
     $OuterResults[] = generate_user_json('Torrents Uploaded', 'numul', $TopUserNumUploads, $Limit);
 }
 
 if ('all' == $Details || 'uls' == $Details) {
-    if (!$TopUserUploadSpeed = $Cache->get_value("topuser_ulspeed_$Limit")) {
+    if (!$TopUserUploadSpeed = $Cache->get_value(sprintf('topuser_ulspeed_%s', $Limit))) {
         $DB->query("
-      $BaseQuery
+      {$BaseQuery}
       ORDER BY UpSpeed DESC
-      LIMIT $Limit;");
+      LIMIT {$Limit};");
         $TopUserUploadSpeed = $DB->to_array();
-        $Cache->cache_value("topuser_ulspeed_$Limit", $TopUserUploadSpeed, 3600 * 12);
+        $Cache->cache_value(sprintf('topuser_ulspeed_%s', $Limit), $TopUserUploadSpeed, 3600 * 12);
     }
     $OuterResults[] = generate_user_json('Fastest Uploaders', 'uls', $TopUserUploadSpeed, $Limit);
 }
 
 if ('all' == $Details || 'dls' == $Details) {
-    if (!$TopUserDownloadSpeed = $Cache->get_value("topuser_dlspeed_$Limit")) {
+    if (!$TopUserDownloadSpeed = $Cache->get_value(sprintf('topuser_dlspeed_%s', $Limit))) {
         $DB->query("
-      $BaseQuery
+      {$BaseQuery}
       ORDER BY DownSpeed DESC
-      LIMIT $Limit;");
+      LIMIT {$Limit};");
         $TopUserDownloadSpeed = $DB->to_array();
-        $Cache->cache_value("topuser_dlspeed_$Limit", $TopUserDownloadSpeed, 3600 * 12);
+        $Cache->cache_value(sprintf('topuser_dlspeed_%s', $Limit), $TopUserDownloadSpeed, 3600 * 12);
     }
     $OuterResults[] = generate_user_json('Fastest Downloaders', 'dls', $TopUserDownloadSpeed, $Limit);
 }

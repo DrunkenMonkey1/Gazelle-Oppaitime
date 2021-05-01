@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $LoggedUser['ID'];
 $BadgeID = $_GET['badge'];
 
 $ShopBadgeIDs = [100, 101, 102, 103, 104, 105, 106, 107];
-$Prices = [100 => 5000, 101 => 10000, 102 => 25000, 103 => 50000, 104 => 100000, 105 => 250000, 106 => 500000, 107 => 1000000];
+$Prices = [100 => 5000, 101 => 10000, 102 => 25000, 103 => 50000, 104 => 100000, 105 => 250000, 106 => 500000, 107 => 1_000_000];
 
 if (!$BadgeID) {
     $Err = 'No badge specified.';
@@ -12,7 +12,7 @@ if (!$BadgeID) {
 } elseif (Badges::has_badge($UserID, $BadgeID)) {
     $Err = 'You already have this badge.';
 } elseif ($BadgeID != $ShopBadgeIDs[0] && !Badges::has_badge($UserID, $ShopBadgeIDs[array_search($BadgeID, $ShopBadgeIDs, true)-1])) {
-    $Err = 'You haven\'t purchased the badges before this one!';
+    $Err = "You haven't purchased the badges before this one!";
 }
 
 if (isset($_GET['confirm']) && 1 == $_GET['confirm']) {
@@ -20,7 +20,7 @@ if (isset($_GET['confirm']) && 1 == $_GET['confirm']) {
         $DB->query("
       SELECT BonusPoints
       FROM users_main
-      WHERE ID = $UserID");
+      WHERE ID = {$UserID}");
         if ($DB->has_results()) {
             [$BP] =  $DB->next_record();
             $BP = (int)$BP;
@@ -32,14 +32,14 @@ if (isset($_GET['confirm']) && 1 == $_GET['confirm']) {
                     $DB->query("
             UPDATE users_main
             SET BonusPoints = BonusPoints - " . $Prices[$BadgeID] . "
-            WHERE ID = $UserID");
+            WHERE ID = {$UserID}");
 
                     $DB->query("
             UPDATE users_info
-            SET AdminComment = CONCAT('" . sqltime() . " - Purchased badge $BadgeID from store\n\n', AdminComment)
-            WHERE UserID = $UserID");
+            SET AdminComment = CONCAT('" . sqltime() . " - Purchased badge {$BadgeID} from store\n\n', AdminComment)
+            WHERE UserID = {$UserID}");
 
-                    $Cache->delete_value("user_info_heavy_$UserID");
+                    $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
                 }
             } else {
                 $Err = 'Not enough ' . BONUS_POINTS . '.';

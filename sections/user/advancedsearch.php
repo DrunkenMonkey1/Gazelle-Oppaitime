@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($_GET['search'])) {
     if (preg_match('/^' . IP_REGEX . '$/', $_GET['search'])) {
         $_GET['ip'] = $_GET['search'];
@@ -10,7 +10,7 @@ if (!empty($_GET['search'])) {
       FROM users_main
       WHERE Username = '" . db_string($_GET['search']) . "'");
         if ([$ID] = $DB->next_record()) {
-            header("Location: user.php?id=$ID");
+            header(sprintf('Location: user.php?id=%s', $ID));
             die();
         }
         $_GET['username'] = $_GET['search'];
@@ -29,7 +29,7 @@ function wrap($String, $ForceMatch = '', $IPSearch = false)
         $Match = $ForceMatch;
     }
     if (' REGEXP ' == $Match) {
-        if (false !== strpos($String, '\'') || preg_match('/^.*\\\\$/i', $String)) {
+        if (str_contains($String, "'") || preg_match('#^.*\\\$#i', $String)) {
             error('Regex contains illegal characters.');
         }
     } else {
@@ -39,19 +39,14 @@ function wrap($String, $ForceMatch = '', $IPSearch = false)
         // Fuzzy search
         // Stick in wildcards at beginning and end of string unless string starts or ends with |
         if (('|' != $String[0]) && !$IPSearch) {
-            $String = "%$String";
+            $String = sprintf('%%s', $String);
         } elseif ('|' == $String[0]) {
             $String = substr($String, 1, strlen($String));
         }
 
-        if ('|' != substr($String, -1, 1)) {
-            $String = "$String%";
-        } else {
-            $String = substr($String, 0, -1);
-        }
+        $String = '|' != substr($String, -1, 1) ? sprintf('%s%', $String) : substr($String, 0, -1);
     }
-    $String = "'$String'";
-    return $String;
+    return sprintf('\'%s\'', $String);
 }
 
 function date_compare($Field, $Operand, $Date1, $Date2 = '')
@@ -62,18 +57,18 @@ function date_compare($Field, $Operand, $Date1, $Date2 = '')
 
     switch ($Operand) {
     case 'on':
-      $Return [] = " $Field >= '$Date1 00:00:00' ";
-      $Return [] = " $Field <= '$Date1 23:59:59' ";
+      $Return [] = sprintf(' %s >= \'%s 00:00:00\' ', $Field, $Date1);
+      $Return [] = sprintf(' %s <= \'%s 23:59:59\' ', $Field, $Date1);
       break;
     case 'before':
-      $Return [] = " $Field < '$Date1 00:00:00' ";
+      $Return [] = sprintf(' %s < \'%s 00:00:00\' ', $Field, $Date1);
       break;
     case 'after':
-      $Return [] = " $Field > '$Date1 23:59:59' ";
+      $Return [] = sprintf(' %s > \'%s 23:59:59\' ', $Field, $Date1);
       break;
     case 'between':
-      $Return [] = " $Field >= '$Date1 00:00:00' ";
-      $Return [] = " $Field <= '$Date2 00:00:00' ";
+      $Return [] = sprintf(' %s >= \'%s 00:00:00\' ', $Field, $Date1);
+      $Return [] = sprintf(' %s <= \'%s 00:00:00\' ', $Field, $Date2);
       break;
   }
 
@@ -94,17 +89,17 @@ function num_compare($Field, $Operand, $Num1, $Num2 = '')
 
     switch ($Operand) {
     case 'equal':
-      $Return [] = " $Field = '$Num1' ";
+      $Return [] = sprintf(' %s = \'%s\' ', $Field, $Num1);
       break;
     case 'above':
-      $Return [] = " $Field > '$Num1' ";
+      $Return [] = sprintf(' %s > \'%s\' ', $Field, $Num1);
       break;
     case 'below':
-      $Return [] = " $Field < '$Num1' ";
+      $Return [] = sprintf(' %s < \'%s\' ', $Field, $Num1);
       break;
     case 'between':
-      $Return [] = " $Field > '$Num1' ";
-      $Return [] = " $Field < '$Num2' ";
+      $Return [] = sprintf(' %s > \'%s\' ', $Field, $Num1);
+      $Return [] = sprintf(' %s < \'%s\' ', $Field, $Num2);
       break;
     default:
       print_r($Return);
@@ -122,7 +117,7 @@ $YesNo = ['inarray'=>['any', 'yes', 'no']];
 $OrderVals = ['inarray'=>['Username', 'Ratio', 'IP', 'Email', 'Joined', 'Last Seen', 'Uploaded', 'Downloaded', 'Invites', 'Snatches']];
 $WayVals = ['inarray'=>['Ascending', 'Descending']];
 
-if (count($_GET)) {
+if ([] !== $_GET) {
     $DateRegex = ['regex' => '/\d{4}-\d{2}-\d{2}/'];
 
     $ClassIDs = [];
@@ -279,7 +274,7 @@ if (count($_GET)) {
             $DB->query($Query);
             $Users = implode(',', $DB->collect('UserID'));
             if (!empty($Users)) {
-                $Where[] = "um1.ID IN ($Users)";
+                $Where[] = sprintf('um1.ID IN (%s)', $Users);
             }
         }
 
@@ -329,7 +324,7 @@ if (count($_GET)) {
             $Where[] = 'ui1.AdminComment' . $Match . wrap($_GET['comment']);
         }
 
-        if (strlen($_GET['invites1'])) {
+        if (0 !== strlen($_GET['invites1'])) {
             $Invites1 = round($_GET['invites1']);
             $Invites2 = round($_GET['invites2']);
             $Where[] = implode(' AND ', num_compare('Invites', $_GET['invites'], $Invites1, $Invites2));
@@ -342,15 +337,15 @@ if (count($_GET)) {
         }
 
         if ('yes' == $_GET['disabled_invites']) {
-            $Where[] = 'ui1.DisableInvites = \'1\'';
+            $Where[] = "ui1.DisableInvites = '1'";
         } elseif ('no' == $_GET['disabled_invites']) {
-            $Where[] = 'ui1.DisableInvites = \'0\'';
+            $Where[] = "ui1.DisableInvites = '0'";
         }
 
         if ('yes' == $_GET['disabled_uploads']) {
-            $Where[] = 'ui1.DisableUpload = \'1\'';
+            $Where[] = "ui1.DisableUpload = '1'";
         } elseif ('no' == $_GET['disabled_uploads']) {
-            $Where[] = 'ui1.DisableUpload = \'0\'';
+            $Where[] = "ui1.DisableUpload = '0'";
         }
 
         if ($_GET['join1']) {
@@ -363,13 +358,13 @@ if (count($_GET)) {
 
         if ($_GET['ratio1']) {
             $Decimals = strlen(array_pop(explode('.', $_GET['ratio1'])));
-            if (!$Decimals) {
+            if (0 === $Decimals) {
                 $Decimals = 0;
             }
-            $Where[] = implode(' AND ', num_compare("ROUND(Uploaded/Downloaded,$Decimals)", $_GET['ratio'], $_GET['ratio1'], $_GET['ratio2']));
+            $Where[] = implode(' AND ', num_compare(sprintf('ROUND(Uploaded/Downloaded,%s)', $Decimals), $_GET['ratio'], $_GET['ratio1'], $_GET['ratio2']));
         }
 
-        if (strlen($_GET['uploaded1'])) {
+        if (0 !== strlen($_GET['uploaded1'])) {
             $Upload1 = round($_GET['uploaded1']);
             $Upload2 = round($_GET['uploaded2']);
             if ('buffer' != $_GET['uploaded']) {
@@ -379,13 +374,13 @@ if (count($_GET)) {
             }
         }
 
-        if (strlen($_GET['downloaded1'])) {
+        if (0 !== strlen($_GET['downloaded1'])) {
             $Download1 = round($_GET['downloaded1']);
             $Download2 = round($_GET['downloaded2']);
             $Where[] = implode(' AND ', num_compare('ROUND(Downloaded / 1024 / 1024 / 1024)', $_GET['downloaded'], $Download1, $Download2));
         }
 
-        if (strlen($_GET['snatched1'])) {
+        if (0 !== strlen($_GET['snatched1'])) {
             $Snatched1 = round($_GET['snatched1']);
             $Snatched2 = round($_GET['snatched2']);
             $Having[] = implode(' AND ', num_compare('Snatches', $_GET['snatched'], $Snatched1, $Snatched2));
@@ -405,9 +400,9 @@ if (count($_GET)) {
         }
 
         if ('yes' == $_GET['donor']) {
-            $Where[] = 'ui1.Donor = \'1\'';
+            $Where[] = "ui1.Donor = '1'";
         } elseif ('no' == $_GET['donor']) {
-            $Where[] = 'ui1.Donor = \'0\'';
+            $Where[] = "ui1.Donor = '0'";
         }
 
         if ('yes' == $_GET['warned']) {
@@ -423,9 +418,9 @@ if (count($_GET)) {
                     $Join['tip'] = ' JOIN users_ips_decrypted AS tip ON tip.ID = um1.ID ';
                 }
                 $Join['tip2'] = ' JOIN users_ips_decrypted2 AS tip2 ON tip2.IP = tip.IP ';
-                $Join['um2'] = ' JOIN users_main AS um2 ON um2.ID = tip2.ID AND um2.Enabled = \'2\' ';
+                $Join['um2'] = " JOIN users_main AS um2 ON um2.ID = tip2.ID AND um2.Enabled = '2' ";
             } else {
-                $Join['um2'] = ' JOIN users_main AS um2 ON um2.IP = um1.IP AND um2.Enabled = \'2\' ';
+                $Join['um2'] = " JOIN users_main AS um2 ON um2.IP = um1.IP AND um2.Enabled = '2' ";
             }
         }
 
@@ -450,15 +445,15 @@ if (count($_GET)) {
         $SQL = 'SELECT ' . $Distinct . $SQL;
         $SQL .= implode(' ', $Join);
 
-        if (count($Where)) {
+        if (count($Where) > 0) {
             $SQL .= ' WHERE ' . implode(' AND ', $Where);
         }
 
-        if (count($Group)) {
+        if ([] !== $Group) {
             $SQL .= " GROUP BY " . implode(' ,', $Group);
         }
 
-        if (count($Having)) {
+        if (count($Having) > 0) {
             $SQL .= ' HAVING ' . implode(' AND ', $Having);
         }
 
@@ -469,7 +464,7 @@ if (count($_GET)) {
         }
 
         [$Page, $Limit] = Format::page_limit(USERS_PER_PAGE);
-        $SQL .= " LIMIT $Limit";
+        $SQL .= sprintf(' LIMIT %s', $Limit);
     } else {
         error($Err);
     }
@@ -592,9 +587,7 @@ View::show_header('User search');
 <?php  $Secondaries = [];
   // Neither level nor ID is particularly useful when searching secondary classes, so let's do some
   // kung-fu to sort them alphabetically.
-  $fnc = function ($Class1, $Class2) {
-      return strcmp($Class1['Name'], $Class2['Name']);
-  };
+  $fnc = fn ($Class1, $Class2) => strcmp($Class1['Name'], $Class2['Name']);
   foreach ($ClassLevels as $Class) {
       if (!$Class['Secondary']) {
           continue;
@@ -1017,7 +1010,7 @@ while ([$UserID, $Username, $Uploaded, $Downloaded, $Snatched, $Invitees, $Class
         SELECT COUNT(ud.UserID)
         FROM users_downloads AS ud
           JOIN torrents AS t ON t.ID = ud.TorrentID
-        WHERE ud.UserID = $UserID");
+        WHERE ud.UserID = {$UserID}");
     [$Downloads] = $DB->next_record();
     $DB->set_query_id($Results); ?>
       <td><?=number_format((int)$Downloads)?></td>

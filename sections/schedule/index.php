@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //--------------Schedule page -------------------------------------------//
 // This page is run every 15 minutes by cron.
 
@@ -9,14 +11,14 @@ gc_enable();
 
 $ScheduleDebug = false;
 
-$PCount = chop(shell_exec("/usr/bin/pgrep -cf schedule.php"));
+$PCount = rtrim(shell_exec("/usr/bin/pgrep -cf schedule.php"));
 if ($PCount > 3) {  // 3 because the cron job starts two processes and pgrep finds itself
-    die("schedule.php is already running. Exiting ($PCount)\n");
+    die("schedule.php is already running. Exiting ({$PCount})\n");
 }
 
 $AS = check_perms('admin_schedule');
 
-function run_all_in($Dir)
+function run_all_in($Dir): void
 {
     $Tasks = array_diff(scandir(SERVER_ROOT . '/sections/schedule/' . $Dir, 1), ['.', '..']);
     extract($GLOBALS);
@@ -52,7 +54,7 @@ $NextBiWeek = (date('d') < 22 && date('d') >= 8) ? 22 : 8;
 
 $DB->query("
   UPDATE schedule
-  SET NextHour = $NextHour, NextDay = $NextDay, NextBiWeekly = $NextBiWeek");
+  SET NextHour = {$NextHour}, NextDay = {$NextDay}, NextBiWeekly = {$NextBiWeek}");
 
 $sqltime = sqltime();
 echo $sqltime . $ASBreak;

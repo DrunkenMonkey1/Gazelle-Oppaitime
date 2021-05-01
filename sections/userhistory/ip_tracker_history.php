@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| User IP history page ||---------------------------||
 
@@ -26,7 +26,7 @@ $DB->query("
     p.Level AS Class
   FROM users_main AS um
     LEFT JOIN permissions AS p ON p.ID = um.PermissionID
-  WHERE um.ID = $UserID");
+  WHERE um.ID = {$UserID}");
 [$Username, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_ips', $Class)) {
@@ -35,7 +35,7 @@ if (!check_perms('users_view_ips', $Class)) {
 
 $UsersOnly = $_GET['usersonly'];
 
-View::show_header("Tracker IP address history for $Username");
+View::show_header(sprintf('Tracker IP address history for %s', $Username));
 ?>
 <script type="text/javascript">
 function ShowIPs(rowname) {
@@ -53,10 +53,10 @@ if ($Perms['site_disable_ip_history']) {
 $TrackerIps = $DB->query("
   SELECT IP, fid, tstamp
   FROM xbt_snatched
-  WHERE uid = $UserID
+  WHERE uid = {$UserID}
     AND IP != ''
   ORDER BY tstamp DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();

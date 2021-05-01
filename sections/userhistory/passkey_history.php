@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| User passkey history page ||--------------------------||
 
@@ -21,14 +21,14 @@ $DB->query("
     p.Level AS Class
   FROM users_main AS um
     LEFT JOIN permissions AS p ON p.ID = um.PermissionID
-  WHERE um.ID = $UserID");
+  WHERE um.ID = {$UserID}");
 [$Username, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_keys', $Class)) {
     error(403);
 }
 
-View::show_header("Passkey history for $Username");
+View::show_header(sprintf('Passkey history for %s', $Username));
 
 $DB->query("
   SELECT
@@ -37,7 +37,7 @@ $DB->query("
     ChangeTime,
     ChangerIP
   FROM users_history_passkeys
-  WHERE UserID = $UserID
+  WHERE UserID = {$UserID}
   ORDER BY ChangeTime DESC");
 
 ?>

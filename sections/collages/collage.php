@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ini_set('max_execution_time', 600);
 
 //~~~~~~~~~~~ Main collage page ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
@@ -9,7 +11,7 @@ if (empty($_GET['id']) || !is_number($_GET['id'])) {
 }
 $CollageID = $_GET['id'];
 
-$CollageData = $Cache->get_value("collage_$CollageID");
+$CollageData = $Cache->get_value(sprintf('collage_%s', $CollageID));
 if ($CollageData) {
     [$Name, $Description, $CommentList, $Deleted, $CollageCategoryID, $CreatorID, $Locked, $MaxGroups, $MaxGroupsPerUser, $Updated, $Subscribers] = $CollageData;
 } else {
@@ -26,7 +28,7 @@ if ($CollageData) {
       Updated,
       Subscribers
     FROM collages
-    WHERE ID = '$CollageID'");
+    WHERE ID = '{$CollageID}'");
     if ($DB->has_results()) {
         [$Name, $Description, $CreatorID, $Deleted, $CollageCategoryID, $Locked, $MaxGroups, $MaxGroupsPerUser, $Updated, $Subscribers] = $DB->next_record(MYSQLI_NUM);
         $CommentList = null;
@@ -37,7 +39,7 @@ if ($CollageData) {
 }
 
 if ('1' === $Deleted) {
-    header("Location: log.php?search=Collage+$CollageID");
+    header(sprintf('Location: log.php?search=Collage+%s', $CollageID));
     die();
 }
 
@@ -56,7 +58,7 @@ if (!empty($CollageSubscriptions) && in_array($CollageID, $CollageSubscriptions,
     UPDATE users_collage_subs
     SET LastVisit = NOW()
     WHERE UserID = " . $LoggedUser['ID'] . "
-      AND CollageID = $CollageID");
+      AND CollageID = {$CollageID}");
     $Cache->delete_value('collage_subs_user_new_' . $LoggedUser['ID']);
 }
 
@@ -79,5 +81,5 @@ if (isset($SetCache)) {
         (int)$MaxGroupsPerUser,
         $Updated,
         (int)$Subscribers];
-    $Cache->cache_value("collage_$CollageID", $CollageData, 3600);
+    $Cache->cache_value(sprintf('collage_%s', $CollageID), $CollageData, 3600);
 }

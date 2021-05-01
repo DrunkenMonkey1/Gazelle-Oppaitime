@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 function compare($X, $Y)
 {
     return($Y['count'] - $X['count']);
@@ -12,16 +12,12 @@ $DB->query("
     ct.UserID
   FROM collages_torrents AS ct
     JOIN torrents_group AS tg ON tg.ID = ct.GroupID
-  WHERE ct.CollageID = '$CollageID'
+  WHERE ct.CollageID = '{$CollageID}'
   ORDER BY ct.Sort");
 
 $GroupIDs = $DB->collect('GroupID');
 $Contributors = $DB->to_pair('GroupID', 'UserID', false);
-if (count($GroupIDs) > 0) {
-    $TorrentList = Torrents::get_groups($GroupIDs);
-} else {
-    $TorrentList = [];
-}
+$TorrentList = count($GroupIDs) > 0 ? Torrents::get_groups($GroupIDs) : [];
 
 // Loop through the result set, building up $Collage and $TorrentTable
 // Then we print them.
@@ -44,9 +40,9 @@ foreach ($GroupIDs as $GroupID) {
     $TorrentTags = new Tags($TagList);
 
     // Handle stats and stuff
-    $Number++;
+    ++$Number;
     if ($UserID == $LoggedUser['ID']) {
-        $NumGroupsByUser++;
+        ++$NumGroupsByUser;
     }
 
     $CountArtists = $Artists;
@@ -56,7 +52,7 @@ foreach ($GroupIDs as $GroupID) {
             if (!isset($TopArtists[$Artist['id']])) {
                 $TopArtists[$Artist['id']] = ['name' => $Artist['name'], 'count' => 1];
             } else {
-                $TopArtists[$Artist['id']]['count']++;
+                ++$TopArtists[$Artist['id']]['count'];
             }
         }
     }
@@ -64,29 +60,28 @@ foreach ($GroupIDs as $GroupID) {
     if (!isset($UserAdditions[$UserID])) {
         $UserAdditions[$UserID] = 0;
     }
-    $UserAdditions[$UserID]++;
+    ++$UserAdditions[$UserID];
 
-    $DisplayName = "$Number - ";
+    $DisplayName = sprintf('%s - ', $Number);
 
     $DisplayName .= Artists::display_artists($Artists);
 
-    $DisplayName .= "<a href=\"torrents.php?id=$GroupID\" ";
+    $DisplayName .= sprintf('<a href="torrents.php?id=%s" ', $GroupID);
     if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
         $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage, 'thumb') . '" ';
     }
-    $GroupName = empty($GroupName) ? (empty($GroupNameRJ) ? $GroupNameJP : $GroupNameRJ) : $GroupName;
-    $DisplayName .= "dir=\"ltr\">$GroupName</a>";
+    $DisplayName .= sprintf('dir="ltr">%s</a>', $GroupName);
     if ($GroupYear > 0) {
-        $DisplayName = "$DisplayName [$GroupYear]";
+        $DisplayName = sprintf('%s [%s]', $DisplayName, $GroupYear);
     }
     if ($GroupStudio) {
-        $DisplayName .= " [$GroupStudio]";
+        $DisplayName .= sprintf(' [%s]', $GroupStudio);
     }
     if ($GroupCatalogueNumber) {
-        $DisplayName .= " [$GroupCatalogueNumber]";
+        $DisplayName .= sprintf(' [%s]', $GroupCatalogueNumber);
     }
     if ($GroupDLSiteID) {
-        $DisplayName .= " [$GroupDLSiteID]";
+        $DisplayName .= sprintf(' [%s]', $GroupDLSiteID);
     }
     $SnatchedGroupClass = ($GroupFlags['IsSnatched'] ? ' snatched_group' : '');
     // Start an output buffer, so we can store this output in $TorrentTable
@@ -196,7 +191,7 @@ foreach ($GroupIDs as $GroupID) {
     $DisplayName .= Artists::display_artists($Artists, false);
     $DisplayName .= $GroupName;
     if ($GroupYear > 0) {
-        $DisplayName = "$DisplayName [$GroupYear]";
+        $DisplayName = sprintf('%s [%s]', $DisplayName, $GroupYear);
     }
     $Tags = display_str($TorrentTags->format());
     $PlainTags = implode(', ', $TorrentTags->get_tags()); ?>
@@ -205,17 +200,15 @@ foreach ($GroupIDs as $GroupID) {
 <?php  if (!$WikiImage) {
         $WikiImage = STATIC_SERVER . 'common/noartwork/nocover.png';
     } ?>
-            <img class="tooltip_interactive" src="<?=ImageTools::process($WikiImage, 'thumb')?>" alt="<?=$DisplayName?>" title="<?=$DisplayName?> <br /> <div class='tags'><?=$Tags?></div>" data-title-plain="<?="$DisplayName ($PlainTags)"?>" width="100%" />
+            <img class="tooltip_interactive" src="<?=ImageTools::process($WikiImage, 'thumb')?>" alt="<?=$DisplayName?>" title="<?=$DisplayName?> <br /> <div class='tags'><?=$Tags?></div>" data-title-plain="<?=sprintf('%s (%s)', $DisplayName, $PlainTags)?>" width="100%" />
           </a>
         </div>
 <?php
   $Collage[] = ob_get_clean();
 }
 
-if ('0' === $CollageCategoryID && !check_perms('site_collages_delete')) {
-    if (!check_perms('site_collages_personal') || $CreatorID !== $LoggedUser['ID']) {
-        $PreventAdditions = true;
-    }
+if ('0' === $CollageCategoryID && !check_perms('site_collages_delete') && (!check_perms('site_collages_personal') || $CreatorID !== $LoggedUser['ID'])) {
+    $PreventAdditions = true;
 }
 
 if (!check_perms('site_collages_delete')
@@ -233,7 +226,7 @@ $CollageCovers = isset($LoggedUser['CollageCovers']) ? $LoggedUser['CollageCover
 $CollagePages = [];
 
 if ($CollageCovers) {
-    for ($i = 0; $i < $NumGroups / $CollageCovers; $i++) {
+    for ($i = 0; $i < $NumGroups / $CollageCovers; ++$i) {
         $Groups = array_slice($Collage, $i * $CollageCovers, $CollageCovers);
         $CollagePage = '';
         foreach ($Groups as $Group) {
@@ -394,7 +387,7 @@ foreach ($ZIPOptions as $Option) {
     uasort($TopArtists, 'compare');
     $i = 0;
     foreach ($TopArtists as $ID => $Artist) {
-        $i++;
+        ++$i;
         if ($i > 10) {
             break;
         } ?>
@@ -414,7 +407,7 @@ foreach ($ZIPOptions as $Option) {
 arsort($UserAdditions);
 $i = 0;
 foreach ($UserAdditions as $UserID => $Additions) {
-    $i++;
+    ++$i;
     if ($i > 5) {
         break;
     } ?>
@@ -471,7 +464,7 @@ if (null === $CommentList) {
     FROM comments AS c
       LEFT JOIN users_main AS um ON um.ID = c.AuthorID
     WHERE c.Page = 'collages'
-      AND c.PageID = $CollageID
+      AND c.PageID = {$CollageID}
     ORDER BY c.ID DESC
     LIMIT 15");
     $CommentList = $DB->to_array(false, MYSQLI_NUM);
@@ -534,7 +527,7 @@ if (0 != $CollageCovers) { ?>
     <div class="linkbox pager" style="clear: left;" id="pageslinksdiv">
       <span id="firstpage" class="invisible"><a href="#" class="pageslink" onclick="collageShow.page(0, this); return false;"><strong>&lt;&lt; First</strong></a> | </span>
       <span id="prevpage" class="invisible"><a href="#" class="pageslink" onclick="collageShow.prevPage(); return false;"><strong>&lt; Prev</strong></a> | </span>
-<?php    for ($i = 0; $i < $NumGroups / $CollageCovers; $i++) { ?>
+<?php    for ($i = 0; $i < $NumGroups / $CollageCovers; ++$i) { ?>
       <span id="pagelink<?=$i?>" class="<?=(($i > 4) ? 'hidden' : '')?><?=((0 == $i) ? 'selected' : '')?>"><a href="#" class="pageslink" onclick="collageShow.page(<?=$i?>, this); return false;"><strong><?=$CollageCovers * $i + 1?>-<?=min($NumGroups, $CollageCovers * ($i + 1))?></strong></a><?=(($i != ceil($NumGroups / $CollageCovers) - 1) ? ' | ' : '')?></span>
 <?php    } ?>
       <span id="nextbar" class="<?=($NumGroups / $CollageCovers > 5) ? 'hidden' : ''?>"> | </span>

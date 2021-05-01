@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 
 
@@ -40,7 +42,7 @@ switch ($_REQUEST['action']) {
         JOIN snatched_groups_temp AS s
       USING(GroupID)
       WHERE b.UserID = '$LoggedUser[ID]'");
-    $Cache->delete_value("bookmarks_group_ids_$UserID");
+    $Cache->delete_value(sprintf('bookmarks_group_ids_%s', $UserID));
     header('Location: bookmarks.php');
     die();
     break;
@@ -49,11 +51,9 @@ switch ($_REQUEST['action']) {
     if (empty($_REQUEST['type'])) {
         $_REQUEST['type'] = false;
     }
-    switch ($_REQUEST['type']) {
-      case 'torrents':
+    if ('torrents' == $_REQUEST['type']) {
         require SERVER_ROOT . '/sections/bookmarks/edit_torrents.php';
-        break;
-      default:
+    } else {
         error(404);
     }
     break;

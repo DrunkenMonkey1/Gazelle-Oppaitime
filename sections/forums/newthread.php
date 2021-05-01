@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
 New post page
 
@@ -30,7 +30,7 @@ View::show_header('Forums &gt; ' . $Forum['Name'] . ' &gt; New Topic', 'comments
     <div class="linkbox">
       <div class="center">
         <a href="#" onclick="return false;" class="brackets">Report thread</a>
-        <a href="#" onclick="return false;" class="brackets"><?=!empty($HeavyInfo['AutoSubscribe']) ? 'Unsubscribe' : 'Subscribe'?></a>
+        <a href="#" onclick="return false;" class="brackets"><?=empty($HeavyInfo['AutoSubscribe']) ? 'Subscribe' : 'Unsubscribe'?></a>
       </div>
     </div>
 <?php  if (check_perms('forums_polls_create')) { ?>
@@ -93,7 +93,7 @@ View::show_header('Forums &gt; ' . $Forum['Name'] . ' &gt; New Topic', 'comments
         <tr>
           <td></td>
           <td>
-            <input id="subscribebox" type="checkbox" name="subscribe"<?=!empty($HeavyInfo['AutoSubscribe']) ? ' checked="checked"' : ''?> onchange="$('#subscribeboxpreview').raw().checked=this.checked;" />
+            <input id="subscribebox" type="checkbox" name="subscribe"<?=empty($HeavyInfo['AutoSubscribe']) ? '' : ' checked="checked"'?> onchange="$('#subscribeboxpreview').raw().checked=this.checked;" />
             <label for="subscribebox">Subscribe to topic</label>
           </td>
         </tr>
@@ -154,7 +154,7 @@ if (check_perms('forums_polls_create')) {
 } ?>
       </table>
       <div id="subscribediv" class="hidden">
-        <input id="subscribeboxpreview" type="checkbox" name="subscribe"<?=!empty($HeavyInfo['AutoSubscribe']) ? ' checked="checked"' : '' ?> />
+        <input id="subscribeboxpreview" type="checkbox" name="subscribe"<?=empty($HeavyInfo['AutoSubscribe']) ? '' : ' checked="checked"' ?> />
         <label for="subscribebox">Subscribe to topic</label>
       </div>
       <div id="buttons" class="center">

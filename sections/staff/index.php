@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 View::show_header('Staff');
 
@@ -117,7 +117,7 @@ if ($ForumStaff) { ?>
           }
       }
           if ('mods' != $HTMLID) {
-              echo "\t\t<h3 style=\"font-size: 17px;\" id=\"$HTMLID\"><i>" . $ClassName . "s</i></h3>\n";
+              echo sprintf('		<h3 style="font-size: 17px;" id="%s"><i>', $HTMLID) . $ClassName . "s</i></h3>\n";
           } else {
               echo "\t\t<h2 style='text-align: left'>" . $ClassName . "s</h2>\n";
           } ?>

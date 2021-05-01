@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 
 $StaffIDs = $Cache->get_value('staff_ids');
@@ -19,28 +21,13 @@ if (!is_array($StaffIDs)) {
 if (!isset($_REQUEST['action'])) {
     $_REQUEST['action'] = '';
 }
-switch ($_REQUEST['action']) {
-  case 'takecompose':
-    require 'takecompose.php';
-    break;
-  case 'takeedit':
-    require 'takeedit.php';
-    break;
-  case 'compose':
-    require 'compose.php';
-    break;
-  case 'viewconv':
-    require 'conversation.php';
-    break;
-  case 'masschange':
-    require 'massdelete_handle.php';
-    break;
-  case 'get_post':
-    require 'get_post.php';
-    break;
-  case 'forward':
-    require 'forward.php';
-    break;
-  default:
-    require SERVER_ROOT . '/sections/inbox/inbox.php';
-}
+match ($_REQUEST['action']) {
+    'takecompose' => require __DIR__ . '/takecompose.php',
+    'takeedit' => require __DIR__ . '/takeedit.php',
+    'compose' => require __DIR__ . '/compose.php',
+    'viewconv' => require __DIR__ . '/conversation.php',
+    'masschange' => require __DIR__ . '/massdelete_handle.php',
+    'get_post' => require __DIR__ . '/get_post.php',
+    'forward' => require __DIR__ . '/forward.php',
+    default => require SERVER_ROOT . '/sections/inbox/inbox.php',
+};

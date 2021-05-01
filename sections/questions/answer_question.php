@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 Text::$TOC = true;
 if (!check_perms("users_mod")) {
     error(403);
@@ -13,7 +13,7 @@ if (!is_number($ID)) {
 $DB->query("
   SELECT ID, Question, UserID, Date
   FROM user_questions
-  WHERE ID = '$ID'");
+  WHERE ID = '{$ID}'");
 $Question = $DB->next_record();
 
 View::show_header('Ask the Staff', 'bbcode');

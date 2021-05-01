@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //******************************************************************************//
 //--------------- Take mass PM -------------------------------------------------//
 // This pages handles the backend of the 'Send Mass PM' function. It checks     //
@@ -27,8 +29,8 @@ if (!check_perms('site_moderate_requests')) {
     error(403);
 }
 
-$Validate->SetFields('torrentid', '1', 'number', 'Invalid torrent ID.', ['maxlength' => 1000000000, 'minlength' => 1]); // we shouldn't have torrent IDs higher than a billion
-$Validate->SetFields('groupid', '1', 'number', 'Invalid group ID.', ['maxlength' => 1000000000, 'minlength' => 1]); // we shouldn't have group IDs higher than a billion either
+$Validate->SetFields('torrentid', '1', 'number', 'Invalid torrent ID.', ['maxlength' => 1_000_000_000, 'minlength' => 1]); // we shouldn't have torrent IDs higher than a billion
+$Validate->SetFields('groupid', '1', 'number', 'Invalid group ID.', ['maxlength' => 1_000_000_000, 'minlength' => 1]); // we shouldn't have group IDs higher than a billion either
 $Validate->SetFields('subject', '0', 'string', 'Invalid subject.', ['maxlength' => 1000, 'minlength' => 1]);
 $Validate->SetFields('message', '0', 'string', 'Invalid message.', ['maxlength' => 10000, 'minlength' => 1]);
 $Err = $Validate->ValidateForm($_POST); // Validate the form
@@ -45,7 +47,7 @@ if ($Err) {
 $DB->query("
   SELECT uid
   FROM xbt_snatched
-  WHERE fid = $TorrentID");
+  WHERE fid = {$TorrentID}");
 
 if ($DB->has_results()) {
     // Save this because send_pm uses $DB to run its own query... Oops...
@@ -55,6 +57,6 @@ if ($DB->has_results()) {
     }
 }
 
-Misc::write_log($LoggedUser['Username'] . " sent mass notice to snatchers of torrent $TorrentID in group $GroupID");
+Misc::write_log($LoggedUser['Username'] . sprintf(' sent mass notice to snatchers of torrent %s in group %s', $TorrentID, $GroupID));
 
-header("Location: torrents.php?id=$GroupID");
+header(sprintf('Location: torrents.php?id=%s', $GroupID));

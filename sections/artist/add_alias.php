@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('torrents_edit')) {
@@ -13,7 +15,7 @@ if (!$Redirect) {
     $Redirect = 0;
 }
 
-if (!is_number($ArtistID) || !(0 === $Redirect || is_number($Redirect)) || !$ArtistID) {
+if (!is_number($ArtistID) || 0 !== $Redirect && !is_number($Redirect) || !$ArtistID) {
     error(0);
 }
 
@@ -32,10 +34,10 @@ if ('' == $AliasName) {
 $DB->query("
   SELECT AliasID, ArtistID, Name, Redirect
   FROM artists_alias
-  WHERE Name = '$DBAliasName'");
+  WHERE Name = '{$DBAliasName}'");
 if ($DB->has_results()) {
     while ([$CloneAliasID, $CloneArtistID, $CloneAliasName, $CloneRedirect] = $DB->next_record(MYSQLI_NUM, false)) {
-        if (!strcasecmp($CloneAliasName, $AliasName)) {
+        if (0 === strcasecmp($CloneAliasName, $AliasName)) {
             break;
         }
     }
@@ -44,9 +46,9 @@ if ($DB->has_results()) {
             if (0 != $CloneRedirect) {
                 $DB->query("
           UPDATE artists_alias
-          SET ArtistID = '$ArtistID', Redirect = 0
-          WHERE AliasID = '$CloneAliasID'");
-                Misc::write_log("Redirection for the alias $CloneAliasID ($DBAliasName) for the artist $ArtistID was removed by user $LoggedUser[ID] ($LoggedUser[Username])");
+          SET ArtistID = '{$ArtistID}', Redirect = 0
+          WHERE AliasID = '{$CloneAliasID}'");
+                Misc::write_log(sprintf('Redirection for the alias %s (%s) for the artist %s was removed by user %s (%s)', $CloneAliasID, $DBAliasName, $ArtistID, $LoggedUser[ID], $LoggedUser[Username]));
             } else {
                 error('No changes were made as the target alias did not redirect anywhere.');
             }
@@ -60,7 +62,7 @@ if (!$CloneAliasID) {
         $DB->query("
       SELECT ArtistID, Redirect
       FROM artists_alias
-      WHERE AliasID = $Redirect");
+      WHERE AliasID = {$Redirect}");
         if (!$DB->has_results()) {
             error('Cannot redirect to a nonexistent artist alias.');
         }
@@ -76,15 +78,15 @@ if (!$CloneAliasID) {
     INSERT INTO artists_alias
       (ArtistID, Name, Redirect, UserID)
     VALUES
-      ($ArtistID, '$DBAliasName', $Redirect, " . $LoggedUser['ID'] . ')');
+      ({$ArtistID}, '{$DBAliasName}', {$Redirect}, " . $LoggedUser['ID'] . ')');
     $AliasID = $DB->inserted_id();
 
     $DB->query("
     SELECT Name
     FROM artists_group
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     [$ArtistName] = $DB->next_record(MYSQLI_NUM, false);
 
-    Misc::write_log("The alias $AliasID ($DBAliasName) was added to the artist $ArtistID (" . db_string($ArtistName) . ') by user ' . $LoggedUser['ID'] . ' (' . $LoggedUser['Username'] . ')');
+    Misc::write_log(sprintf('The alias %s (%s) was added to the artist %s (', $AliasID, $DBAliasName, $ArtistID) . db_string($ArtistName) . ') by user ' . $LoggedUser['ID'] . ' (' . $LoggedUser['Username'] . ')');
 }
 header('Location: ' . $_SERVER['HTTP_REFERER']);

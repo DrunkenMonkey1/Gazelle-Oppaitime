@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 //TODO: Remove all the stupid queries that could get their information just as easily from the cache
@@ -81,7 +83,7 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
       (Page, PostID, EditUser, EditTime, Body)
     VALUES
       ('forums', ?, ?, ?, ?)", $PostID, $LoggedUser['ID'], $SQLTime, $OldBody);
-    $Cache->delete_value("forums_edits_$PostID");
+    $Cache->delete_value(sprintf('forums_edits_%s', $PostID));
 
     //Get the catalogue it is in
     $CatalogueID = floor((POSTS_PER_PAGE * ceil($ThreadInfo['Posts'] / POSTS_PER_PAGE) - POSTS_PER_PAGE) / THREAD_CATALOGUE);
@@ -96,13 +98,13 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
         $ThreadInfo['StickyPost']['Body'] .= "\n\n" . $Body;
         $ThreadInfo['StickyPost']['EditedUserID'] = $LoggedUser['ID'];
         $ThreadInfo['StickyPost']['EditedTime'] = $SQLTime;
-        $Cache->cache_value("thread_$TopicID" . '_info', $ThreadInfo, 0);
+        $Cache->cache_value(sprintf('thread_%s', $TopicID) . '_info', $ThreadInfo, 0);
     }
 
     //Edit the post in the cache
-    $Cache->begin_transaction("thread_$TopicID" . "_catalogue_$CatalogueID");
+    $Cache->begin_transaction(sprintf('thread_%s', $TopicID) . sprintf('_catalogue_%s', $CatalogueID));
     $Cache->update_row($Key, [
-        'Body' => $Cache->MemcacheDBArray[$Key]['Body'] . "\n\n$Body",
+        'Body' => $Cache->MemcacheDBArray[$Key]['Body'] . "\n\n{$Body}",
         'EditedUserID' => $LoggedUser['ID'],
         'EditedTime' => $SQLTime,
         'Username' => $LoggedUser['Username']
@@ -146,14 +148,14 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
     WHERE ID = ?", $PostID, $LoggedUser['ID'], $SQLTime, $TopicID);
 
     // if cache exists modify it, if not, then it will be correct when selected next, and we can skip this block
-    if ($Forum = $Cache->get_value("forums_$ForumID")) {
+    if ($Forum = $Cache->get_value(sprintf('forums_%s', $ForumID))) {
         [$Forum, , , $Stickies] = $Forum;
 
         // if the topic is already on this page
         if (array_key_exists($TopicID, $Forum)) {
             $Thread = $Forum[$TopicID];
             unset($Forum[$TopicID]);
-            $Thread['NumPosts'] = $Thread['NumPosts'] + 1; // Increment post count
+            ++$Thread['NumPosts']; // Increment post count
       $Thread['LastPostID'] = $PostID; // Set post ID for read/unread
       $Thread['LastPostTime'] = $SQLTime; // Time of last post
       $Thread['LastPostAuthorID'] = $LoggedUser['ID']; // Last poster ID
@@ -215,7 +217,7 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
         } else {
             $Forum = $Part1 + $Part2 + $Part3; //Merge it
         }
-        $Cache->cache_value("forums_$ForumID", [$Forum, '', 0, $Stickies], 0);
+        $Cache->cache_value(sprintf('forums_%s', $ForumID), [$Forum, '', 0, $Stickies], 0);
 
         //Update the forum root
         $Cache->begin_transaction('forums_list');
@@ -240,7 +242,7 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
     $CatalogueID = floor((POSTS_PER_PAGE * ceil($ThreadInfo['Posts'] / POSTS_PER_PAGE) - POSTS_PER_PAGE) / THREAD_CATALOGUE);
 
     //Insert the post into the thread catalogue (block of 500 posts)
-    $Cache->begin_transaction("thread_$TopicID" . "_catalogue_$CatalogueID");
+    $Cache->begin_transaction(sprintf('thread_%s', $TopicID) . sprintf('_catalogue_%s', $CatalogueID));
     $Cache->insert('', [
         'ID'           => $PostID,
         'AuthorID'     => $LoggedUser['ID'],
@@ -253,12 +255,12 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
     $Cache->commit_transaction(0);
 
     //Update the thread info
-    $Cache->begin_transaction("thread_$TopicID" . '_info');
+    $Cache->begin_transaction(sprintf('thread_%s', $TopicID) . '_info');
     $Cache->update_row(false, ['Posts' => '+1', 'LastPostAuthorID' => $LoggedUser['ID']]);
     $Cache->commit_transaction(0);
 
     //Increment this now to make sure we redirect to the correct page
-    $ThreadInfo['Posts']++;
+    ++$ThreadInfo['Posts'];
 
     //Award a badge if necessary
     $DB->query("
@@ -279,5 +281,5 @@ if ($ThreadInfo['LastPostAuthorID'] == $LoggedUser['ID'] && ((!check_perms('site
 Subscriptions::flush_subscriptions('forums', $TopicID);
 Subscriptions::quote_notify($Body, $PostID, 'forums', $TopicID);
 
-header("Location: forums.php?action=viewthread&threadid=$TopicID&page=" . ceil($ThreadInfo['Posts'] / $PerPage));
+header(sprintf('Location: forums.php?action=viewthread&threadid=%s&page=', $TopicID) . ceil($ThreadInfo['Posts'] / $PerPage));
 die();

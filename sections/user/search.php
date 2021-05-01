@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**********************************************************************
  *>>>>>>>>>>>>>>>>>>>>>>>>>>> User search <<<<<<<<<<<<<<<<<<<<<<<<<<<<*
  **********************************************************************/
@@ -35,7 +35,7 @@ if (isset($_GET['username'])) {
         JOIN users_info AS ui ON ui.UserID = um.ID
       WHERE Username LIKE '%" . db_string($_GET['username'], true) . "%'
       ORDER BY Username
-      LIMIT $Limit");
+      LIMIT {$Limit}");
         $Results = $DB->to_array();
         $DB->query('SELECT FOUND_ROWS()');
         [$NumResults] = $DB->next_record();

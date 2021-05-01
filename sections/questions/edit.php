@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 $ID = $_GET['id'];
 
@@ -15,7 +15,7 @@ if ($UserID != $LoggedUser['ID']) {
 $DB->query("
   SELECT Answer
   FROM staff_answers
-  WHERE QuestionID = '$ID' AND UserID = '$UserID'");
+  WHERE QuestionID = '{$ID}' AND UserID = '{$UserID}'");
 
 if (!$DB->has_results()) {
     error("Question not found");

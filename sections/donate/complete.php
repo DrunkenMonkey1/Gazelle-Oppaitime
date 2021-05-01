@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 View::show_header('Donation Complete');
 ?>

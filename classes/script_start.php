@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 /*-- Script Start Class --------------------------------*/
 /*------------------------------------------------------*/
@@ -10,19 +11,19 @@
 /* generates the page are at the bottom.        */
 /*------------------------------------------------------*/
 /********************************************************/
-require 'config.php'; //The config contains all site wide configuration information
+require __DIR__ . '/config.php'; //The config contains all site wide configuration information
+require __DIR__ . '/../library/vendor/autoload.php';
 
-// Check for common setup pitfalls
-if (!ini_get('short_open_tag')) {
-    die('short_open_tag must be On in php.ini');
+//die(var_dump(password_get_info('$2y$10$yfgQf39d9GJrDcjjKVPyeucWY4ljNm0y0nvFPHOn6cb07y9ClhgvS')));
+// Deal with dumbasses
+if (isset($_REQUEST['info_hash'], $_REQUEST['peer_id'])) {
+    die('d14:failure reason40:Invalid .torrent, try downloading again.e');
 }
 if (!extension_loaded('apcu')) {
-    die('APCu extension not loaded');
-}
-
-// Deal with dumbasses
-if (isset($_REQUEST['info_hash']) && isset($_REQUEST['peer_id'])) {
-    die('d14:failure reason40:Invalid .torrent, try downloading again.e');
+    if (!DEBUG_MODE) {
+        die('oops something went wrong :(');
+    }
+    die('install the Apcu extension');
 }
 
 require SERVER_ROOT . '/classes/proxies.class.php';
@@ -42,21 +43,18 @@ if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])
     $_SERVER['REMOTE_ADDR'] = $_SERVER['HTTP_X_FORWARDED_FOR'];
 }
 
-if (!isset($argv) && !empty($_SERVER['HTTP_HOST'])) {
-    // Skip this block if running from cli or if the browser is old and shitty
-    // This should really be done in nginx config TODO: Remove
-    if ($_SERVER['HTTP_HOST'] == 'www.' . SITE_DOMAIN) {
-        header('Location: https://' . SITE_DOMAIN . $_SERVER['REQUEST_URI']);
-        die();
-    }
+// Skip this block if running from cli or if the browser is old and shitty
+// This should really be done in nginx config TODO: Remove
+if (!isset($argv) && !empty($_SERVER['HTTP_HOST']) && $_SERVER['HTTP_HOST'] == 'www.' . SITE_DOMAIN) {
+    header('Location: https://' . SITE_DOMAIN . $_SERVER['REQUEST_URI']);
+    die();
 }
-
 
 
 $ScriptStartTime = microtime(true); //To track how long a page takes to create
 if (!defined('PHP_WINDOWS_VERSION_MAJOR')) {
     $RUsage = getrusage();
-    $CPUTimeStart = $RUsage['ru_utime.tv_sec'] * 1000000 + $RUsage['ru_utime.tv_usec'];
+    $CPUTimeStart = $RUsage['ru_utime.tv_sec'] * 1_000_000 + $RUsage['ru_utime.tv_usec'];
 }
 ob_start(); //Start a buffer, mainly in case there is a mysql error
 
@@ -75,6 +73,7 @@ $Debug->set_flag('Debug constructed');
 
 $DB = new DB_MYSQL();
 $Cache = new Cache(MEMCACHED_SERVERS);
+$Cache->flush();
 
 // Autoload classes.
 require SERVER_ROOT . '/classes/classloader.php';
@@ -88,12 +87,11 @@ G::initialize();
 
 $Browser = UserAgent::browser($_SERVER['HTTP_USER_AGENT']);
 $OperatingSystem = UserAgent::operating_system($_SERVER['HTTP_USER_AGENT']);
-
 $Debug->set_flag('start user handling');
-
 // Get classes
 // TODO: Remove these globals, replace by calls into Users
 [$Classes, $ClassLevels] = Users::get_classes();
+
 
 //-- Load user information
 // User info is broken up into many sections
@@ -104,16 +102,16 @@ $Debug->set_flag('start user handling');
 // Enabled - if the user's enabled or not
 // Permissions
 
-if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
+if (isset($_COOKIE['session'], $_COOKIE['userid'])) {
     $SessionID = $_COOKIE['session'];
-    $LoggedUser['ID'] = (int)$_COOKIE['userid'];
-
+    $LoggedUser['ID'] = (int) $_COOKIE['userid'];
+    
     $UserID = $LoggedUser['ID']; //TODO: UserID should not be LoggedUser
-
+    
     if (!$LoggedUser['ID'] || !$SessionID) {
         logout();
     }
-
+    
     $UserSessions = $Cache->get_value("users_sessions_$UserID");
     if (!is_array($UserSessions)) {
         $DB->query(
@@ -131,13 +129,14 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         $UserSessions = $DB->to_array('SessionID', MYSQLI_ASSOC);
         $Cache->cache_value("users_sessions_$UserID", $UserSessions, 0);
     }
-
+    
     if (!array_key_exists($SessionID, $UserSessions)) {
         logout();
     }
-
+    
     // Check if user is enabled
     $Enabled = $Cache->get_value('enabled_' . $LoggedUser['ID']);
+    
     if (false === $Enabled) {
         $DB->query("
       SELECT Enabled
@@ -149,7 +148,8 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
     if (2 == $Enabled) {
         logout();
     }
-
+    
+    
     // Up/Down stats
     $UserStats = $Cache->get_value('user_stats_' . $LoggedUser['ID']);
     if (!is_array($UserStats)) {
@@ -160,35 +160,36 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         $UserStats = $DB->next_record(MYSQLI_ASSOC);
         $Cache->cache_value('user_stats_' . $LoggedUser['ID'], $UserStats, 3600);
     }
-
     // Get info such as username
+    
     $LightInfo = Users::user_info($LoggedUser['ID']);
     $HeavyInfo = Users::user_heavy_info($LoggedUser['ID']);
-
+    
     // Create LoggedUser array
     $LoggedUser = array_merge($HeavyInfo, $LightInfo, $UserStats);
-
+    
     $LoggedUser['RSS_Auth'] = md5($LoggedUser['ID'] . RSS_HASH . $LoggedUser['torrent_pass']);
-
+    
     // $LoggedUser['RatioWatch'] as a bool to disable things for users on Ratio Watch
     $LoggedUser['RatioWatch'] = (
         $LoggedUser['RatioWatchEnds']
-    && time() < strtotime($LoggedUser['RatioWatchEnds'])
-    && ($LoggedUser['BytesDownloaded'] * $LoggedUser['RequiredRatio']) > $LoggedUser['BytesUploaded']
+        && time() < strtotime($LoggedUser['RatioWatchEnds'])
+        && ($LoggedUser['BytesDownloaded'] * $LoggedUser['RequiredRatio']) > $LoggedUser['BytesUploaded']
     );
-
+    
     // Load in the permissions
-    $LoggedUser['Permissions'] = Permissions::get_permissions_for_user($LoggedUser['ID'], $LoggedUser['CustomPermissions']);
+    $LoggedUser['Permissions'] = Permissions::get_permissions_for_user($LoggedUser['ID'],
+        $LoggedUser['CustomPermissions']);
     $LoggedUser['Permissions']['MaxCollages'] += Donations::get_personal_collages($LoggedUser['ID']);
-
+    
     // Change necessary triggers in external components
     $Cache->CanClear = check_perms('admin_clear_cache');
-
+    
     // Because we <3 our staff
     if (check_perms('site_disable_ip_history')) {
         $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
     }
-
+    
     // Update LastUpdate every 10 minutes
     if (strtotime($UserSessions[$SessionID]['LastUpdate']) + 600 < time()) {
         $DB->query("
@@ -196,14 +197,14 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
       SET LastAccess = NOW()
       WHERE ID = '$LoggedUser[ID]'");
         $SessionQuery =
-     "UPDATE users_sessions
+            "UPDATE users_sessions
       SET ";
         // Only update IP if we have an encryption key in memory
         if (apcu_exists('DBKEY')) {
             $SessionQuery .= "IP = '" . Crypto::encrypt($_SERVER['REMOTE_ADDR']) . "', ";
         }
         $SessionQuery .=
-       "Browser = '$Browser',
+            "Browser = '$Browser',
         OperatingSystem = '$OperatingSystem',
         LastUpdate = NOW()
       WHERE UserID = '$LoggedUser[ID]'
@@ -216,11 +217,12 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
             'Browser' => $Browser,
             'OperatingSystem' => $OperatingSystem,
             'IP' => (apcu_exists('DBKEY') ? Crypto::encrypt($_SERVER['REMOTE_ADDR']) : $UserSessions[$SessionID]['IP']),
-            'LastUpdate' => sqltime()];
+            'LastUpdate' => sqltime()
+        ];
         $Cache->insert_front($SessionID, $UsersSessionCache);
         $Cache->commit_transaction(0);
     }
-
+    
     // Notifications
     if (isset($LoggedUser['Permissions']['site_torrents_notify'])) {
         $LoggedUser['Notify'] = $Cache->get_value('notify_filters_' . $LoggedUser['ID']);
@@ -230,22 +232,22 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         FROM users_notify_filters
         WHERE UserID = '$LoggedUser[ID]'");
             $LoggedUser['Notify'] = $DB->to_array('ID');
-            $Cache->cache_value('notify_filters_' . $LoggedUser['ID'], $LoggedUser['Notify'], 2592000);
+            $Cache->cache_value('notify_filters_' . $LoggedUser['ID'], $LoggedUser['Notify'], 2_592_000);
         }
     }
-
+    
     // We've never had to disable the wiki privs of anyone.
     if ($LoggedUser['DisableWiki']) {
         unset($LoggedUser['Permissions']['site_edit_wiki']);
     }
-
+    
     // IP changed
-
+    
     if (apcu_exists('DBKEY') && Crypto::decrypt($LoggedUser['IP']) != $_SERVER['REMOTE_ADDR'] && !check_perms('site_disable_ip_history')) {
         if (Tools::site_ban_ip($_SERVER['REMOTE_ADDR'])) {
             error('Your IP address has been banned.');
         }
-
+        
         $CurIP = db_string($LoggedUser['IP']);
         $NewIP = db_string($_SERVER['REMOTE_ADDR']);
         $DB->query("
@@ -271,7 +273,7 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         (UserID, IP, StartTime)
       VALUES
         ('$LoggedUser[ID]', '" . Crypto::encrypt($NewIP) . "', NOW())");
-
+        
         $ipcc = Tools::geoip($NewIP);
         $DB->query("
       UPDATE users_main
@@ -281,8 +283,8 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         $Cache->update_row(false, ['IP' => Crypto::encrypt($_SERVER['REMOTE_ADDR'])]);
         $Cache->commit_transaction(0);
     }
-
-
+    
+    
     // Get stylesheets
     $Stylesheets = $Cache->get_value('stylesheets');
     if (!is_array($Stylesheets)) {
@@ -297,10 +299,10 @@ if (isset($_COOKIE['session']) && isset($_COOKIE['userid'])) {
         $Stylesheets = $DB->to_array('ID', MYSQLI_BOTH);
         $Cache->cache_value('stylesheets', $Stylesheets, 0);
     }
-
+    
     //A9 TODO: Clean up this messy solution
     $LoggedUser['StyleName'] = $Stylesheets[$LoggedUser['StyleID']]['Name'];
-
+    
     if (empty($LoggedUser['Username'])) {
         logout(); // Ghost
     }
@@ -313,7 +315,7 @@ $Debug->set_flag('start function definitions');
 /**
  * Log out the current session
  */
-function logout()
+function logout(): void
 {
     global $SessionID;
     setcookie('session', '', time() - 60 * 60 * 24 * 365, '/', '', false);
@@ -324,7 +326,7 @@ function logout()
       DELETE FROM users_sessions
       WHERE UserID = '" . G::$LoggedUser['ID'] . "'
         AND SessionID = '" . db_string($SessionID) . "'");
-
+        
         G::$Cache->begin_transaction('users_sessions_' . G::$LoggedUser['ID']);
         G::$Cache->delete_row($SessionID);
         G::$Cache->commit_transaction(0);
@@ -332,25 +334,25 @@ function logout()
     G::$Cache->delete_value('user_info_' . G::$LoggedUser['ID']);
     G::$Cache->delete_value('user_stats_' . G::$LoggedUser['ID']);
     G::$Cache->delete_value('user_info_heavy_' . G::$LoggedUser['ID']);
-
+    
     header('Location: login.php');
-
+    
     die();
 }
 
-function logout_all_sessions()
+function logout_all_sessions(): void
 {
     $UserID = G::$LoggedUser['ID'];
-
+    
     G::$DB->query("
     DELETE FROM users_sessions
     WHERE UserID = '$UserID'");
-
+    
     G::$Cache->delete_value('users_sessions_' . $UserID);
     logout();
 }
 
-function enforce_login()
+function enforce_login(): void
 {
     global $SessionID;
     if (!$SessionID || !G::$LoggedUser) {
@@ -364,32 +366,80 @@ function enforce_login()
  * Should be used for any user action that relies solely on GET.
  *
  * @param Are we using ajax?
+ *
  * @return authorisation status. Prints an error message to LAB_CHAN on IRC on failure.
  */
 function authorize($Ajax = false)
 {
     if (empty($_REQUEST['auth']) || $_REQUEST['auth'] != G::$LoggedUser['AuthKey']) {
-        send_irc("PRIVMSG " . LAB_CHAN . " :" . G::$LoggedUser['Username'] . " just failed authorize on " . $_SERVER['REQUEST_URI'] . (!empty($_SERVER['HTTP_REFERER']) ? " coming from " . $_SERVER['HTTP_REFERER'] : ""));
+        send_irc("PRIVMSG " . LAB_CHAN . " :" . G::$LoggedUser['Username'] . " just failed authorize on " . $_SERVER['REQUEST_URI'] . (empty($_SERVER['HTTP_REFERER']) ? "" : " coming from " . $_SERVER['HTTP_REFERER']));
         error('Invalid authorization key. Go back, refresh, and try again.', $Ajax);
+        
         return false;
     }
+    
     return true;
 }
 
 $Debug->set_flag('ending function definitions');
 //Include /sections/*/index.php
-$Document = basename(parse_url($_SERVER['SCRIPT_FILENAME'], PHP_URL_PATH), '.php');
+
+$Document = mb_strtolower(basename(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '.php'));
+
+switch ($Document) {
+    case 'wiki':
+    case 'artist':
+    case 'better':
+    case 'bookmarks':
+    case 'collage':
+    case 'comments':
+    case 'contest':
+    case 'forums':
+    case 'friends':
+    case 'slaves':
+    case 'snatchlist':
+    case 'staffblog':
+    case 'store':
+    case 'upload':
+    case 'user':
+    case 'userhistory':
+        define('ERROR_EXCEPTION', true);
+    case 'peerupdate':
+    case 'schedule':
+        define('MEMORY_EXCEPTION', true);
+        define('TIME_EXCEPTION', true);
+        define('ERROR_EXCEPTION', true);
+        
+        break;
+}
+if (empty($Document)) {
+    $Document = 'index';
+}
 if (!preg_match('/^[a-z0-9]+$/i', $Document)) {
     error(404);
+} elseif (in_array($Document, ['announce', 'scrape'])) {
+    echo "d14:failure reason40:Invalid .torrent, try downloading again.e";
+    die();
 }
+$StripPostKeys = array_fill_keys([
+    'password',
+    'cur_pass',
+    'new_pass_1',
+    'new_pass_2',
+    'verifypassword',
+    'confirm_password',
+    'ChangePassword',
+    'Password'
+], true);
 
-$StripPostKeys = array_fill_keys(['password', 'cur_pass', 'new_pass_1', 'new_pass_2', 'verifypassword', 'confirm_password', 'ChangePassword', 'Password'], true);
 $Cache->cache_value('php_' . getmypid(), [
     'start' => sqltime(),
     'document' => $Document,
     'query' => $_SERVER['QUERY_STRING'],
     'get' => $_GET,
-    'post' => array_diff_key($_POST, $StripPostKeys)], 600);
+    'post' => array_diff_key($_POST, $StripPostKeys)
+], 600);
+
 
 // Locked account constant
 define('STAFF_LOCKED', 1);
@@ -399,7 +449,12 @@ $AllowedPages = ['staffpm', 'ajax', 'locked', 'logout', 'login'];
 if (isset(G::$LoggedUser['LockedAccount']) && !in_array($Document, $AllowedPages, true)) {
     require SERVER_ROOT . '/sections/locked/index.php';
 } else {
-    require SERVER_ROOT . '/sections/' . $Document . '/index.php';
+    $file = realpath(SERVER_ROOT . '/sections/' . $Document . '/index.php');
+    if (false !== $file) {
+        require $file;
+    } else {
+        error(404);
+    }
 }
 
 $Debug->set_flag('completed module execution');

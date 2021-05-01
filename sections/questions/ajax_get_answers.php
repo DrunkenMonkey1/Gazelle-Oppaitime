@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $ID = (int)$_GET['id'];
 if (empty($ID)) {
     die();
@@ -7,14 +7,14 @@ Text::$TOC = true;
 $UserID = (int)$_GET['userid'];
 $UserIDSQL = "";
 if (!empty($UserID)) {
-    $UserIDSQL = " AND UserID != '$UserID' ";
+    $UserIDSQL = sprintf(' AND UserID != \'%s\' ', $UserID);
 }
 
 G::$DB->query("
     SELECT UserID, Answer, Date
     FROM staff_answers
-    WHERE QuestionID = '$ID'
-      $UserIDSQL
+    WHERE QuestionID = '{$ID}'
+      {$UserIDSQL}
     ORDER BY DATE DESC");
 
 $Answers = G::$DB->to_array(false, MYSQLI_ASSOC);

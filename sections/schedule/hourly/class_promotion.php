@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Promote users -------------------------------------------//
 
 // Disabled in favor of store-based promotions

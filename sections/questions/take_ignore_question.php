@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms("users_mod")) {
@@ -15,4 +17,4 @@ G::$DB->query("
   INSERT INTO staff_ignored_questions
     (QuestionID, UserID)
   VALUES
-    ('$ID', '$LoggedUser[ID]')");
+    ('{$ID}', '$LoggedUser[ID]')");

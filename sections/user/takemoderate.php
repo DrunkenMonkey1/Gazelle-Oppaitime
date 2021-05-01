@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*************************************************************************\
 //--------------Take moderation -----------------------------------------//
 
@@ -150,11 +152,11 @@ $DB->query("
     LEFT JOIN permissions AS p ON p.ID = m.PermissionID
     LEFT JOIN users_levels AS l ON l.UserID = m.ID
     LEFT JOIN locked_accounts AS la ON la.UserID = m.ID
-  WHERE m.ID = $UserID
+  WHERE m.ID = {$UserID}
   GROUP BY m.ID");
 
 if (!$DB->has_results()) { // If user doesn't exist
-    header("Location: log.php?search=User+$UserID");
+    header(sprintf('Location: log.php?search=User+%s', $UserID));
 }
 
 $Cur = $DB->next_record(MYSQLI_ASSOC, false);
@@ -179,18 +181,18 @@ if (!empty($_POST['donor_points_submit']) && !empty($_POST['donation_value']) &&
 // If we're deleting the user, we can ignore all the other crap
 
 if ('delete' === $_POST['UserStatus'] && check_perms('users_delete_users')) {
-    Misc::write_log("User account $UserID (" . $Cur['Username'] . ") was deleted by " . $LoggedUser['Username']);
+    Misc::write_log(sprintf('User account %s (', $UserID) . $Cur['Username'] . ") was deleted by " . $LoggedUser['Username']);
     $DB->query("
     DELETE FROM users_main
-    WHERE id = $UserID");
+    WHERE id = {$UserID}");
     $DB->query("
     DELETE FROM users_info
-    WHERE UserID = $UserID");
-    $Cache->delete_value("user_info_$UserID");
+    WHERE UserID = {$UserID}");
+    $Cache->delete_value(sprintf('user_info_%s', $UserID));
 
     Tracker::update_tracker('remove_user', ['passkey' => $Cur['torrent_pass']]);
 
-    header("Location: log.php?search=User+$UserID");
+    header(sprintf('Location: log.php?search=User+%s', $UserID));
     die();
 }
 
@@ -227,7 +229,7 @@ if ($_POST['ResetRatioWatch'] && check_perms('users_edit_reset_keys')) {
     $DB->query("
     UPDATE users_info
     SET RatioWatchEnds = NULL, RatioWatchDownload = '0', RatioWatchTimes = '0'
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     $EditSummary[] = 'RatioWatch history reset';
 }
 
@@ -235,87 +237,87 @@ if ($_POST['ResetIPHistory'] && check_perms('users_edit_reset_keys')) {
     $GenericIP = Crypto::encrypt('127.0.0.1');
     $DB->query("
     DELETE FROM users_history_ips
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     $DB->query("
     UPDATE users_main
-    SET IP = '$GenericIP'
-    WHERE ID = '$UserID'");
+    SET IP = '{$GenericIP}'
+    WHERE ID = '{$UserID}'");
     $DB->query("
     UPDATE xbt_snatched
     SET IP = ''
-    WHERE uid = '$UserID'");
+    WHERE uid = '{$UserID}'");
     $DB->query("
     UPDATE users_history_passwords
     SET ChangerIP = ''
-    WHERE UserID = $UserID");
+    WHERE UserID = {$UserID}");
     $DB->query("
     UPDATE users_history_passkeys
     SET ChangerIP = ''
-    WHERE UserID = $UserID");
+    WHERE UserID = {$UserID}");
     $DB->query("
     UPDATE users_sessions
-    SET IP = '$GenericIP'
-    WHERE UserID = $UserID");
+    SET IP = '{$GenericIP}'
+    WHERE UserID = {$UserID}");
 }
 
 if ($_POST['ResetEmailHistory'] && check_perms('users_edit_reset_keys')) {
     $DB->query("
     DELETE FROM users_history_emails
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     if ($_POST['ResetIPHistory']) {
         $DB->query("
       INSERT INTO users_history_emails
         (UserID, Email, Time, IP)
       VALUES
-        ('$UserID', '" . Crypto::encrypt($Username . '@' . SITE_DOMAIN) . "', NULL, '" . Crypto::encrypt('127.0.0.1') . "')");
+        ('{$UserID}', '" . Crypto::encrypt($Username . '@' . SITE_DOMAIN) . "', NULL, '" . Crypto::encrypt('127.0.0.1') . "')");
     } else {
         $DB->query("
       INSERT INTO users_history_emails
         (UserID, Email, Time, IP)
       VALUES
-        ('$UserID', '" . Crypto::encrypt($Username . '@' . SITE_DOMAIN) . "', NULL, '" . $Cur['IP'] . "')");
+        ('{$UserID}', '" . Crypto::encrypt($Username . '@' . SITE_DOMAIN) . "', NULL, '" . $Cur['IP'] . "')");
     }
     $DB->query("
     UPDATE users_main
     SET Email = '" . Crypto::encrypt($Username . '@' . SITE_DOMAIN) . "'
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
     $EditSummary[] = 'Email history cleared';
 }
 
 if ($_POST['ResetSnatchList'] && check_perms('users_edit_reset_keys')) {
     $DB->query("
     DELETE FROM xbt_snatched
-    WHERE uid = '$UserID'");
+    WHERE uid = '{$UserID}'");
     $EditSummary[] = 'Snatch list cleared';
-    $Cache->delete_value("recent_snatches_$UserID");
+    $Cache->delete_value(sprintf('recent_snatches_%s', $UserID));
 }
 
 if ($_POST['ResetDownloadList'] && check_perms('users_edit_reset_keys')) {
     $DB->query("
     DELETE FROM users_downloads
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     $EditSummary[] = 'Download list cleared';
 }
 
 if (($_POST['ResetSession'] || $_POST['LogOut']) && check_perms('users_logout')) {
-    $Cache->delete_value("user_info_$UserID");
-    $Cache->delete_value("user_info_heavy_$UserID");
-    $Cache->delete_value("user_stats_$UserID");
-    $Cache->delete_value("enabled_$UserID");
+    $Cache->delete_value(sprintf('user_info_%s', $UserID));
+    $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
+    $Cache->delete_value(sprintf('user_stats_%s', $UserID));
+    $Cache->delete_value(sprintf('enabled_%s', $UserID));
 
     if ($_POST['LogOut']) {
         $DB->query("
       SELECT SessionID
       FROM users_sessions
-      WHERE UserID = '$UserID'");
+      WHERE UserID = '{$UserID}'");
         while ([$SessionID] = $DB->next_record()) {
-            $Cache->delete_value("session_{$UserID}_$SessionID");
+            $Cache->delete_value(sprintf('session_%s_%s', $UserID, $SessionID));
         }
-        $Cache->delete_value("users_sessions_$UserID");
+        $Cache->delete_value(sprintf('users_sessions_%s', $UserID));
 
         $DB->query("
       DELETE FROM users_sessions
-      WHERE UserID = '$UserID'");
+      WHERE UserID = '{$UserID}'");
     }
 }
 
@@ -326,7 +328,7 @@ if ($Classes[$Class]['Level'] != $Cur['Class']
     || ($Classes[$Class]['Level'] <= $LoggedUser['Class'] && check_perms('users_promote_to', $Cur['Class'] - 1))
   )
   ) {
-    $UpdateSet[] = "PermissionID = '$Class'";
+    $UpdateSet[] = sprintf('PermissionID = \'%s\'', $Class);
     $EditSummary[] = 'class changed to ' . Users::make_class_string($Class);
     $LightUpdates['PermissionID'] = $Class;
     $DeleteKeys = true;
@@ -334,7 +336,7 @@ if ($Classes[$Class]['Level'] != $Cur['Class']
     $DB->query("
     SELECT DISTINCT DisplayStaff
     FROM permissions
-    WHERE ID = $Class
+    WHERE ID = {$Class}
       OR ID = " . $ClassLevels[$Cur['Class']]['ID']);
     if (2 === $DB->record_count()) {
         if ($Classes[$Class]['Level'] < $Cur['Class']) {
@@ -342,26 +344,26 @@ if ($Classes[$Class]['Level'] != $Cur['Class']
         }
         $ClearStaffIDCache = true;
     }
-    $Cache->delete_value("donor_info_$UserID");
+    $Cache->delete_value(sprintf('donor_info_%s', $UserID));
 }
 
 if ($Username != $Cur['Username'] && check_perms('users_edit_usernames', $Cur['Class'] - 1)) {
     $DB->query("
     SELECT ID
     FROM users_main
-    WHERE Username = '$Username'");
+    WHERE Username = '{$Username}'");
     if ($DB->next_record() > 0) {
         [$UsedUsernameID] = $DB->next_record();
-        error("Username already in use by <a href=\"user.php?id=$UsedUsernameID\">$Username</a>");
-        header("Location: user.php?id=$UserID");
+        error(sprintf('Username already in use by <a href="user.php?id=%s">%s</a>', $UsedUsernameID, $Username));
+        header(sprintf('Location: user.php?id=%s', $UserID));
         die();
     } elseif ('0' == $Username || '1' == $Username) {
         error('You cannot set a username of "0" or "1".');
-        header("Location: user.php?id=$UserID");
+        header(sprintf('Location: user.php?id=%s', $UserID));
         die();
     } else {
-        $UpdateSet[] = "Username = '$Username'";
-        $EditSummary[] = "username changed from " . $Cur['Username'] . " to $Username";
+        $UpdateSet[] = sprintf('Username = \'%s\'', $Username);
+        $EditSummary[] = "username changed from " . $Cur['Username'] . sprintf(' to %s', $Username);
         $LightUpdates['Username'] = $Username;
     }
 }
@@ -370,17 +372,17 @@ if ($Title != db_string($Cur['Title']) && check_perms('users_edit_titles')) {
     // Using the unescaped value for the test to avoid confusion
     if (strlen($_POST['Title']) > 1024) {
         error("Custom titles have a maximum length of 1,024 characters.");
-        header("Location: user.php?id=$UserID");
+        header(sprintf('Location: user.php?id=%s', $UserID));
         die();
     } else {
-        $UpdateSet[] = "Title = '$Title'";
-        $EditSummary[] = "title changed to [code]{$Title}[/code]";
+        $UpdateSet[] = sprintf('Title = \'%s\'', $Title);
+        $EditSummary[] = sprintf('title changed to [code]%s[/code]', $Title);
         $LightUpdates['Title'] = $_POST['Title'];
     }
 }
 
 if ($Donor != $Cur['Donor'] && check_perms('users_give_donor')) {
-    $UpdateSet[] = "Donor = '$Donor'";
+    $UpdateSet[] = sprintf('Donor = \'%s\'', $Donor);
     $EditSummary[] = 'donor status changed';
     $LightUpdates['Donor'] = $Donor;
 }
@@ -389,7 +391,7 @@ if ($Donor != $Cur['Donor'] && check_perms('users_give_donor')) {
 $OldClasses = $Cur['SecondaryClasses'] ? explode(',', $Cur['SecondaryClasses']) : [];
 $DroppedClasses = array_diff($OldClasses, $SecondaryClasses);
 $AddedClasses   = array_diff($SecondaryClasses, $OldClasses);
-if (count($DroppedClasses) > 0) {
+if ([] !== $DroppedClasses) {
     $ClassChanges = [];
     foreach ($DroppedClasses as $PermID) {
         $ClassChanges[] = $Classes[$PermID]['Name'];
@@ -397,16 +399,12 @@ if (count($DroppedClasses) > 0) {
     $EditSummary[] = 'Secondary classes dropped: ' . implode(', ', $ClassChanges);
     $DB->query("
     DELETE FROM users_levels
-    WHERE UserID = '$UserID'
+    WHERE UserID = '{$UserID}'
       AND PermissionID IN (" . implode(',', $DroppedClasses) . ')');
-    if (count($SecondaryClasses) > 0) {
-        $LightUpdates['ExtraClasses'] = array_fill_keys($SecondaryClasses, 1);
-    } else {
-        $LightUpdates['ExtraClasses'] = [];
-    }
+    $LightUpdates['ExtraClasses'] = count($SecondaryClasses) > 0 ? array_fill_keys($SecondaryClasses, 1) : [];
     $DeleteKeys = true;
 }
-if (count($AddedClasses) > 0) {
+if ([] !== $AddedClasses) {
     $ClassChanges = [];
     foreach ($AddedClasses as $PermID) {
         $ClassChanges[] = $Classes[$PermID]['Name'];
@@ -414,7 +412,7 @@ if (count($AddedClasses) > 0) {
     $EditSummary[] = "Secondary classes added: " . implode(', ', $ClassChanges);
     $Values = [];
     foreach ($AddedClasses as $PermID) {
-        $Values[] = "($UserID, $PermID)";
+        $Values[] = sprintf('(%s, %s)', $UserID, $PermID);
     }
     $DB->query("
     INSERT INTO users_levels (UserID, PermissionID)
@@ -424,7 +422,7 @@ if (count($AddedClasses) > 0) {
 }
 
 if ($Visible != $Cur['Visible'] && check_perms('users_make_invisible')) {
-    $UpdateSet[] = "Visible = '$Visible'";
+    $UpdateSet[] = sprintf('Visible = \'%s\'', $Visible);
     $EditSummary[] = 'visibility changed';
     $LightUpdates['Visible'] = $Visible;
     $TrackerUserUpdates['visible'] = $Visible;
@@ -432,38 +430,38 @@ if ($Visible != $Cur['Visible'] && check_perms('users_make_invisible')) {
 
 if ($Uploaded != $Cur['Uploaded'] && $Uploaded != $_POST['OldUploaded'] && (check_perms('users_edit_ratio')
   || (check_perms('users_edit_own_ratio') && $UserID == $LoggedUser['ID']))) {
-    $UpdateSet[] = "Uploaded = '$Uploaded'";
+    $UpdateSet[] = sprintf('Uploaded = \'%s\'', $Uploaded);
     $EditSummary[] = "uploaded changed from " . Format::get_size($Cur['Uploaded']) . ' to ' . Format::get_size($Uploaded);
-    $Cache->delete_value("user_stats_$UserID");
+    $Cache->delete_value(sprintf('user_stats_%s', $UserID));
 }
 
 if ($Downloaded != $Cur['Downloaded'] && $Downloaded != $_POST['OldDownloaded'] && (check_perms('users_edit_ratio')
   || (check_perms('users_edit_own_ratio') && $UserID == $LoggedUser['ID']))) {
-    $UpdateSet[] = "Downloaded = '$Downloaded'";
+    $UpdateSet[] = sprintf('Downloaded = \'%s\'', $Downloaded);
     $EditSummary[] = "downloaded changed from " . Format::get_size($Cur['Downloaded']) . ' to ' . Format::get_size($Downloaded);
-    $Cache->delete_value("user_stats_$UserID");
+    $Cache->delete_value(sprintf('user_stats_%s', $UserID));
 }
 
 if ($BonusPoints != $Cur['BonusPoints'] && (check_perms('users_edit_ratio') || (check_perms('users_edit_own_ratio') && $UserID == $LoggedUser['ID']))) {
-    $UpdateSet[] = "BonusPoints = $BonusPoints";
-    $EditSummary[] = "Bonus Points changed from " . $Cur['BonusPoints'] . " to $BonusPoints";
+    $UpdateSet[] = sprintf('BonusPoints = %s', $BonusPoints);
+    $EditSummary[] = "Bonus Points changed from " . $Cur['BonusPoints'] . sprintf(' to %s', $BonusPoints);
     $HeavyUpdates['BonusPoints'] = $BonusPoints;
 }
 
 if ($FLTokens != $Cur['FLTokens'] && (check_perms('users_edit_ratio') || (check_perms('users_edit_own_ratio') && $UserID == $LoggedUser['ID']))) {
-    $UpdateSet[] = "FLTokens = $FLTokens";
-    $EditSummary[] = "Freeleech Tokens changed from " . $Cur['FLTokens'] . " to $FLTokens";
+    $UpdateSet[] = sprintf('FLTokens = %s', $FLTokens);
+    $EditSummary[] = "Freeleech Tokens changed from " . $Cur['FLTokens'] . sprintf(' to %s', $FLTokens);
     $HeavyUpdates['FLTokens'] = $FLTokens;
 }
 
 if ($Invites != $Cur['Invites'] && check_perms('users_edit_invites')) {
-    $UpdateSet[] = "invites = '$Invites'";
-    $EditSummary[] = "number of invites changed to $Invites";
+    $UpdateSet[] = sprintf('invites = \'%s\'', $Invites);
+    $EditSummary[] = sprintf('number of invites changed to %s', $Invites);
     $HeavyUpdates['Invites'] = $Invites;
 }
 
 if (check_perms('users_edit_badges')) {
-    $query = "DELETE FROM users_badges WHERE UserID = $UserID";
+    $query = sprintf('DELETE FROM users_badges WHERE UserID = %s', $UserID);
     if (!empty($Badges)) {
         $query .= " AND BadgeID NOT IN (" . implode(',', $Badges) . ")";
     }
@@ -473,7 +471,7 @@ if (check_perms('users_edit_badges')) {
         $query = "INSERT IGNORE INTO users_badges (UserID, BadgeID) VALUES ";
         $len = count($Badges);
         foreach ($Badges as $i => $BadgeID) {
-            $query .= "($UserID, $BadgeID)";
+            $query .= sprintf('(%s, %s)', $UserID, $BadgeID);
             if ($i < ($len-1)) {
                 $query .= ", ";
             }
@@ -486,12 +484,12 @@ if (check_perms('users_edit_badges')) {
 
 if (1 == $Warned && !$Cur['Warned'] && check_perms('users_warn')) {
     $Weeks = 'week' . (1 === $WarnLength ? '' : 's');
-    Misc::send_pm($UserID, 0, 'You have received a warning', "You have been [url=" . site_url() . "wiki.php?action=article&amp;name=warnings]warned for $WarnLength {$Weeks}[/url] by [user]" . $LoggedUser['Username'] . "[/user]. The reason given was:
+    Misc::send_pm($UserID, 0, 'You have received a warning', "You have been [url=" . site_url() . sprintf('wiki.php?action=article&amp;name=warnings]warned for %s %s[/url] by [user]', $WarnLength, $Weeks) . $LoggedUser['Username'] . "[/user]. The reason given was:
 [quote]{$WarnReason}[/quote]");
-    $UpdateSet[] = "Warned = NOW() + INTERVAL $WarnLength WEEK";
-    $Msg = "warned for $WarnLength $Weeks";
+    $UpdateSet[] = sprintf('Warned = NOW() + INTERVAL %s WEEK', $WarnLength);
+    $Msg = sprintf('warned for %s %s', $WarnLength, $Weeks);
     if ($WarnReason) {
-        $Msg .= " for \"$WarnReason\"";
+        $Msg .= sprintf(' for "%s"', $WarnReason);
     }
     $EditSummary[] = db_string($Msg);
     $LightUpdates['Warned'] = time_plus(3600 * 24 * 7 * $WarnLength);
@@ -501,47 +499,47 @@ if (1 == $Warned && !$Cur['Warned'] && check_perms('users_warn')) {
     $LightUpdates['Warned'] = null;
 } elseif (1 == $Warned && '---' != $ExtendWarning && check_perms('users_warn')) {
     $Weeks = 'week' . (1 === $ExtendWarning ? '' : 's');
-    Misc::send_pm($UserID, 0, 'Your warning has been extended', "Your warning has been extended by $ExtendWarning $Weeks by [user]" . $LoggedUser['Username'] . "[/user]. The reason given was:
+    Misc::send_pm($UserID, 0, 'Your warning has been extended', sprintf('Your warning has been extended by %s %s by [user]', $ExtendWarning, $Weeks) . $LoggedUser['Username'] . "[/user]. The reason given was:
 [quote]{$WarnReason}[/quote]");
 
-    $UpdateSet[] = "Warned = Warned + INTERVAL $ExtendWarning WEEK";
+    $UpdateSet[] = sprintf('Warned = Warned + INTERVAL %s WEEK', $ExtendWarning);
     $DB->query("
-    SELECT Warned + INTERVAL $ExtendWarning WEEK
+    SELECT Warned + INTERVAL {$ExtendWarning} WEEK
     FROM users_info
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     [$WarnedUntil] = $DB->next_record();
-    $Msg = "warning extended by $ExtendWarning $Weeks to $WarnedUntil";
+    $Msg = sprintf('warning extended by %s %s to %s', $ExtendWarning, $Weeks, $WarnedUntil);
     if ($WarnReason) {
-        $Msg .= " for \"$WarnReason\"";
+        $Msg .= sprintf(' for "%s"', $WarnReason);
     }
     $EditSummary[] = db_string($Msg);
     $LightUpdates['Warned'] = $WarnedUntil;
 } elseif (1 == $Warned && '---' == $ExtendWarning && '---' != $ReduceWarning && check_perms('users_warn')) {
     $Weeks = 'week' . (1 === $ReduceWarning ? '' : 's');
-    Misc::send_pm($UserID, 0, 'Your warning has been reduced', "Your warning has been reduced by $ReduceWarning $Weeks by [user]" . $LoggedUser['Username'] . "[/user]. The reason given was:
+    Misc::send_pm($UserID, 0, 'Your warning has been reduced', sprintf('Your warning has been reduced by %s %s by [user]', $ReduceWarning, $Weeks) . $LoggedUser['Username'] . "[/user]. The reason given was:
 [quote]{$WarnReason}[/quote]");
-    $UpdateSet[] = "Warned = Warned - INTERVAL $ReduceWarning WEEK";
+    $UpdateSet[] = sprintf('Warned = Warned - INTERVAL %s WEEK', $ReduceWarning);
     $DB->query("
-    SELECT Warned - INTERVAL $ReduceWarning WEEK
+    SELECT Warned - INTERVAL {$ReduceWarning} WEEK
     FROM users_info
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     [$WarnedUntil] = $DB->next_record();
-    $Msg = "warning reduced by $ReduceWarning $Weeks to $WarnedUntil";
+    $Msg = sprintf('warning reduced by %s %s to %s', $ReduceWarning, $Weeks, $WarnedUntil);
     if ($WarnReason) {
-        $Msg .= " for \"$WarnReason\"";
+        $Msg .= sprintf(' for "%s"', $WarnReason);
     }
     $EditSummary[] = db_string($Msg);
     $LightUpdates['Warned'] = $WarnedUntil;
 }
 
 if ($SupportFor != db_string($Cur['SupportFor']) && (check_perms('admin_manage_fls') || (check_perms('users_mod') && $UserID == $LoggedUser['ID']))) {
-    $UpdateSet[] = "SupportFor = '$SupportFor'";
-    $EditSummary[] = "First-Line Support status changed to \"$SupportFor\"";
+    $UpdateSet[] = sprintf('SupportFor = \'%s\'', $SupportFor);
+    $EditSummary[] = sprintf('First-Line Support status changed to "%s"', $SupportFor);
 }
 
 if ($RestrictedForums != db_string($Cur['RestrictedForums']) && check_perms('users_mod')) {
-    $UpdateSet[] = "RestrictedForums = '$RestrictedForums'";
-    $EditSummary[] = "restricted forum(s): $RestrictedForums";
+    $UpdateSet[] = sprintf('RestrictedForums = \'%s\'', $RestrictedForums);
+    $EditSummary[] = sprintf('restricted forum(s): %s', $RestrictedForums);
     $DeleteKeys = true;
 }
 
@@ -554,131 +552,129 @@ if ($PermittedForums != db_string($Cur['PermittedForums']) && check_perms('users
         }
     }
     $PermittedForums = implode(',', $ForumSet);
-    $UpdateSet[] = "PermittedForums = '$PermittedForums'";
-    $EditSummary[] = "permitted forum(s): $PermittedForums";
+    $UpdateSet[] = sprintf('PermittedForums = \'%s\'', $PermittedForums);
+    $EditSummary[] = sprintf('permitted forum(s): %s', $PermittedForums);
     $DeleteKeys = true;
 }
 
 if ($DisableAvatar != $Cur['DisableAvatar'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableAvatar = '$DisableAvatar'";
+    $UpdateSet[] = sprintf('DisableAvatar = \'%s\'', $DisableAvatar);
     $EditSummary[] = 'avatar privileges ' . ($DisableAvatar ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableAvatar'] = $DisableAvatar;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your avatar privileges have been disabled', "Your avatar privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your avatar privileges have been disabled', sprintf('Your avatar privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableLeech != $Cur['can_leech'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "can_leech = '$DisableLeech'";
+    $UpdateSet[] = sprintf('can_leech = \'%s\'', $DisableLeech);
     $EditSummary[] = "leeching status changed (" . translateLeechStatus($Cur['can_leech']) . " -> " . translateLeechStatus($DisableLeech) . ")";
     $HeavyUpdates['DisableLeech'] = $DisableLeech;
     $HeavyUpdates['CanLeech'] = $DisableLeech;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your leeching privileges have been disabled', "Your leeching privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your leeching privileges have been disabled', sprintf('Your leeching privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
     $TrackerUserUpdates['can_leech'] = $DisableLeech;
 }
 
 if ($DisableInvites != $Cur['DisableInvites'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableInvites = '$DisableInvites'";
-    if (1 == $DisableInvites) {
-        //$UpdateSet[] = "Invites = '0'";
-        if (!empty($UserReason)) {
-            Misc::send_pm($UserID, 0, 'Your invite privileges have been disabled', "Your invite privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
-        }
+    $UpdateSet[] = sprintf('DisableInvites = \'%s\'', $DisableInvites);
+    //$UpdateSet[] = "Invites = '0'";
+    if (1 == $DisableInvites && !empty($UserReason)) {
+        Misc::send_pm($UserID, 0, 'Your invite privileges have been disabled', sprintf('Your invite privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
     $EditSummary[] = 'invites privileges ' . ($DisableInvites ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableInvites'] = $DisableInvites;
 }
 
 if ($DisablePosting != $Cur['DisablePosting'] && check_perms('users_disable_posts')) {
-    $UpdateSet[] = "DisablePosting = '$DisablePosting'";
+    $UpdateSet[] = sprintf('DisablePosting = \'%s\'', $DisablePosting);
     $EditSummary[] = 'posting privileges ' . ($DisablePosting ? 'disabled' : 'enabled');
     $HeavyUpdates['DisablePosting'] = $DisablePosting;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your forum posting privileges have been disabled', "Your forum posting privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your forum posting privileges have been disabled', sprintf('Your forum posting privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableForums != $Cur['DisableForums'] && check_perms('users_disable_posts')) {
-    $UpdateSet[] = "DisableForums = '$DisableForums'";
+    $UpdateSet[] = sprintf('DisableForums = \'%s\'', $DisableForums);
     $EditSummary[] = 'forums privileges ' . ($DisableForums ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableForums'] = $DisableForums;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your forum privileges have been disabled', "Your forum privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your forum privileges have been disabled', sprintf('Your forum privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableTagging != $Cur['DisableTagging'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableTagging = '$DisableTagging'";
+    $UpdateSet[] = sprintf('DisableTagging = \'%s\'', $DisableTagging);
     $EditSummary[] = 'tagging privileges ' . ($DisableTagging ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableTagging'] = $DisableTagging;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your tagging privileges have been disabled', "Your tagging privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your tagging privileges have been disabled', sprintf('Your tagging privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableUpload != $Cur['DisableUpload'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableUpload = '$DisableUpload'";
+    $UpdateSet[] = sprintf('DisableUpload = \'%s\'', $DisableUpload);
     $EditSummary[] = 'upload privileges ' . ($DisableUpload ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableUpload'] = $DisableUpload;
     if (1 == $DisableUpload) {
-        Misc::send_pm($UserID, 0, 'Your upload privileges have been disabled', "Your upload privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your upload privileges have been disabled', sprintf('Your upload privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableWiki != $Cur['DisableWiki'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableWiki = '$DisableWiki'";
+    $UpdateSet[] = sprintf('DisableWiki = \'%s\'', $DisableWiki);
     $EditSummary[] = 'wiki privileges ' . ($DisableWiki ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableWiki'] = $DisableWiki;
     $HeavyUpdates['site_edit_wiki'] = 0;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your site editing privileges have been disabled', "Your site editing privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your site editing privileges have been disabled', sprintf('Your site editing privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisablePM != $Cur['DisablePM'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisablePM = '$DisablePM'";
+    $UpdateSet[] = sprintf('DisablePM = \'%s\'', $DisablePM);
     $EditSummary[] = 'PM privileges ' . ($DisablePM ? 'disabled' : 'enabled');
     $HeavyUpdates['DisablePM'] = $DisablePM;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your PM privileges have been disabled', "Your PM privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your PM privileges have been disabled', sprintf('Your PM privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisablePoints != $Cur['DisablePoints'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisablePoints = '$DisablePoints'";
+    $UpdateSet[] = sprintf('DisablePoints = \'%s\'', $DisablePoints);
     $EditSummary[] = BONUS_POINTS . ' earning ' . ($DisablePoints ? 'disabled' : 'enabled');
     $HeavyUpdates['DisablePoints'] = $DisablePoints;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your ' . BONUS_POINTS . '-earning ability has been disabled', "Your " . BONUS_POINTS . "-earning ability has been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your ' . BONUS_POINTS . '-earning ability has been disabled', "Your " . BONUS_POINTS . sprintf('-earning ability has been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisablePromotion != $Cur['DisablePromotion'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisablePromotion = '$DisablePromotion'";
+    $UpdateSet[] = sprintf('DisablePromotion = \'%s\'', $DisablePromotion);
     $EditSummary[] = 'Class purchasing ' . ($DisablePromotion ? 'disabled' : 'enabled');
     $HeavyUpdates['DisablePromotion'] = $DisablePromotion;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your promotion purchasing ability has been disabled', "Your promotion purchasing ability has been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your promotion purchasing ability has been disabled', sprintf('Your promotion purchasing ability has been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
 if ($DisableIRC != $Cur['DisableIRC'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableIRC = '$DisableIRC'";
+    $UpdateSet[] = sprintf('DisableIRC = \'%s\'', $DisableIRC);
     $EditSummary[] = 'IRC privileges ' . ($DisableIRC ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableIRC'] = $DisableIRC;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your IRC privileges have been disabled', "Your IRC privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url]. This loss of privileges does not affect the ability to join and talk to staff in ' . BOT_DISABLED_CHAN . '.');
+        Misc::send_pm($UserID, 0, 'Your IRC privileges have been disabled', sprintf('Your IRC privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url]. This loss of privileges does not affect the ability to join and talk to staff in ' . BOT_DISABLED_CHAN . '.');
     }
 }
 
 if ($DisableRequests != $Cur['DisableRequests'] && check_perms('users_disable_any')) {
-    $UpdateSet[] = "DisableRequests = '$DisableRequests'";
+    $UpdateSet[] = sprintf('DisableRequests = \'%s\'', $DisableRequests);
     $EditSummary[] = 'request privileges ' . ($DisableRequests ? 'disabled' : 'enabled');
     $HeavyUpdates['DisableRequests'] = $DisableRequests;
     if (!empty($UserReason)) {
-        Misc::send_pm($UserID, 0, 'Your request privileges have been disabled', "Your request privileges have been disabled. The reason given was: [quote]{$UserReason}[/quote] If you would like to discuss this, please join " . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
+        Misc::send_pm($UserID, 0, 'Your request privileges have been disabled', sprintf('Your request privileges have been disabled. The reason given was: [quote]%s[/quote] If you would like to discuss this, please join ', $UserReason) . BOT_DISABLED_CHAN . ' on our IRC network. Instructions can be found [url=' . site_url() . 'wiki.php?action=article&amp;name=IRC+-+How+to+join]here[/url].');
     }
 }
 
@@ -712,12 +708,12 @@ if ($EnableUser != $Cur['Enabled'] && check_perms('users_disable_users')) {
         $LightUpdates['Enabled'] = 1;
     }
     $EditSummary[] = $EnableStr;
-    $Cache->replace_value("enabled_$UserID", $EnableUser, 0);
+    $Cache->replace_value(sprintf('enabled_%s', $UserID), $EnableUser, 0);
 }
 
 if (1 == $ResetPasskey && check_perms('users_edit_reset_keys')) {
     $Passkey = db_string(Users::make_secret());
-    $UpdateSet[] = "torrent_pass = '$Passkey'";
+    $UpdateSet[] = sprintf('torrent_pass = \'%s\'', $Passkey);
     $EditSummary[] = 'passkey reset';
     $HeavyUpdates['torrent_pass'] = $Passkey;
     $TrackerUserUpdates['passkey'] = $Passkey;
@@ -728,19 +724,19 @@ if (1 == $ResetPasskey && check_perms('users_edit_reset_keys')) {
     INSERT INTO users_history_passkeys
       (UserID, OldPassKey, NewPassKey, ChangerIP, ChangeTime)
     VALUES
-      ('$UserID', '" . $Cur['torrent_pass'] . "', '$Passkey', '" . Crypto::encrypt('0.0.0.0') . "', NOW())");
+      ('{$UserID}', '" . $Cur['torrent_pass'] . sprintf('\', \'%s\', \'', $Passkey) . Crypto::encrypt('0.0.0.0') . "', NOW())");
     Tracker::update_tracker('change_passkey', ['oldpasskey' => $Cur['torrent_pass'], 'newpasskey' => $Passkey]);
 }
 
 if (1 == $ResetAuthkey && check_perms('users_edit_reset_keys')) {
     $Authkey = db_string(Users::make_secret());
-    $UpdateSet[] = "AuthKey = '$Authkey'";
+    $UpdateSet[] = sprintf('AuthKey = \'%s\'', $Authkey);
     $EditSummary[] = 'authkey reset';
     $HeavyUpdates['AuthKey'] = $Authkey;
 }
 
 if ($SendHackedMail && check_perms('users_disable_any')) {
-    $EditSummary[] = "hacked account email sent to $HackedEmail";
+    $EditSummary[] = sprintf('hacked account email sent to %s', $HackedEmail);
     Misc::send_email($HackedEmail, 'Your ' . SITE_NAME . ' account', 'Your ' . SITE_NAME . ' account appears to have been compromised. As a security measure, we have disabled your account. To resolve this, please visit us on IRC.
 
 This is the information to connect to our server:
@@ -757,7 +753,7 @@ if ($MergeStatsFrom && check_perms('users_edit_ratio')) {
     $DB->query("
     SELECT ID, Uploaded, Downloaded
     FROM users_main
-    WHERE Username LIKE '$MergeStatsFrom'");
+    WHERE Username LIKE '{$MergeStatsFrom}'");
     if ($DB->has_results()) {
         [$MergeID, $MergeUploaded, $MergeDownloaded] = $DB->next_record();
         $DB->query("
@@ -766,13 +762,13 @@ if ($MergeStatsFrom && check_perms('users_edit_ratio')) {
       SET
         um.Uploaded = 0,
         um.Downloaded = 0,
-        ui.AdminComment = CONCAT('" . sqltime() . ' - Stats (Uploaded: ' . Format::get_size($MergeUploaded) . ', Downloaded: ' . Format::get_size($MergeDownloaded) . ', Ratio: ' . Format::get_ratio($MergeUploaded, $MergeDownloaded) . ') merged into ' . site_url() . "user.php?id=$UserID (" . $Cur['Username'] . ') by ' . $LoggedUser['Username'] . "\n\n', ui.AdminComment)
-      WHERE ID = $MergeID");
-        $UpdateSet[] = "Uploaded = Uploaded + '$MergeUploaded'";
-        $UpdateSet[] = "Downloaded = Downloaded + '$MergeDownloaded'";
-        $EditSummary[] = 'stats merged from ' . site_url() . "user.php?id=$MergeID ($MergeStatsFrom) (previous stats: Uploaded: " . Format::get_size($Cur['Uploaded']) . ', Downloaded: ' . Format::get_size($Cur['Downloaded']) . ', Ratio: ' . Format::get_ratio($Cur['Uploaded'], $Cur['Downloaded']) . ')';
-        $Cache->delete_value("user_stats_$UserID");
-        $Cache->delete_value("user_stats_$MergeID");
+        ui.AdminComment = CONCAT('" . sqltime() . ' - Stats (Uploaded: ' . Format::get_size($MergeUploaded) . ', Downloaded: ' . Format::get_size($MergeDownloaded) . ', Ratio: ' . Format::get_ratio($MergeUploaded, $MergeDownloaded) . ') merged into ' . site_url() . sprintf('user.php?id=%s (', $UserID) . $Cur['Username'] . ') by ' . $LoggedUser['Username'] . "\n\n', ui.AdminComment)
+      WHERE ID = {$MergeID}");
+        $UpdateSet[] = sprintf('Uploaded = Uploaded + \'%s\'', $MergeUploaded);
+        $UpdateSet[] = sprintf('Downloaded = Downloaded + \'%s\'', $MergeDownloaded);
+        $EditSummary[] = 'stats merged from ' . site_url() . sprintf('user.php?id=%s (%s) (previous stats: Uploaded: ', $MergeID, $MergeStatsFrom) . Format::get_size($Cur['Uploaded']) . ', Downloaded: ' . Format::get_size($Cur['Downloaded']) . ', Ratio: ' . Format::get_ratio($Cur['Uploaded'], $Cur['Downloaded']) . ')';
+        $Cache->delete_value(sprintf('user_stats_%s', $UserID));
+        $Cache->delete_value(sprintf('user_stats_%s', $MergeID));
     }
 }
 
@@ -780,31 +776,31 @@ if ($Pass && check_perms('users_edit_password')) {
     $UpdateSet[] = "PassHash = '" . db_string(Users::make_sec_hash($Pass)) . "'";
     $EditSummary[] = 'password reset';
 
-    $Cache->delete_value("user_info_$UserID");
-    $Cache->delete_value("user_info_heavy_$UserID");
-    $Cache->delete_value("user_stats_$UserID");
-    $Cache->delete_value("enabled_$UserID");
+    $Cache->delete_value(sprintf('user_info_%s', $UserID));
+    $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
+    $Cache->delete_value(sprintf('user_stats_%s', $UserID));
+    $Cache->delete_value(sprintf('enabled_%s', $UserID));
 
     $DB->query("
     SELECT SessionID
     FROM users_sessions
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     while ([$SessionID] = $DB->next_record()) {
-        $Cache->delete_value("session_{$UserID}_$SessionID");
+        $Cache->delete_value(sprintf('session_%s_%s', $UserID, $SessionID));
     }
-    $Cache->delete_value("users_sessions_$UserID");
+    $Cache->delete_value(sprintf('users_sessions_%s', $UserID));
 
     $DB->query("
     DELETE FROM users_sessions
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
 }
 
 if (empty($UpdateSet) && empty($EditSummary)) {
     if (!$Reason) {
-        if (str_replace("\r", '', $Cur['AdminComment']) != str_replace("\r", '', $AdminComment) && check_perms('users_disable_any')) {
-            $UpdateSet[] = "AdminComment = '$AdminComment'";
+        if (str_replace("\r", '', $Cur['AdminComment']) !== str_replace("\r", '', $AdminComment) && check_perms('users_disable_any')) {
+            $UpdateSet[] = sprintf('AdminComment = \'%s\'', $AdminComment);
         } else {
-            header("Location: user.php?id=$UserID");
+            header(sprintf('Location: user.php?id=%s', $UserID));
             die();
         }
     } else {
@@ -817,14 +813,14 @@ if (count($TrackerUserUpdates) > 1) {
 }
 
 if ($DeleteKeys) {
-    $Cache->delete_value("user_info_$UserID");
-    $Cache->delete_value("user_info_heavy_$UserID");
+    $Cache->delete_value(sprintf('user_info_%s', $UserID));
+    $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
 } else {
-    $Cache->begin_transaction("user_info_$UserID");
+    $Cache->begin_transaction(sprintf('user_info_%s', $UserID));
     $Cache->update_row(false, $LightUpdates);
     $Cache->commit_transaction(0);
 
-    $Cache->begin_transaction("user_info_heavy_$UserID");
+    $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
     $Cache->update_row(false, $HeavyUpdates);
     $Cache->commit_transaction(0);
 }
@@ -836,20 +832,16 @@ if ($EditSummary) {
     $Summary = sqltime() . ' - ' . ucfirst($Summary);
 
     if ($Reason) {
-        $Summary .= "\nReason: $Reason";
+        $Summary .= "\nReason: {$Reason}";
     }
 
 
-    $Summary .= "\n\n$AdminComment";
+    $Summary .= "\n\n{$AdminComment}";
 } elseif (empty($UpdateSet) && empty($EditSummary) && $Cur['AdminComment'] == $_POST['AdminComment']) {
-    $Summary = sqltime() . ' - Comment added by ' . $LoggedUser['Username'] . ': ' . "$Reason\n\n";
+    $Summary = sqltime() . ' - Comment added by ' . $LoggedUser['Username'] . ': ' . "{$Reason}\n\n";
 }
 
-if (!empty($Summary)) {
-    $UpdateSet[] = "AdminComment = '$Summary'";
-} else {
-    $UpdateSet[] = "AdminComment = '$AdminComment'";
-}
+$UpdateSet[] = empty($Summary) ? sprintf('AdminComment = \'%s\'', $AdminComment) : sprintf('AdminComment = \'%s\'', $Summary);
 
 // Update cache
 
@@ -861,8 +853,8 @@ $SET = implode(', ', $UpdateSet);
 $SQL = "
   UPDATE users_main AS m
     JOIN users_info AS i ON m.ID = i.UserID
-  SET $SET
-  WHERE m.ID = '$UserID'";
+  SET {$SET}
+  WHERE m.ID = '{$UserID}'";
 
 // Perform update
 //die($SQL);
@@ -873,7 +865,7 @@ if (isset($ClearStaffIDCache)) {
 }
 
 // redirect to user page
-header("location: user.php?id=$UserID");
+header(sprintf('location: user.php?id=%s', $UserID));
 
 function translateUserStatus($Status)
 {

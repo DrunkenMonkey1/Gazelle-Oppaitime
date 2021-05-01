@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 
 if (!isset($_REQUEST['action'])) {
@@ -25,52 +27,52 @@ $IsFLS = ($IsStaff || ($LoggedUser['ExtraClasses'] && $LoggedUser['ExtraClasses'
 
 switch ($_REQUEST['action']) {
   case 'viewconv':
-    require 'viewconv.php';
+    require __DIR__ . '/viewconv.php';
     break;
   case 'takepost':
-    require 'takepost.php';
+    require __DIR__ . '/takepost.php';
     break;
   case 'resolve':
-    require 'resolve.php';
+    require __DIR__ . '/resolve.php';
     break;
   case 'unresolve':
-    require 'unresolve.php';
+    require __DIR__ . '/unresolve.php';
     break;
   case 'multiresolve':
-    require 'multiresolve.php';
+    require __DIR__ . '/multiresolve.php';
     break;
   case 'assign':
-    require 'assign.php';
+    require __DIR__ . '/assign.php';
     break;
   case 'make_donor':
-    require 'makedonor.php';
+    require __DIR__ . '/makedonor.php';
     break;
   case 'responses':
-    require 'common_responses.php';
+    require __DIR__ . '/common_responses.php';
     break;
   case 'get_response':
-    require 'ajax_get_response.php';
+    require __DIR__ . '/ajax_get_response.php';
     break;
   case 'delete_response':
-    require 'ajax_delete_response.php';
+    require __DIR__ . '/ajax_delete_response.php';
     break;
   case 'edit_response':
-    require 'ajax_edit_response.php';
+    require __DIR__ . '/ajax_edit_response.php';
     break;
   case 'preview':
-    require 'ajax_preview_response.php';
+    require __DIR__ . '/ajax_preview_response.php';
     break;
   case 'get_post':
-    require 'get_post.php';
+    require __DIR__ . '/get_post.php';
     break;
   case 'scoreboard':
-    require 'scoreboard.php';
+    require __DIR__ . '/scoreboard.php';
     break;
   default:
     if ($IsStaff || $IsFLS) {
-        require 'staff_inbox.php';
+        require __DIR__ . '/staff_inbox.php';
     } else {
-        require 'user_inbox.php';
+        require __DIR__ . '/user_inbox.php';
     }
     break;
 }

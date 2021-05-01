@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('admin_reports') && !check_perms('project_team') && !check_perms('site_moderate_forums')) {
@@ -11,7 +13,7 @@ $ReportID = (int) $_POST['reportid'];
 $DB->query("
   SELECT Type
   FROM reports
-  WHERE ID = $ReportID");
+  WHERE ID = {$ReportID}");
 [$Type] = $DB->next_record();
 if (!check_perms('admin_reports')) {
     if (check_perms('site_moderate_forums')) {
@@ -51,20 +53,20 @@ $DB->query("
 [$Remaining] = $DB->next_record();
 
 foreach ($Channels as $Channel) {
-    send_irc("PRIVMSG $Channel :Report $ReportID resolved by " . preg_replace('/^(.{2})/', '$1·', $LoggedUser['Username']) . ' on site (' . (int)$Remaining . ' remaining).');
+    send_irc(sprintf('PRIVMSG %s :Report %s resolved by ', $Channel, $ReportID) . preg_replace('#^(.{2})#', '$1·', $LoggedUser['Username']) . ' on site (' . (int)$Remaining . ' remaining).');
 }
 
 $Cache->delete_value('num_other_reports');
 
 ajax_success();
 
-function ajax_error($Error = 'error')
+function ajax_error($Error = 'error'): void
 {
     echo json_encode(['status' => $Error]);
     die();
 }
 
-function ajax_success()
+function ajax_success(): void
 {
     echo json_encode(['status' => 'success']);
     die();

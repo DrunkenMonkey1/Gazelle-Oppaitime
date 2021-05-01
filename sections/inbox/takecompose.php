@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (empty($_POST['toid'])) {
@@ -23,7 +25,7 @@ if (isset($_POST['convid']) && is_number($_POST['convid'])) {
     SELECT UserID
     FROM pm_conversations_users
     WHERE UserID = '$LoggedUser[ID]'
-      AND ConvID = '$ConvID'");
+      AND ConvID = '{$ConvID}'");
     if (!$DB->has_results()) {
         error(403);
     }

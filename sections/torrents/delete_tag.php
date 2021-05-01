@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!empty($LoggedUser['DisableTagging']) || !check_perms('site_delete_tag')) {
     error(403);
 }
@@ -14,37 +16,37 @@ if (!is_number($TagID) || !is_number($GroupID)) {
 $DB->query("
   SELECT Name
   FROM tags
-  WHERE ID = '$TagID'");
+  WHERE ID = '{$TagID}'");
 if ([$TagName] = $DB->next_record()) {
     $DB->query("
     INSERT INTO group_log
       (GroupID, UserID, Time, Info)
     VALUES
-      ('$GroupID'," . $LoggedUser['ID'] . ", NOW(),'" . db_string('Tag "' . $TagName . '" removed from group') . "')");
+      ('{$GroupID}'," . $LoggedUser['ID'] . ", NOW(),'" . db_string('Tag "' . $TagName . '" removed from group') . "')");
 }
 
 $DB->query("
   DELETE FROM torrents_tags
-  WHERE GroupID = '$GroupID'
-    AND TagID = '$TagID'");
+  WHERE GroupID = '{$GroupID}'
+    AND TagID = '{$TagID}'");
 
 Torrents::update_hash($GroupID);
 
 $DB->query("
   SELECT COUNT(GroupID)
   FROM torrents_tags
-  WHERE TagID = $TagID");
+  WHERE TagID = {$TagID}");
 [$Count] = $DB->next_record();
 if ($Count < 1) {
     $DB->query("
     SELECT Name
     FROM tags
-    WHERE ID = $TagID");
+    WHERE ID = {$TagID}");
     [$TagName] = $DB->next_record();
 
     $DB->query("
     DELETE FROM tags
-    WHERE ID = $TagID");
+    WHERE ID = {$TagID}");
 }
 // Cache the deleted tag for 5 minutes
 $Cache->cache_value('deleted_tags_' . $GroupID . '_' . $LoggedUser['ID'], $TagName, 300);

@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*
  * This page is for creating a report using AJAX.
  * It should have the following posted fields:
@@ -27,7 +29,7 @@ $DB->query("
   SELECT tg.CategoryID
   FROM torrents_group AS tg
     JOIN torrents AS t ON t.GroupID = tg.ID
-  WHERE t.ID = $TorrentID");
+  WHERE t.ID = {$TorrentID}");
 if (!$DB->has_results()) {
     $Err = 'No torrent with that ID exists!';
 } else {
@@ -52,11 +54,7 @@ if (!isset($_POST['type'])) {
 
 $ExtraID = (int) $_POST['otherid'];
 
-if (!empty($_POST['extra'])) {
-    $Extra = db_string($_POST['extra']);
-} else {
-    $Extra = '';
-}
+$Extra = empty($_POST['extra']) ? '' : db_string($_POST['extra']);
 
 if (!empty($Err)) {
     echo $Err;
@@ -66,7 +64,7 @@ if (!empty($Err)) {
 $DB->query("
   SELECT ID
   FROM reportsv2
-  WHERE TorrentID = $TorrentID
+  WHERE TorrentID = {$TorrentID}
     AND ReporterID = " . db_string($LoggedUser['ID']) . "
     AND ReportedTime > '" . time_minus(3) . "'");
 if ($DB->has_results()) {
@@ -77,11 +75,11 @@ $DB->query("
   INSERT INTO reportsv2
     (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, ExtraID)
   VALUES
-    (" . db_string($LoggedUser['ID']) . ", $TorrentID, '$Type', '$Extra', 'New', NOW(), '$ExtraID')");
+    (" . db_string($LoggedUser['ID']) . sprintf(', %s, \'%s\', \'%s\', \'New\', NOW(), \'%s\')', $TorrentID, $Type, $Extra, $ExtraID));
 
 $ReportID = $DB->inserted_id();
 
-$Cache->delete_value("reports_torrent_$TorrentID");
+$Cache->delete_value(sprintf('reports_torrent_%s', $TorrentID));
 $Cache->increment('num_torrent_reportsv2');
 
 echo $ReportID;

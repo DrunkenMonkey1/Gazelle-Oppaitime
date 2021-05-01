@@ -1,12 +1,12 @@
-<?php
-$DB->query("SELECT OwnerID FROM slaves WHERE UserID = $UserID");
+<?php declare(strict_types=1);
+$DB->query(sprintf('SELECT OwnerID FROM slaves WHERE UserID = %s', $UserID));
 if ($DB->has_results()) {
     [$Owner] = $DB->next_record();
 }
 
 $UserLevel = Slaves::get_level($UserID);
 
-$DB->query("SELECT UserID FROM slaves WHERE OwnerID = $UserID");
+$DB->query(sprintf('SELECT UserID FROM slaves WHERE OwnerID = %s', $UserID));
 $Slaves = $DB->collect('UserID');
 
 if (isset($_POST['release'])) {
@@ -14,7 +14,7 @@ if (isset($_POST['release'])) {
         $DB->query("
       DELETE FROM slaves
       WHERE UserID = " . db_string($_POST['release']) . "
-      AND OwnerID = '$UserID'");
+      AND OwnerID = '{$UserID}'");
     }
     $Slaves = array_diff($Slaves, [$_POST['release']]);
 }
@@ -35,7 +35,7 @@ View::show_header('Slaves');
     <h3>You are free</h3>
 <?php  } ?>
   </div>
-<?php  if (0 == sizeof($Slaves)) { ?>
+<?php  if (0 == count($Slaves)) { ?>
   <h3>You have no slaves</h3>
 <?php  } else { ?>
   <h2>Your slaves</h2>

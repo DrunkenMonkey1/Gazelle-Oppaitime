@@ -1,17 +1,13 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!isset($_POST['topicid']) || !is_number($_POST['topicid'])) {
     error(0, true);
 }
 $TopicID = $_POST['topicid'];
 
-if (!empty($_POST['large'])) {
-    $Size = 750;
-} else {
-    $Size = 140;
-}
+$Size = empty($_POST['large']) ? 140 : 750;
 
-if (!$ThreadInfo = $Cache->get_value("thread_$TopicID" . '_info')) {
+if (!$ThreadInfo = $Cache->get_value(sprintf('thread_%s', $TopicID) . '_info')) {
     $DB->query("
     SELECT
       t.Title,
@@ -24,19 +20,19 @@ if (!$ThreadInfo = $Cache->get_value("thread_$TopicID" . '_info')) {
     FROM forums_topics AS t
       JOIN forums_posts AS fp ON fp.TopicID = t.ID
       LEFT JOIN forums_polls AS p ON p.TopicID = t.ID
-    WHERE t.ID = '$TopicID'
+    WHERE t.ID = '{$TopicID}'
     GROUP BY fp.TopicID");
     if (!$DB->has_results()) {
         die();
     }
     $ThreadInfo = $DB->next_record(MYSQLI_ASSOC);
     if (!$ThreadInfo['IsLocked'] || $ThreadInfo['IsSticky']) {
-        $Cache->cache_value("thread_$TopicID" . '_info', $ThreadInfo, 0);
+        $Cache->cache_value(sprintf('thread_%s', $TopicID) . '_info', $ThreadInfo, 0);
     }
 }
 $ForumID = $ThreadInfo['ForumID'];
 
-if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value("polls_$TopicID")) {
+if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value(sprintf('polls_%s', $TopicID))) {
     $DB->query("
     SELECT
       Question,
@@ -44,13 +40,13 @@ if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value("poll
       Featured,
       Closed
     FROM forums_polls
-    WHERE TopicID = '$TopicID'");
+    WHERE TopicID = '{$TopicID}'");
     [$Question, $Answers, $Featured, $Closed] = $DB->next_record(MYSQLI_NUM, [1]);
     $Answers = unserialize($Answers);
     $DB->query("
     SELECT Vote, COUNT(UserID)
     FROM forums_polls_votes
-    WHERE TopicID = '$TopicID'
+    WHERE TopicID = '{$TopicID}'
       AND Vote != '0'
     GROUP BY Vote");
     $VoteArray = $DB->to_array(false, MYSQLI_NUM);
@@ -66,7 +62,7 @@ if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value("poll
             $Votes[$i] = 0;
         }
     }
-    $Cache->cache_value("polls_$TopicID", [$Question, $Answers, $Votes, $Featured, $Closed], 0);
+    $Cache->cache_value(sprintf('polls_%s', $TopicID), [$Question, $Answers, $Votes, $Featured, $Closed], 0);
 }
 
 
@@ -90,7 +86,7 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
   <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
   <input type="hidden" name="large" value="<?=display_str($_POST['large'])?>" />
   <input type="hidden" name="topicid" value="<?=$TopicID?>" />
-<?php  for ($i = 1, $il = count($Answers); $i <= $il; $i++) { ?>
+<?php  for ($i = 1, $il = count($Answers); $i <= $il; ++$i) { ?>
   <input type="radio" name="vote" id="answer_<?=$i?>" value="<?=$i?>" />
   <label for="answer_<?=$i?>"><?=display_str($Answers[$i])?></label><br />
 <?php  } ?>
@@ -110,14 +106,14 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
     INSERT IGNORE INTO forums_polls_votes
       (TopicID, UserID, Vote)
     VALUES
-      ($TopicID, " . $LoggedUser['ID'] . ", $Vote)");
+      ({$TopicID}, " . $LoggedUser['ID'] . sprintf(', %s)', $Vote));
         if (1 == $DB->affected_rows() && 0 != $Vote) {
-            $Cache->begin_transaction("polls_$TopicID");
+            $Cache->begin_transaction(sprintf('polls_%s', $TopicID));
             $Cache->update_row(2, [$Vote => '+1']);
             $Cache->commit_transaction(0);
-            $Votes[$Vote]++;
-            $TotalVotes++;
-            $MaxVotes++;
+            ++$Votes[$Vote];
+            ++$TotalVotes;
+            ++$MaxVotes;
         }
 
         if (0 != $Vote) {
@@ -126,7 +122,7 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
     <ul class="poll nobullet">
 <?php
     if (STAFF_FORUM != $ForumID) {
-        for ($i = 1, $il = count($Answers); $i <= $il; $i++) {
+        for ($i = 1, $il = count($Answers); $i <= $il; ++$i) {
             if (!empty($Votes[$i]) && $TotalVotes > 0) {
                 $Ratio = $Votes[$i] / $MaxVotes;
                 $Percent = $Votes[$i] / $TotalVotes;
@@ -147,7 +143,7 @@ if (!isset($_POST['vote']) || !is_number($_POST['vote'])) {
           fpv.Vote
         FROM users_main AS um
           JOIN forums_polls_votes AS fpv ON um.ID = fpv.UserID
-        WHERE TopicID = $TopicID
+        WHERE TopicID = {$TopicID}
         GROUP BY fpv.Vote");
 
         $StaffVotes = $DB->to_array();

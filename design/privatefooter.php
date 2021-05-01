@@ -1,56 +1,65 @@
 </div>
 <?php TEXTAREA_PREVIEW::JavaScript(); ?>
 <div id="footer">
-<?php  if (!empty($Options['disclaimer'])) { ?>
-  <br /><br />
-  <div id="disclaimer_container" class="thin" style="text-align: center; margin-bottom: 20px;">
-    None of the files shown here are actually hosted on this server. The links are provided solely by this site's users. These BitTorrent files are meant for the distribution of backup files. By downloading the BitTorrent file, you are claiming that you own the original file. The administrator of this site (<?=site_url()?>) holds NO RESPONSIBILITY if these files are misused in any way and cannot be held responsible for what its users post, or any other actions of it.
-  </div>
-  <div class='thin'><a href='/canary.php'>Warrant Canary</a></div>
-<?php
-  }
-  if (count($UserSessions) > 1) {
-      foreach ($UserSessions as $ThisSessionID => $Session) {
-          if ($ThisSessionID != $SessionID) {
-              $LastActive = $Session;
-              break;
-          }
-      }
-  }
+    <?php if (!empty($Options['disclaimer'])) { ?>
+        <br/><br/>
+        <div id="disclaimer_container" class="thin" style="text-align: center; margin-bottom: 20px;">
+            None of the files shown here are actually hosted on this server. The links are provided solely by this
+            site's users. These BitTorrent files are meant for the distribution of backup files. By downloading the
+            BitTorrent file, you are claiming that you own the original file. The administrator of this site
+            (<?= site_url() ?>) holds NO RESPONSIBILITY if these files are misused in any way and cannot be held
+            responsible for what its users post, or any other actions of it.
+        </div>
+        <div class='thin'><a href='/canary.php'>Warrant Canary</a></div>
+        <?php
+    }
+    if (count($UserSessions) > 1) {
+        foreach ($UserSessions as $ThisSessionID => $Session) {
+            if ($ThisSessionID != $SessionID) {
+                $LastActive = $Session;
+                break;
+            }
+        }
+    }
 
-  $Load = sys_getloadavg();
-?>
-  <p>Site and design &copy; <?=date('Y')?> <?=SITE_NAME?></p>
-<?php  if (!empty($LastActive)) { ?>
-  <p>
-    <a href="user.php?action=sessions">
-      <span class="tooltip" title="Manage sessions">Last activity: </span><?=time_diff($LastActive['LastUpdate'])?><span class="tooltip" title="Manage sessions"> from <?=(apcu_exists('DBKEY')?(Crypto::decrypt($LastActive['IP'])):'[Encrypted]') ?></span>
-    </a>
-  </p>
-<?php  } ?>
-  <p>
-    <strong>Time:</strong> <span><?=number_format(((microtime(true) - $ScriptStartTime) * 1000), 5)?> ms</span>
-    <strong>Used:</strong> <span><?=Format::get_size(memory_get_usage(true))?></span>
-    <strong>Load:</strong> <span><?=number_format($Load[0], 2) . ' ' . number_format($Load[1], 2) . ' ' . number_format($Load[2], 2)?></span>
-    <strong>Date:</strong> <span id="site_date"><?=date('M d Y')?></span>, <span id="site_time"><?=date('H:i')?></span>
+    $Load = sys_getloadavg();
+    ?>
+    <p>Site and design &copy; <?= date('Y') ?> <?= SITE_NAME ?></p>
+    <?php if (!empty($LastActive)) { ?>
+        <p>
+            <a href="user.php?action=sessions">
+                <span class="tooltip"
+                      title="Manage sessions">Last activity: </span><?= time_diff($LastActive['LastUpdate']) ?><span
+                        class="tooltip"
+                        title="Manage sessions"> from <?= (apcu_exists('DBKEY') ? (Crypto::decrypt($LastActive['IP'])) : '[Encrypted]') ?></span>
+            </a>
+        </p>
+    <?php } ?>
+    <p>
+        <strong>Time:</strong> <span><?= number_format(((microtime(true) - $ScriptStartTime) * 1000), 5) ?> ms</span>
+        <strong>Used:</strong> <span><?= Format::get_size(memory_get_usage(true)) ?></span>
+        <strong>Load:</strong> <span><?= number_format($Load[0], 2) . ' ' . number_format($Load[1],
+                2) . ' ' . number_format($Load[2], 2) ?></span>
+        <strong>Date:</strong> <span id="site_date"><?= date('M d Y') ?></span>,
+        <span id="site_time"><?= date('H:i') ?></span>
 
-  </p>
-  </div>
+    </p>
+</div>
 <?php if (DEBUG_MODE || check_perms('site_debug')) { ?>
-  <!-- Begin Debugging -->
-  <div id="site_debug">
-<?php
-$Debug->perf_table();
-$Debug->flag_table();
-$Debug->error_table();
-$Debug->sphinx_table();
-$Debug->query_table();
-$Debug->cache_table();
-$Debug->vars_table();
-$Debug->ocelot_table();
-?>
-  </div>
-  <!-- End Debugging -->
+    <!-- Begin Debugging -->
+    <div id="site_debug">
+        <?php
+        $Debug->perf_table();
+        $Debug->flag_table();
+        $Debug->error_table();
+        $Debug->sphinx_table();
+        $Debug->query_table();
+        $Debug->cache_table();
+        $Debug->vars_table();
+        $Debug->ocelot_table();
+        ?>
+    </div>
+    <!-- End Debugging -->
 <?php } ?>
 
 </div>

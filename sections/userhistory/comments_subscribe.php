@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // perform the back end of subscribing to topics
 authorize();
 

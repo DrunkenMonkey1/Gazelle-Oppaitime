@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $FeaturedAlbum = $Cache->get_value('featured_album');
 if (false === $FeaturedAlbum) {
     $DB->query('

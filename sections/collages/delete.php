@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 $CollageID = $_GET['collageid'];
 if (!is_number($CollageID) || !$CollageID) {
@@ -8,7 +8,7 @@ if (!is_number($CollageID) || !$CollageID) {
 $DB->query("
   SELECT Name, CategoryID, UserID
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$Name, $CategoryID, $UserID] = $DB->next_record();
 
 if (!check_perms('site_collages_delete') && $UserID != $LoggedUser['ID']) {

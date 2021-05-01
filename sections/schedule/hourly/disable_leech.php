@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // If a user has downloaded more than 10 GiBs while on ratio watch, disable leeching privileges, and send the user a message
 
 $DB->query("
@@ -24,6 +26,6 @@ if (count($Users) > 0) {
     UPDATE users_info AS i
       JOIN users_main AS m ON m.ID = i.UserID
     SET m.can_leech = '0',
-      i.AdminComment = CONCAT('$sqltime - Leeching privileges disabled by ratio watch system for downloading more than 10 GBs on ratio watch. - required ratio: ', m.RequiredRatio, '\n\n', i.AdminComment)
+      i.AdminComment = CONCAT('{$sqltime} - Leeching privileges disabled by ratio watch system for downloading more than 10 GBs on ratio watch. - required ratio: ', m.RequiredRatio, '\n\n', i.AdminComment)
     WHERE m.ID IN(" . implode(',', $Users) . ')');
 }

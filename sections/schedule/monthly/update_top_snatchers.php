@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query('TRUNCATE TABLE top_snatchers;');
 $DB->query("
   INSERT INTO top_snatchers (UserID)

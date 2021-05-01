@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class Comments
 {
     /*
@@ -7,15 +9,12 @@ class Comments
      * $Page = 'artist', 'collages', 'requests' or 'torrents'
      * $PageID = ArtistID, CollageID, RequestID or GroupID, respectively
      */
-
     /**
      * Post a comment on an artist, request or torrent page.
-     * @param  string $Page
-     * @param  int    $PageID
-     * @param  string $Body
-     * @return int    ID of the new comment
+     *
+     * @return int ID of the new comment
      */
-    public static function post($Page, $PageID, $Body)
+    public static function post(string $Page, int $PageID, string $Body): int
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
@@ -29,35 +28,35 @@ class Comments
           ) / " . TORRENT_COMMENTS_PER_PAGE . "
         ) AS Pages");
         [$Pages] = G::$DB->next_record();
-
+        
         G::$DB->query("
       INSERT INTO comments (Page, PageID, AuthorID, AddedTime, Body)
       VALUES ('$Page', $PageID, " . G::$LoggedUser['ID'] . ", NOW(), '" . db_string($Body) . "')");
         $PostID = G::$DB->inserted_id();
-
+        
         $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE * $Pages - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
         G::$Cache->delete_value($Page . '_comments_' . $PageID . '_catalogue_' . $CatalogueID);
         G::$Cache->delete_value($Page . '_comments_' . $PageID);
-
+        
         Subscriptions::flush_subscriptions($Page, $PageID);
         Subscriptions::quote_notify($Body, $PostID, $Page, $PageID);
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         return $PostID;
     }
-
+    
     /**
      * Edit a comment
-     * @param int    $PostID
-     * @param string $NewBody
-     * @param bool   $SendPM  If true, send a PM to the author of the comment informing him about the edit
+     *
+     * @param bool $SendPM If true, send a PM to the author of the comment informing him about the edit
+     *
      * @todo move permission check out of here/remove hardcoded error(404)
      */
-    public static function edit($PostID, $NewBody, $SendPM = false)
+    public static function edit(int $PostID, string $NewBody, bool $SendPM = false): bool
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         G::$DB->query("
       SELECT
         Body,
@@ -71,11 +70,11 @@ class Comments
             return false;
         }
         [$OldBody, $AuthorID, $Page, $PageID, $AddedTime] = G::$DB->next_record();
-
+        
         if (G::$LoggedUser['ID'] != $AuthorID && !check_perms('site_moderate_forums')) {
             return false;
         }
-
+        
         G::$DB->query("
       SELECT CEIL(COUNT(ID) / " . TORRENT_COMMENTS_PER_PAGE . ") AS Page
       FROM comments
@@ -83,7 +82,7 @@ class Comments
         AND PageID = $PageID
         AND ID <= $PostID");
         [$CommPage] = G::$DB->next_record();
-
+        
         // Perform the update
         G::$DB->query("
       UPDATE comments
@@ -92,22 +91,22 @@ class Comments
         EditedUserID = " . G::$LoggedUser['ID'] . ",
         EditedTime = NOW()
       WHERE ID = $PostID");
-
+        
         // Update the cache
         $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE * $CommPage - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
         G::$Cache->delete_value($Page . '_comments_' . $PageID . '_catalogue_' . $CatalogueID);
-
+        
         if ('collages' == $Page) {
             // On collages, we also need to clear the collage key (collage_$CollageID), because it has the comments in it... (why??)
             G::$Cache->delete_value('collage_' . $PageID);
         }
-
+        
         G::$DB->query("
       INSERT INTO comments_edits (Page, PostID, EditUser, EditTime, Body)
       VALUES ('$Page', $PostID, " . G::$LoggedUser['ID'] . ", NOW(), '" . db_string($OldBody) . "')");
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         if ($SendPM && G::$LoggedUser['ID'] != $AuthorID) {
             // Send a PM to the user to notify them of the edit
             $PMSubject = "Your comment #$PostID has been edited";
@@ -116,15 +115,14 @@ class Comments
             $PMBody = "One of your comments has been edited by $ProfLink: [url]{$PMurl}[/url]";
             Misc::send_pm($AuthorID, 0, $PMSubject, $PMBody);
         }
-
+        
         return true; // TODO: this should reflect whether or not the update was actually successful, e.g. by checking G::$DB->affected_rows after the UPDATE query
     }
-
+    
     /**
      * Delete a comment
-     * @param int $PostID
      */
-    public static function delete($PostID)
+    public static function delete(int $PostID): bool
     {
         $QueryID = G::$DB->get_query_id();
         // Get page, pageid
@@ -132,6 +130,7 @@ class Comments
         if (!G::$DB->has_results()) {
             // no such comment?
             G::$DB->set_query_id($QueryID);
+            
             return false;
         }
         [$Page, $PageID] = G::$DB->next_record();
@@ -147,14 +146,15 @@ class Comments
         if (!G::$DB->has_results()) {
             // the comment $PostID was probably not posted on $Page
             G::$DB->set_query_id($QueryID);
+            
             return false;
         }
         [$CommPages, $CommPage] = G::$DB->next_record();
-
+        
         // $CommPages = number of pages in the thread
         // $CommPage = which page the post is on
         // These are set for cache clearing.
-
+        
         G::$DB->query("
       DELETE FROM comments
       WHERE ID = $PostID");
@@ -162,67 +162,43 @@ class Comments
       DELETE FROM comments_edits
       WHERE Page = '$Page'
         AND PostID = $PostID");
-
+        
         G::$DB->query("
       DELETE FROM users_notify_quoted
       WHERE Page = '$Page'
         AND PostID = $PostID");
-
+        
         Subscriptions::flush_subscriptions($Page, $PageID);
         Subscriptions::flush_quote_notifications($Page, $PageID);
-
+        
         //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
         $ThisCatalogue = floor((TORRENT_COMMENTS_PER_PAGE * $CommPage - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
         $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE * $CommPages - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
         for ($i = $ThisCatalogue; $i <= $LastCatalogue; ++$i) {
             G::$Cache->delete_value($Page . '_comments_' . $PageID . '_catalogue_' . $i);
         }
-
+        
         G::$Cache->delete_value($Page . '_comments_' . $PageID);
-
+        
         if ('collages' == $Page) {
             // On collages, we also need to clear the collage key (collage_$CollageID), because it has the comments in it... (why??)
             G::$Cache->delete_value("collage_$PageID");
         }
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         return true;
     }
-
-    /**
-     * Get the URL to a comment, already knowing the Page and PostID
-     * @param  string      $Page
-     * @param  int         $PageID
-     * @param  int         $PostID
-     * @return string|bool The URL to the comment or false on error
-     */
-    public static function get_url($Page, $PageID, $PostID = null)
-    {
-        $Post = (!empty($PostID) ? "&postid=$PostID#post$PostID" : '');
-        switch ($Page) {
-      case 'artist':
-        return "artist.php?id=$PageID$Post";
-      case 'collages':
-        return "collages.php?action=comments&collageid=$PageID$Post";
-      case 'requests':
-        return "requests.php?action=view&id=$PageID$Post";
-      case 'torrents':
-        return "torrents.php?id=$PageID$Post";
-      default:
-        return false;
-    }
-    }
-
+    
     /**
      * Get the URL to a comment
-     * @param  int         $PostID
+     *
      * @return string|bool The URL to the comment or false on error
      */
-    public static function get_url_query($PostID)
+    public static function get_url_query(int $PostID): string|bool
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         G::$DB->query("
       SELECT Page, PageID
       FROM comments
@@ -231,29 +207,55 @@ class Comments
             error(404);
         }
         [$Page, $PageID] = G::$DB->next_record();
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         return self::get_url($Page, $PageID, $PostID);
     }
-
+    
+    /**
+     * Get the URL to a comment, already knowing the Page and PostID
+     *
+     * @return string|bool The URL to the comment or false on error
+     */
+    public static function get_url(string $Page, int $PageID, int $PostID = null): string|bool
+    {
+        $Post = (empty($PostID) ? '' : "&postid=$PostID#post$PostID");
+        switch ($Page) {
+            case 'artist':
+                return "artist.php?id=$PageID$Post";
+            case 'collages':
+                return "collages.php?action=comments&collageid=$PageID$Post";
+            case 'requests':
+                return "requests.php?action=view&id=$PageID$Post";
+            case 'torrents':
+                return "torrents.php?id=$PageID$Post";
+            default:
+                return false;
+        }
+    }
+    
     /**
      * Load a page's comments. This takes care of `postid` and (indirectly) `page` parameters passed in $_GET.
      * Quote notifications and last read are also handled here, unless $HandleSubscriptions = false is passed.
-     * @param  string $Page
-     * @param  int    $PageID
-     * @param  bool   $HandleSubscriptions Whether or not to handle subscriptions (last read & quote notifications)
-     * @return array  ($NumComments, $Page, $Thread, $LastRead)
-     *                                    $NumComments: the total number of comments on this artist/request/torrent group
-     *                                    $Page: the page we're currently on
-     *                                    $Thread: an array of all posts on this page
-     *                                    $LastRead: ID of the last comment read by the current user in this thread;
-     *                                    will be false if $HandleSubscriptions == false or if there are no comments on this page
+     *
+     * @param string $Page
+     * @param        $PageID
+     * @param bool   $HandleSubscriptions Whether or not to handle subscriptions (last read & quote notifications)
+     *
+     * @return array ($NumComments, $Page, $Thread, $LastRead)
+     *                                   $NumComments: the total number of comments on this artist/request/torrent
+     *                                   group
+     *                                   $Page: the page we're currently on
+     *                                   $Thread: an array of all posts on this page
+     *                                   $LastRead: ID of the last comment read by the current user in this thread;
+     *                                   will be false if $HandleSubscriptions == false or if there are no comments on
+     *                                   this page
      */
-    public static function load($Page, $PageID, $HandleSubscriptions = true)
+    public static function load(string $Page, $PageID, bool $HandleSubscriptions = true): array
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         // Get the total number of comments
         $NumComments = G::$Cache->get_value($Page . "_comments_$PageID");
         if (false === $NumComments) {
@@ -265,7 +267,7 @@ class Comments
             [$NumComments] = G::$DB->next_record();
             G::$Cache->cache_value($Page . "_comments_$PageID", $NumComments, 0);
         }
-
+        
         // If a postid was passed, we need to determine which page that comment is on.
         // Format::page_limit handles a potential $_GET['page']
         if (isset($_GET['postid']) && is_number($_GET['postid']) && $NumComments > TORRENT_COMMENTS_PER_PAGE) {
@@ -280,10 +282,10 @@ class Comments
         } else {
             [$CommPage, $Limit] = Format::page_limit(TORRENT_COMMENTS_PER_PAGE, $NumComments);
         }
-
+        
         // Get the cache catalogue
         $CatalogueID = floor((TORRENT_COMMENTS_PER_PAGE * $CommPage - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
-
+        
         // Cache catalogue from which the page is selected, allows block caches and future ability to specify posts per page
         $Catalogue = G::$Cache->get_value($Page . '_comments_' . $PageID . '_catalogue_' . $CatalogueID);
         if (false === $Catalogue) {
@@ -306,11 +308,13 @@ class Comments
             $Catalogue = G::$DB->to_array(false, MYSQLI_ASSOC);
             G::$Cache->cache_value($Page . '_comments_' . $PageID . '_catalogue_' . $CatalogueID, $Catalogue, 0);
         }
-
+        
         //This is a hybrid to reduce the catalogue down to the page elements: We use the page limit % catalogue
-        $Thread = array_slice($Catalogue, ((TORRENT_COMMENTS_PER_PAGE * $CommPage - TORRENT_COMMENTS_PER_PAGE) % THREAD_CATALOGUE), TORRENT_COMMENTS_PER_PAGE, true);
-
-        if ($HandleSubscriptions && count($Thread) > 0) {
+        $Thread = array_slice($Catalogue,
+            ((TORRENT_COMMENTS_PER_PAGE * $CommPage - TORRENT_COMMENTS_PER_PAGE) % THREAD_CATALOGUE),
+            TORRENT_COMMENTS_PER_PAGE, true);
+        
+        if ($HandleSubscriptions && [] !== $Thread) {
             // quote notifications
             $LastPost = end($Thread);
             $LastPost = $LastPost['ID'];
@@ -327,7 +331,7 @@ class Comments
             if (G::$DB->affected_rows()) {
                 G::$Cache->delete_value('notify_quoted_' . G::$LoggedUser['ID']);
             }
-
+            
             // last read
             G::$DB->query("
         SELECT PostID
@@ -349,38 +353,40 @@ class Comments
         } else {
             $LastRead = false;
         }
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         return [$NumComments, $CommPage, $Thread, $LastRead];
     }
-
+    
     /**
-     * Merges all comments from $Page/$PageID into $Page/$TargetPageID. This also takes care of quote notifications, subscriptions and cache.
+     * Merges all comments from $Page/$PageID into $Page/$TargetPageID. This also takes care of quote notifications,
+     * subscriptions and cache.
+     *
      * @param type $Page
      * @param type $PageID
      * @param type $TargetPageID
      */
-    public static function merge($Page, $PageID, $TargetPageID)
+    public static function merge($Page, $PageID, $TargetPageID): void
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         G::$DB->query("
       UPDATE comments
       SET PageID = $TargetPageID
       WHERE Page = '$Page'
         AND PageID = $PageID");
-
+        
         // quote notifications
         G::$DB->query("
       UPDATE users_notify_quoted
       SET PageID = $TargetPageID
       WHERE Page = '$Page'
         AND PageID = $PageID");
-
+        
         // comment subscriptions
         Subscriptions::move_subscriptions($Page, $PageID, $TargetPageID);
-
+        
         // cache (we need to clear all comment catalogues)
         G::$DB->query("
       SELECT
@@ -397,17 +403,14 @@ class Comments
         G::$Cache->delete_value($Page . "_comments_$TargetPageID");
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * Delete all comments on $Page/$PageID (deals with quote notifications and subscriptions as well)
-     * @param  string $Page
-     * @param  int    $PageID
-     * @return bool
      */
-    public static function delete_page($Page, $PageID)
+    public static function delete_page(string $Page, int $PageID): bool
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         // get number of pages
         G::$DB->query("
       SELECT
@@ -420,32 +423,32 @@ class Comments
             return false;
         }
         [$CommPages] = G::$DB->next_record();
-
+        
         // Delete comments
         G::$DB->query("
       DELETE FROM comments
       WHERE Page = '$Page'
         AND PageID = $PageID");
-
+        
         // Delete quote notifications
         Subscriptions::flush_quote_notifications($Page, $PageID);
         G::$DB->query("
       DELETE FROM users_notify_quoted
       WHERE Page = '$Page'
         AND PageID = $PageID");
-
+        
         // Deal with subscriptions
         Subscriptions::move_subscriptions($Page, $PageID, null);
-
+        
         // Clear cache
         $LastCatalogue = floor((TORRENT_COMMENTS_PER_PAGE * $CommPages - TORRENT_COMMENTS_PER_PAGE) / THREAD_CATALOGUE);
         for ($i = 0; $i <= $LastCatalogue; ++$i) {
             G::$Cache->delete_value($Page . '_comments_' . $PageID . '_catalogue_' . $i);
         }
         G::$Cache->delete_value($Page . '_comments_' . $PageID);
-
+        
         G::$DB->set_query_id($QueryID);
-
+        
         return true;
     }
 }

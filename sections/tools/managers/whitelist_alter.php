@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('admin_whitelist')) {
@@ -42,8 +44,8 @@ if ('Delete' == $_POST['submit']) {
             $DB->query("
         UPDATE xbt_client_whitelist
         SET
-          vstring = '$Client',
-          peer_id = '$PeerID'
+          vstring = '{$Client}',
+          peer_id = '{$PeerID}'
         WHERE ID = " . $_POST['id']);
             Tracker::update_tracker('edit_whitelist', ['old_peer_id' => $OldPeerID, 'new_peer_id' => $PeerID]);
         }
@@ -52,7 +54,7 @@ if ('Delete' == $_POST['submit']) {
       INSERT INTO xbt_client_whitelist
         (vstring, peer_id)
       VALUES
-        ('$Client', '$PeerID')");
+        ('{$Client}', '{$PeerID}')");
         Tracker::update_tracker('add_whitelist', ['peer_id' => $PeerID]);
     }
 }

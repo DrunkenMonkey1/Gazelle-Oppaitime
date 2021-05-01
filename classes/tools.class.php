@@ -1,13 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 class Tools
 {
     /**
      * Returns true if given IP is banned.
-     *
-     * @param string $IP
      */
-    public static function site_ban_ip($IP)
+    public static function site_ban_ip(string $IP): bool
     {
         global $Debug;
         $A = substr($IP, 0, strcspn($IP, '.:'));
@@ -31,20 +31,21 @@ class Tools
                 return true;
             }
         }
-
+        
         return false;
     }
-
+    
     /**
      * Returns the unsigned form of an IP address.
      *
-     * @param  string $IP The IP address x.x.x.x
+     * @param string $IP The IP address x.x.x.x
+     *
      * @return string the long it represents.
      */
-    public static function ip_to_unsigned($IP)
+    public static function ip_to_unsigned(string $IP): string
     {
         $IPnum = sprintf('%u', ip2long($IP));
-        if (!$IPnum) {
+        if ('' === $IPnum) {
             // Try to encode as IPv6 (stolen from stackoverflow)
             // Note that this is *wrong* and because of PHP's wankery stops being accurate after the most significant 16 digits or so
             // But since this is only used for geolocation and IPv6 blocks are allocated in huge numbers, it's still fine
@@ -54,14 +55,16 @@ class Tools
             }
             $IPnum = base_convert(ltrim($IPnum, '0'), 2, 10);
         }
+        
         return $IPnum;
     }
-
+    
     /**
      * Geolocate an IP address using the database
      *
      * @param $IP the ip to fetch the country for
-     * @return the country of origin
+     *
+     * @return mixed|bool country of origin
      */
     public static function geoip($IP)
     {
@@ -69,12 +72,8 @@ class Tools
         if (isset($IPs[$IP])) {
             return $IPs[$IP];
         }
-        if (is_number($IP)) {
-            $Long = $IP;
-        } else {
-            $Long = Tools::ip_to_unsigned($IP);
-        }
-        if (!$Long || 2130706433 == $Long) { // No need to check cc for 127.0.0.1
+        $Long = is_number($IP) ? $IP : Tools::ip_to_unsigned($IP);
+        if (!$Long || 2_130_706_433 == $Long) { // No need to check cc for 127.0.0.1
             return false;
         }
         $QueryID = G::$DB->get_query_id();
@@ -89,13 +88,15 @@ class Tools
         }
         G::$DB->set_query_id($QueryID);
         $IPs[$IP] = $Country;
+        
         return $Country;
     }
-
+    
     /**
      * Gets the hostname for an IP address
      *
      * @param $IP the IP to get the hostname for
+     *
      * @return hostname fetched
      */
     public static function get_host_by_ip($IP)
@@ -109,33 +110,37 @@ class Tools
                 return $IP;
             }
         }
-
+        
         $host = `host -W 1 $IP`;
+        
         return ($host ? end(explode(' ', $host)) : $IP);
     }
-
+    
     /**
      * Gets an hostname using AJAX
      *
      * @param $IP the IP to fetch
+     *
      * @return a span with JavaScript code
      */
-    public static function get_host_by_ajax($IP)
+    public static function get_host_by_ajax($IP): string
     {
         static $ID = 0;
         ++$ID;
+        
         return '<span id="host_' . $ID . '">Resolving host...<script type="text/javascript">ajax.get(\'tools.php?action=get_host&ip=' . $IP . '\',function(host) {$(\'#host_' . $ID . '\').raw().innerHTML=host;});</script></span>';
     }
-
-
+    
+    
     /**
      * Looks up the full host of an IP address, by system call.
      * Used as the server-side counterpart to get_host_by_ajax.
      *
-     * @param  string $IP The IP address to look up.
+     * @param string $IP The IP address to look up.
+     *
      * @return string the host.
      */
-    public static function lookup_ip($IP)
+    public static function lookup_ip(string $IP): string|bool
     {
         //TODO: use the G::$Cache
         $Output = explode(' ', shell_exec('host -W 1 ' . escapeshellarg($IP)));
@@ -148,38 +153,40 @@ class Tools
         if ($Output[2] . ' ' . $Output[3] == 'not found:') {
             return false;
         }
+        
         return trim($Output[4]);
     }
-
+    
     /**
      * Format an IP address with links to IP history.
      *
      * @param string IP
+     *
      * @return string The HTML
      */
-    public static function display_ip($IP)
+    public static function display_ip($IP): string
     {
         $Line = display_str($IP) . ' (' . Tools::get_country_code_by_ajax($IP) . ') ';
-        $Line .= '<a href="user.php?action=search&amp;ip_history=on&amp;ip=' . display_str($IP) . '&amp;matchtype=strict" title="Search" class="brackets tooltip">S</a>';
-
-        return $Line;
+        
+        return $Line . ('<a href="user.php?action=search&amp;ip_history=on&amp;ip=' . display_str($IP) . '&amp;matchtype=strict" title="Search" class="brackets tooltip">S</a>');
     }
-
-    public static function get_country_code_by_ajax($IP)
+    
+    public static function get_country_code_by_ajax($IP): string
     {
         static $ID = 0;
         ++$ID;
+        
         return '<span id="cc_' . $ID . '">Resolving CC...<script type="text/javascript">ajax.get(\'tools.php?action=get_cc&ip=' . $IP . '\', function(cc) {$(\'#cc_' . $ID . '\').raw().innerHTML = cc;});</script></span>';
     }
-
-
+    
+    
     /**
      * Disable an array of users.
      *
      * @param array $UserIDs (You can also send it one ID as an int, because fuck types)
      * @param BanReason 0 - Unknown, 1 - Manual, 2 - Ratio, 3 - Inactive, 4 - Unused.
      */
-    public static function disable_users($UserIDs, $AdminComment, $BanReason = 1)
+    public static function disable_users(array $UserIDs, $AdminComment, $BanReason = 1): void
     {
         $QueryID = G::$DB->get_query_id();
         if (!is_array($UserIDs)) {
@@ -201,7 +208,7 @@ class Tools
             G::$Cache->delete_value("user_info_$UserID");
             G::$Cache->delete_value("user_info_heavy_$UserID");
             G::$Cache->delete_value("user_stats_$UserID");
-
+            
             G::$DB->query("
         SELECT SessionID
         FROM users_sessions
@@ -211,12 +218,12 @@ class Tools
                 G::$Cache->delete_value("session_$UserID" . "_$SessionID");
             }
             G::$Cache->delete_value("users_sessions_$UserID");
-
+            
             G::$DB->query("
         DELETE FROM users_sessions
         WHERE UserID = '$UserID'");
         }
-
+        
         // Remove the users from the tracker.
         G::$DB->query('
       SELECT torrent_pass
@@ -235,18 +242,17 @@ class Tools
         Tracker::update_tracker('remove_users', ['passkeys' => $Concat]);
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * Warn a user.
      *
-     * @param int    $UserID
      * @param int    $Duration length of warning in seconds
      * @param string $reason
      */
-    public static function warn_user($UserID, $Duration, $Reason)
+    public static function warn_user(int $UserID, int $Duration, $Reason): void
     {
         global $Time;
-
+        
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
       SELECT Warned
@@ -257,16 +263,18 @@ class Tools
             //User was already warned, appending new warning to old.
             [$OldDate] = G::$DB->next_record();
             $NewExpDate = date('Y-m-d H:i:s', strtotime($OldDate) + $Duration);
-
+            
             Misc::send_pm(
                 $UserID,
                 0,
                 'You have received multiple warnings.',
-                "When you received your latest warning (set to expire on " . date('Y-m-d', (time() + $Duration)) . '), you already had a different warning (set to expire on ' . date('Y-m-d', strtotime($OldDate)) . ").\n\n Due to this collision, your warning status will now expire at $NewExpDate."
+                "When you received your latest warning (set to expire on " . date('Y-m-d',
+                    (time() + $Duration)) . '), you already had a different warning (set to expire on ' . date('Y-m-d',
+                    strtotime($OldDate)) . ").\n\n Due to this collision, your warning status will now expire at $NewExpDate."
             );
-
+            
             $AdminComment = date('Y-m-d') . " - Warning (Clash) extended to expire at $NewExpDate by " . G::$LoggedUser['Username'] . "\nReason: $Reason\n\n";
-
+            
             G::$DB->query('
         UPDATE users_info
         SET
@@ -277,13 +285,13 @@ class Tools
         } else {
             //Not changing, user was not already warned
             $WarnTime = time_plus($Duration);
-
+            
             G::$Cache->begin_transaction("user_info_$UserID");
             G::$Cache->update_row(false, ['Warned' => $WarnTime]);
             G::$Cache->commit_transaction(0);
-
+            
             $AdminComment = date('Y-m-d') . " - Warned until $WarnTime by " . G::$LoggedUser['Username'] . "\nReason: $Reason\n\n";
-
+            
             G::$DB->query('
         UPDATE users_info
         SET
@@ -294,13 +302,14 @@ class Tools
         }
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * Update the notes of a user
+     *
      * @param unknown $UserID       ID of user
      * @param unknown $AdminComment Comment to update with
      */
-    public static function update_user_notes($UserID, $AdminComment)
+    public static function update_user_notes($UserID, $AdminComment): void
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query('
@@ -309,19 +318,20 @@ class Tools
       WHERE UserID = \'' . db_string($UserID) . '\'');
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * Check if an IP address is part of a given CIDR range.
+     *
      * @param string $CheckIP the IP address to be looked up
      * @param string $Subnet  the CIDR subnet to be checked against
      */
-    public static function check_cidr_range($CheckIP, $Subnet)
+    public static function check_cidr_range(string $CheckIP, string $Subnet): bool
     {
         $IP = ip2long($CheckIP);
-        $CIDR = split('/', $Subnet);
+        $CIDR = explode('/', $Subnet);
         $SubnetIP = ip2long($CIDR[0]);
         $SubnetMaskBits = 32 - $CIDR[1];
-
-        return (($IP>>$SubnetMaskBits) == ($SubnetIP>>$SubnetMaskBits));
+        
+        return ($IP >> $SubnetMaskBits === $SubnetIP >> $SubnetMaskBits);
     }
 }

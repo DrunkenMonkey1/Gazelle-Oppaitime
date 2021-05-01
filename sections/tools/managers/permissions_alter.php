@@ -1,13 +1,13 @@
-<?php
-function display_perm($Key, $Title)
+<?php declare(strict_types=1);
+function display_perm($Key, $Title): void
 {
     global $Values;
-    $Perm = "<input type=\"checkbox\" name=\"perm_$Key\" id=\"$Key\" value=\"1\"";
+    $Perm = sprintf('<input type="checkbox" name="perm_%s" id="%s" value="1"', $Key, $Key);
     if (!empty($Values[$Key])) {
         $Perm .= ' checked="checked"';
     }
-    $Perm .= " /> <label for=\"$Key\">$Title</label><br />";
-    echo "$Perm\n";
+    $Perm .= sprintf(' /> <label for="%s">%s</label><br />', $Key, $Title);
+    echo $Perm . PHP_EOL;
 }
 
 View::show_header('Manage Permissions', 'validate');
@@ -25,23 +25,23 @@ echo $Val->GenerateJS('permissionsform');
   <table class="permission_head layout box">
     <tr>
       <td class="label">Permission name</td>
-      <td><input type="text" name="name" id="name" value="<?=!empty($Name) ? display_str($Name) : ''?>" /></td>
+      <td><input type="text" name="name" id="name" value="<?=empty($Name) ? '' : display_str($Name)?>" /></td>
     </tr>
     <tr>
       <td class="label">Abbreviation</td>
-      <td><input type="text" name="abbreviation" id="abbreviation" value="<?=!empty($Abbreviation) ? display_str($Abbreviation) : ''?>" /></td>
+      <td><input type="text" name="abbreviation" id="abbreviation" value="<?=empty($Abbreviation) ? '' : display_str($Abbreviation)?>" /></td>
     </tr>
     <tr>
       <td class="label">Class level</td>
-      <td><input type="text" name="level" id="level" value="<?=!empty($Level) ? display_str($Level) : ''?>" /></td>
+      <td><input type="text" name="level" id="level" value="<?=empty($Level) ? '' : display_str($Level)?>" /></td>
     </tr>
     <tr>
       <td class="label">Secondary class</td>
-      <td><input type="checkbox" name="secondary" value="1"<?=!empty($Secondary) ? ' checked="checked"' : ''?> /></td>
+      <td><input type="checkbox" name="secondary" value="1"<?=empty($Secondary) ? '' : ' checked="checked"'?> /></td>
     </tr>
     <tr>
       <td class="label">Show on staff page</td>
-      <td><input type="checkbox" name="displaystaff" value="1"<?=!empty($DisplayStaff) ? ' checked="checked"' : ''?> /></td>
+      <td><input type="checkbox" name="displaystaff" value="1"<?=empty($DisplayStaff) ? '' : ' checked="checked"'?> /></td>
     </tr>
     <tr>
       <td class="label">Maximum number of personal collages</td>

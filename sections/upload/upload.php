@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //**********************************************************************//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Upload form ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // This page relies on the TorrentForm class. All it does is call      //
@@ -18,8 +18,6 @@ if (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid']
       tg.ID as GroupID,
       tg.CategoryID,
       tg.Name AS Title,
-      tg.NameRJ AS TitleRJ,
-      tg.NameJP AS TitleJP,
       tg.Year,
       tg.Studio,
       tg.Series,
@@ -58,7 +56,6 @@ if (empty($Properties) && !empty($_GET['groupid']) && is_number($_GET['groupid']
       ID AS RequestID,
       CategoryID,
       Title AS Title,
-      TitleJP AS TitleJP,
       CatalogueNumber,
       DLSiteID,
       Image
@@ -101,7 +98,7 @@ $DNU = $DB->to_array();
 $DB->query('SELECT MAX(Time) FROM do_not_upload');
 [$Updated] = $DB->next_record();
 $DB->query("
-  SELECT IF(MAX(Time) IS NULL OR MAX(Time) < '$Updated', 1, 0)
+  SELECT IF(MAX(Time) IS NULL OR MAX(Time) < '{$Updated}', 1, 0)
   FROM torrents
   WHERE UserID = " . $LoggedUser['ID']);
 [$NewDNU] = $DB->next_record();

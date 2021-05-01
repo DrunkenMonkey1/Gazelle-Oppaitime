@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 // We keep torrent groups cached. However, the peer counts change often, so our solutions are to not cache them for long, or to update them. Here is where we updated them.
 
-if ((!isset($argv[1]) || SCHEDULE_KEY!=$argv[1]) && !check_perms('admin_schedule')) { // authorization, Fix to allow people with perms hit this page.
+if ((!isset($argv[1]) || SCHEDULE_KEY != $argv[1]) && !check_perms('admin_schedule')) { // authorization, Fix to allow people with perms hit this page.
     error(403);
 }
 
@@ -45,26 +47,27 @@ $DB->query("
   SELECT *
   FROM tpc_temp
   ORDER BY GroupID ASC, TorrentID ASC
-  LIMIT $StepSize");
+  LIMIT {$StepSize}");
 
 $RowNum = 0;
 $LastGroupID = 0;
-$UpdatedKeys = $UncachedGroups = 0;
+$UpdatedKeys = 0;
+$UncachedGroups = 0;
 [$TorrentID, $GroupID, $Seeders, $Leechers, $Snatches] = $DB->next_record(MYSQLI_NUM, false);
 while ($TorrentID) {
     if ($LastGroupID != $GroupID) {
-        $CachedData = $Cache->get_value("torrent_group_$GroupID");
+        $CachedData = $Cache->get_value(sprintf('torrent_group_%s', $GroupID));
         if (false !== $CachedData) {
             if (isset($CachedData['ver']) && Cache::GROUP_VERSION == $CachedData['ver']) {
                 $CachedStats = &$CachedData['d']['Torrents'];
             }
         } else {
-            $UncachedGroups++;
+            ++$UncachedGroups;
         }
         $LastGroupID = $GroupID;
     }
     while ($LastGroupID == $GroupID) {
-        $RowNum++;
+        ++$RowNum;
         if (isset($CachedStats) && is_array($CachedStats[$TorrentID])) {
             $OldValues = &$CachedStats[$TorrentID];
             $OldValues['Seeders'] = $Seeders;
@@ -73,22 +76,22 @@ while ($TorrentID) {
             $Changed = true;
             unset($OldValues);
         }
-        if (!($RowNum % $StepSize)) {
+        if (0 === $RowNum % $StepSize) {
             $DB->query("
         SELECT *
         FROM tpc_temp
-        WHERE GroupID > $GroupID
-          OR (GroupID = $GroupID AND TorrentID > $TorrentID)
+        WHERE GroupID > {$GroupID}
+          OR (GroupID = {$GroupID} AND TorrentID > {$TorrentID})
         ORDER BY GroupID ASC, TorrentID ASC
-        LIMIT $StepSize");
+        LIMIT {$StepSize}");
         }
         $LastGroupID = $GroupID;
         [$TorrentID, $GroupID, $Seeders, $Leechers, $Snatches] = $DB->next_record(MYSQLI_NUM, false);
     }
     if ($Changed) {
-        $Cache->cache_value("torrent_group_$LastGroupID", $CachedData, 0);
+        $Cache->cache_value(sprintf('torrent_group_%s', $LastGroupID), $CachedData, 0);
         unset($CachedStats);
-        $UpdatedKeys++;
+        ++$UpdatedKeys;
         $Changed = false;
     }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('admin_manage_permissions') && !check_perms('users_mod')) {
     error(403);
 }
@@ -57,15 +57,15 @@ if (isset($_POST['submit'])) {
             $DB->query("
                 UPDATE misc
                 SET
-                    Name = '$Name',
-                    First = '$First',
-                    Second = '$Second'
+                    Name = '{$Name}',
+                    First = '{$First}',
+                    Second = '{$Second}'
                 WHERE ID = '" . db_string($_POST['id']) . "'
             ");
         } else {
             $DB->query("
                 INSERT INTO misc (Name, First, Second)
-                VALUES ('$Name', '$First', '$Second')
+                VALUES ('{$Name}', '{$First}', '{$Second}')
             ");
         }
     }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!isset($_GET['id']) || !is_number($_GET['id']) || !isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
     error(0);
 }
@@ -20,7 +20,7 @@ $DB->query("
   FROM torrents AS t
     JOIN torrents_group AS tg ON tg.ID=t.GroupID
     LEFT JOIN artists_group AS ag ON ag.ArtistID=tg.ArtistID
-  WHERE t.ID='$TorrentID'");
+  WHERE t.ID='{$TorrentID}'");
 
 [$Properties] = $DB->to_array(false, MYSQLI_BOTH);
 

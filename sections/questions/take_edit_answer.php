@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $ID = $_POST['id'];
@@ -12,8 +14,8 @@ if (empty($Answer) || !is_number($ID) || $UserID != $LoggedUser['ID']) {
 
 $DB->query("
   UPDATE staff_answers
-  SET Answer = '$Answer'
-  WHERE QuestionID = '$ID'
-    AND UserID = '$UserID'");
+  SET Answer = '{$Answer}'
+  WHERE QuestionID = '{$ID}'
+    AND UserID = '{$UserID}'");
 
-header("Location: questions.php?action=view_answers&userid=$UserID");
+header(sprintf('Location: questions.php?action=view_answers&userid=%s', $UserID));

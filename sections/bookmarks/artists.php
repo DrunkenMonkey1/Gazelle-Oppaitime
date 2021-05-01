@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!empty($_GET['userid'])) {
     if (!check_perms('users_override_paranoia')) {
@@ -12,7 +12,7 @@ if (!empty($_GET['userid'])) {
     $DB->query("
     SELECT Username
     FROM users_main
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
     [$Username] = $DB->next_record();
 } else {
     $UserID = $LoggedUser['ID'];
@@ -26,12 +26,12 @@ $DB->query("
   SELECT ag.ArtistID, ag.Name
   FROM bookmarks_artists AS ba
     INNER JOIN artists_group AS ag ON ba.ArtistID = ag.ArtistID
-  WHERE ba.UserID = $UserID
+  WHERE ba.UserID = {$UserID}
   ORDER BY ag.Name");
 
 $ArtistList = $DB->to_array();
 
-$Title = $Sneaky ? "$Username's bookmarked artists" : 'Your bookmarked artists';
+$Title = $Sneaky ? sprintf('%s\'s bookmarked artists', $Username) : 'Your bookmarked artists';
 
 View::show_header($Title, 'browse');
 
@@ -78,7 +78,7 @@ foreach ($ArtistList as $Artist) {
           $Notify = $DB->next_record(MYSQLI_ASSOC);
           $Cache->cache_value('notify_artists_' . $LoggedUser['ID'], $Notify, 0);
       }
-      if (false === stripos($Notify['Artists'], "|$Name|")) {
+      if (false === stripos($Notify['Artists'], sprintf('|%s|', $Name))) {
           ?>
           <a href="artist.php?action=notify&amp;artistid=<?=$ArtistID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" class="brackets">Notify of new uploads</a>
 <?php

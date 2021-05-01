@@ -1,12 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 [$Page, $Limit] = Format::page_limit(LOG_ENTRIES_PER_PAGE);
 
-if (!empty($_GET['search'])) {
-    $Search = db_string($_GET['search']);
-} else {
-    $Search = false;
-}
+$Search = empty($_GET['search']) ? false : db_string($_GET['search']);
 $Words = explode(' ', $Search);
 $SQL = '
   SELECT
@@ -31,7 +29,7 @@ if (!check_perms('site_view_full_log')) {
 
 $SQL .= "
   ORDER BY ID DESC
-  LIMIT $Limit";
+  LIMIT {$Limit}";
 
 $Log = $DB->query($SQL);
 $DB->query('SELECT FOUND_ROWS()');

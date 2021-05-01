@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_warn')) {
     error(404);
 }
@@ -8,7 +8,7 @@ $PostID = (int)$_POST['postid'];
 $DB->query("
   SELECT Body, AuthorID
   FROM comments
-  WHERE ID = $PostID");
+  WHERE ID = {$PostID}");
 if (!$DB->has_results()) {
     error(404);
 }

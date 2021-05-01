@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!check_perms('users_mod')) {
     json_error(403);
 }
@@ -43,7 +45,7 @@ if ("resolve" == $Type) {
 
 echo json_encode(["status" => "success"]);
 
-function json_error($Message)
+function json_error($Message): void
 {
     echo json_encode(["status" => $Message]);
     die();

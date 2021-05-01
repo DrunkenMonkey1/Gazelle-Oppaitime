@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms("users_mod")) {
     error(404);
 }
@@ -31,7 +31,7 @@ $DB->query("
           WHERE sq.UserID = '$LoggedUser[ID]'
         )
     ORDER BY uq.Date DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
 $Questions = $DB->to_array();
 
 $DB->query("

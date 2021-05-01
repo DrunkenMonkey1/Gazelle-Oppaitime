@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms("users_mod")) {
@@ -13,6 +15,6 @@ if (!is_number($ID)) {
 
 G::$DB->query("
   DELETE FROM user_questions
-  WHERE ID = '$ID'");
+  WHERE ID = '{$ID}'");
 
 header("Location: questions.php");

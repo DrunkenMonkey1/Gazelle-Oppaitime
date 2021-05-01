@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //-----------------------------------------------------------------------------------
 /////////////////////////////////////////////////////////////////////////////////////
 /*//-- MySQL wrapper class ----------------------------------------------------------
@@ -116,6 +118,7 @@ set_query_id($ResultSet)
 -------------------------------------------------------------------------------------
 *///---------------------------------------------------------------------------------
 
+
 if (!extension_loaded('mysqli')) {
     die('Mysqli Extension not loaded.');
 }
@@ -130,6 +133,7 @@ function db_string($String, $DisableWildcards = false)
     if ($DisableWildcards) {
         $String = str_replace(['%', '_'], ['\%', '\_'], $String);
     }
+    
     return $String;
 }
 
@@ -137,49 +141,80 @@ function db_array($Array, $DontEscape = [], $Quote = false)
 {
     foreach ($Array as $Key => $Val) {
         if (!in_array($Key, $DontEscape, true)) {
-            if ($Quote) {
-                $Array[$Key] = '\'' . db_string(trim($Val)) . '\'';
-            } else {
-                $Array[$Key] = db_string(trim($Val));
-            }
+            $Array[$Key] = $Quote ? '\'' . db_string(trim($Val)) . '\'' : db_string(trim($Val));
         }
     }
+    
     return $Array;
 }
 
 //TODO: revisit access levels once Drone is replaced by ZeRobot
 class DB_MYSQL
 {
+    public $PreppedQuery;
+    /**
+     * @var bool|\mysqli|null
+     */
     public $LinkID = false;
-    protected $QueryID = false;
-    protected $StatementID = false;
-    protected $PreparedQuery = false;
-    protected $Record = [];
-    protected $Row;
-    protected $Errno = 0;
-    protected $Error = '';
-
-    public $Queries = [];
-    public $Time = 0.0;
-
-    protected $Database = '';
-    protected $Server = '';
-    protected $User = '';
-    protected $Pass = '';
-    protected $Port = 0;
-    protected $Socket = '';
-
-    public function __construct($Database = SQLDB, $User = SQLLOGIN, $Pass = SQLPASS, $Server = SQLHOST, $Port = SQLPORT, $Socket = SQLSOCK)
-    {
-        $this->Database = $Database;
-        $this->Server = $Server;
-        $this->User = $User;
-        $this->Pass = $Pass;
-        $this->Port = $Port;
-        $this->Socket = $Socket;
+    /**
+     * @var mixed[]
+     */
+    public array $Queries = [];
+    public float $Time = 0.0;
+    protected bool|\mysqli_result $QueryID = false;
+    protected bool|\mysqli_stmt $StatementID = false;
+    protected bool $PreparedQuery = false;
+    /**
+     * @var mixed[]|bool|null
+     */
+    protected null|bool|array $Record = [];
+    protected ?int $Row = null;
+    protected int $Errno = 0;
+    protected ?string $Error = '';
+    
+    public function __construct(
+        protected $Database = SQLDB,
+        protected $User = SQLLOGIN,
+        protected $Pass = SQLPASS,
+        protected $Server = SQLHOST,
+        protected $Port = SQLPORT,
+        protected $Socket = SQLSOCK
+    ) {
     }
-
-    public function halt($Msg)
+    
+    public function prepare_query(bool $Query, &...$BindVars): \mysqli_stmt|bool
+    {
+        $this->connect();
+        
+        $this->StatementID = mysqli_prepare($this->LinkID, $Query);
+        if (!empty($BindVars)) {
+            $Types = '';
+            $TypeMap = ['string' => 's', 'double' => 'd', 'integer' => 'i', 'boolean' => 'i'];
+            foreach ($BindVars as $BindVar) {
+                $Types .= $TypeMap[gettype($BindVar)] ?? 'b';
+            }
+            mysqli_stmt_bind_param($this->StatementID, $Types, ...$BindVars);
+        }
+        $this->PreparedQuery = $Query;
+        
+        return $this->StatementID;
+    }
+    
+    public function connect(): void
+    {
+        if (!$this->LinkID) {
+            $this->LinkID = mysqli_connect($this->Server, $this->User, $this->Pass, $this->Database, $this->Port,
+                $this->Socket); // defined in config.php
+            if (!$this->LinkID) {
+                $this->Errno = mysqli_connect_errno();
+                $this->Error = mysqli_connect_error();
+                $this->halt('Connection failed (host:' . $this->Server . ':' . $this->Port . ')');
+            }
+        }
+        mysqli_set_charset($this->LinkID, "utf8mb4");
+    }
+    
+    public function halt($Msg): void
     {
         global $Debug, $argv;
         $DBError = 'MySQL: ' . strval($Msg) . ' SQL error: ' . strval($this->Errno) . ' (' . strval($this->Error) . ')';
@@ -193,42 +228,12 @@ class DB_MYSQL
                 print_r($this->Queries);
             }
             die();
-        } else {
-            error('-1');
         }
+        
+        error('-1');
     }
-
-    public function connect()
-    {
-        if (!$this->LinkID) {
-            $this->LinkID = mysqli_connect($this->Server, $this->User, $this->Pass, $this->Database, $this->Port, $this->Socket); // defined in config.php
-            if (!$this->LinkID) {
-                $this->Errno = mysqli_connect_errno();
-                $this->Error = mysqli_connect_error();
-                $this->halt('Connection failed (host:' . $this->Server . ':' . $this->Port . ')');
-            }
-        }
-        mysqli_set_charset($this->LinkID, "utf8mb4");
-    }
-
-    public function prepare_query($Query, &...$BindVars)
-    {
-        $this->connect();
-
-        $this->StatementID = mysqli_prepare($this->LinkID, $Query);
-        if (!empty($BindVars)) {
-            $Types = '';
-            $TypeMap = ['string'=>'s', 'double'=>'d', 'integer'=>'i', 'boolean'=>'i'];
-            foreach ($BindVars as $BindVar) {
-                $Types .= $TypeMap[gettype($BindVar)] ?? 'b';
-            }
-            mysqli_stmt_bind_param($this->StatementID, $Types, ...$BindVars);
-        }
-        $this->PreparedQuery = $Query;
-        return $this->StatementID;
-    }
-
-    public function exec_prepared_query()
+    
+    public function exec_prepared_query(): void
     {
         $QueryStartTime = microtime(true);
         mysqli_stmt_execute($this->StatementID);
@@ -237,9 +242,10 @@ class DB_MYSQL
         $this->Queries[] = [$this->PreppedQuery, $QueryRunTime, null];
         $this->Time += $QueryRunTime;
     }
-
-    public function query($Query, &...$BindVars)
+    
+    public function query($Query, &...$BindVars): bool|\mysqli_result
     {
+    
         global $Debug;
         /*
          * If there was a previous query, we store the warnings. We cannot do
@@ -256,206 +262,61 @@ class DB_MYSQL
         }
         $QueryStartTime = microtime(true);
         $this->connect();
-
+        
         // In the event of a MySQL deadlock, we sleep allowing MySQL time to unlock, then attempt again for a maximum of 5 tries
         for ($i = 1; $i < 6; $i++) {
             $this->StatementID = mysqli_prepare($this->LinkID, $Query);
             if (!empty($BindVars)) {
                 $Types = '';
-                $TypeMap = ['string'=>'s', 'double'=>'d', 'integer'=>'i', 'boolean'=>'i'];
+                $TypeMap = ['string' => 's', 'double' => 'd', 'integer' => 'i', 'boolean' => 'i'];
                 foreach ($BindVars as $BindVar) {
                     $Types .= $TypeMap[gettype($BindVar)] ?? 'b';
                 }
                 mysqli_stmt_bind_param($this->StatementID, $Types, ...$BindVars);
             }
-            mysqli_stmt_execute($this->StatementID);
-            $this->QueryID = mysqli_stmt_get_result($this->StatementID);
-
-            if (DEBUG_MODE) {
-                // in DEBUG_MODE, return the full trace on a SQL error (super useful
-                // for debugging). do not attempt to retry to query
-                if (!$this->QueryID) {
-                    echo '<pre>' . mysqli_error($this->LinkID) . '<br><br>';
-                    debug_print_backtrace();
-                    echo '</pre>';
-                    die();
-                }
+            if (false !== $this->StatementID) {
+                mysqli_stmt_execute($this->StatementID);
+                $this->QueryID = mysqli_stmt_get_result($this->StatementID);
             }
-
+            
+            // in DEBUG_MODE, return the full trace on a SQL error (super useful
+            // for debugging). do not attempt to retry to query
+            if (DEBUG_MODE && !$this->QueryID) {
+                echo '<pre>' . mysqli_error($this->LinkID) . '<br><br>';
+                debug_print_backtrace();
+                echo '</pre>';
+                die();
+            }
+            
             if (!in_array(mysqli_errno($this->LinkID), [1213, 1205], true)) {
                 break;
             }
             $Debug->analysis('Non-Fatal Deadlock:', $Query, 3600 * 24);
             trigger_error("Database deadlock, attempt $i");
-
+            
             sleep($i * rand(2, 5)); // Wait longer as attempts increase
         }
-
+        
         $QueryEndTime = microtime(true);
         $this->Queries[] = [$Query, ($QueryEndTime - $QueryStartTime) * 1000, null];
         $this->Time += ($QueryEndTime - $QueryStartTime) * 1000;
-
+        
         if (!$this->QueryID && !$this->StatementID) {
             $this->Errno = mysqli_errno($this->LinkID);
             $this->Error = mysqli_error($this->LinkID);
             $this->halt("Invalid Query: $Query");
         }
-
+        
         $this->Row = 0;
+        
         return $this->QueryID;
     }
-
-    public function query_unb($Query)
-    {
-        $this->connect();
-        mysqli_real_query($this->LinkID, $Query);
-    }
-
-    public function inserted_id()
-    {
-        if ($this->LinkID) {
-            return mysqli_insert_id($this->LinkID);
-        }
-    }
-
-    public function next_record($Type = MYSQLI_BOTH, $Escape = true)
-    { // $Escape can be true, false, or an array of keys to not escape
-        if ($this->LinkID) {
-            $this->Record = mysqli_fetch_array($this->QueryID, $Type);
-            $this->Row++;
-            if (!is_array($this->Record)) {
-                $this->QueryID = false;
-            } elseif (false !== $Escape) {
-                $this->Record = Misc::display_array($this->Record, $Escape);
-            }
-            return $this->Record;
-        }
-    }
-
-    public function close()
-    {
-        if ($this->LinkID) {
-            if (!mysqli_close($this->LinkID)) {
-                $this->halt('Cannot close connection or connection did not open.');
-            }
-            $this->LinkID = false;
-        }
-    }
-
-    /*
-     * returns an integer with the number of rows found
-     * returns a string if the number of rows found exceeds MAXINT
-     */
-    public function record_count()
-    {
-        if ($this->QueryID) {
-            return mysqli_num_rows($this->QueryID);
-        }
-    }
-
-    /*
-     * returns true if the query exists and there were records found
-     * returns false if the query does not exist or if there were 0 records returned
-     */
-    public function has_results()
-    {
-        return ($this->QueryID && 0 !== $this->record_count());
-    }
-
-    public function affected_rows()
-    {
-        if ($this->LinkID) {
-            return mysqli_affected_rows($this->LinkID);
-        }
-    }
-
-    public function info()
-    {
-        return mysqli_get_host_info($this->LinkID);
-    }
-
-    // You should use db_string() instead.
-    public function escape_str($Str)
-    {
-        $this->connect(0);
-        if (is_array($Str)) {
-            trigger_error('Attempted to escape array.');
-            return '';
-        }
-        return mysqli_real_escape_string($this->LinkID, $Str);
-    }
-
-    // Creates an array from a result set
-    // If $Key is set, use the $Key column in the result set as the array key
-    // Otherwise, use an integer
-    public function to_array($Key = false, $Type = MYSQLI_BOTH, $Escape = true)
-    {
-        $Return = [];
-        while ($Row = mysqli_fetch_array($this->QueryID, $Type)) {
-            if (false !== $Escape) {
-                $Row = Misc::display_array($Row, $Escape);
-            }
-            if (false !== $Key) {
-                $Return[$Row[$Key]] = $Row;
-            } else {
-                $Return[] = $Row;
-            }
-        }
-        mysqli_data_seek($this->QueryID, 0);
-        return $Return;
-    }
-
-    //  Loops through the result set, collecting the $ValField column into an array with $KeyField as keys
-    public function to_pair($KeyField, $ValField, $Escape = true)
-    {
-        $Return = [];
-        while ($Row = mysqli_fetch_array($this->QueryID)) {
-            if ($Escape) {
-                $Key = display_str($Row[$KeyField]);
-                $Val = display_str($Row[$ValField]);
-            } else {
-                $Key = $Row[$KeyField];
-                $Val = $Row[$ValField];
-            }
-            $Return[$Key] = $Val;
-        }
-        mysqli_data_seek($this->QueryID, 0);
-        return $Return;
-    }
-
-    //  Loops through the result set, collecting the $Key column into an array
-    public function collect($Key, $Escape = true)
-    {
-        $Return = [];
-        while ($Row = mysqli_fetch_array($this->QueryID)) {
-            $Return[] = $Escape ? display_str($Row[$Key]) : $Row[$Key];
-        }
-        mysqli_data_seek($this->QueryID, 0);
-        return $Return;
-    }
-
-    public function set_query_id(&$ResultSet)
-    {
-        $this->QueryID = $ResultSet;
-        $this->Row = 0;
-    }
-
-    public function get_query_id()
-    {
-        return $this->QueryID;
-    }
-
-    public function beginning()
-    {
-        mysqli_data_seek($this->QueryID, 0);
-        $this->Row = 0;
-    }
-
+    
     /**
      * This function determines whether the last query caused warning messages
      * and stores them in $this->Queries.
      */
-    public function warnings()
+    public function warnings(): void
     {
         $Warnings = [];
         if (!is_bool($this->LinkID) && mysqli_warning_count($this->LinkID)) {
@@ -469,5 +330,186 @@ class DB_MYSQL
             } while ($e->next());
         }
         $this->Queries[count($this->Queries) - 1][2] = $Warnings;
+    }
+    
+    public function query_unb($Query): void
+    {
+        $this->connect();
+        mysqli_real_query($this->LinkID, $Query);
+    }
+    
+    /**
+     * @return int|string|void
+     */
+    public function inserted_id()
+    {
+        if ($this->LinkID) {
+            return mysqli_insert_id($this->LinkID);
+        }
+    }
+    
+    public function next_record($Type = MYSQLI_BOTH, $Escape = true)
+    { // $Escape can be true, false, or an array of keys to not escape
+        if ($this->LinkID && false !== $this->QueryID) {
+            $this->Record = mysqli_fetch_array($this->QueryID, $Type);
+            $this->Row++;
+            if (!is_array($this->Record)) {
+                $this->QueryID = false;
+            } elseif (false !== $Escape) {
+                $this->Record = Misc::display_array($this->Record, $Escape);
+            }
+            
+            return $this->Record;
+        }
+    }
+    
+    /*
+     * returns an integer with the number of rows found
+     * returns a string if the number of rows found exceeds MAXINT
+     */
+    
+    public function close(): void
+    {
+        if ($this->LinkID) {
+            if (!mysqli_close($this->LinkID)) {
+                $this->halt('Cannot close connection or connection did not open.');
+            }
+            $this->LinkID = false;
+        }
+    }
+    
+    /*
+     * returns true if the query exists and there were records found
+     * returns false if the query does not exist or if there were 0 records returned
+     */
+    
+    public function has_results(): bool
+    {
+        return ($this->QueryID && 0 !== $this->record_count());
+    }
+    
+    /**
+     * @return int|string|void
+     */
+    public function record_count()
+    {
+        if ($this->QueryID) {
+            return mysqli_num_rows($this->QueryID);
+        }
+    }
+    
+    /**
+     * @return int|string|void
+     */
+    public function affected_rows()
+    {
+        if ($this->LinkID) {
+            return mysqli_affected_rows($this->LinkID);
+        }
+    }
+    
+    // You should use db_string() instead.
+    
+    public function info(): string
+    {
+        return mysqli_get_host_info($this->LinkID);
+    }
+    
+    // Creates an array from a result set
+    // If $Key is set, use the $Key column in the result set as the array key
+    // Otherwise, use an integer
+    
+    public function escape_str($Str): string
+    {
+        $this->connect();
+        if (is_array($Str)) {
+            trigger_error('Attempted to escape array.');
+            
+            return '';
+        }
+        
+        return mysqli_real_escape_string($this->LinkID, (string) $Str);
+    }
+    
+    //  Loops through the result set, collecting the $ValField column into an array with $KeyField as keys
+    
+    /**
+     * @param bool $Key
+     * @param int  $Type
+     * @param bool $Escape
+     *
+     * @return array
+     */
+    public function to_array($Key = false, $Type = MYSQLI_BOTH, $Escape = true)
+    {
+        $Return = [];
+        
+        while ($Row = mysqli_fetch_array($this->QueryID, $Type)) {
+            if (false !== $Escape && is_array($Row)) {
+//                $Row = Misc::display_array($Row, $Escape);
+            }
+            if (false !== $Key) {
+                $Return[$Row[$Key]] = $Row;
+            } else {
+                $Return[] = $Row;
+            }
+        }
+        mysqli_data_seek($this->QueryID, 0);
+        
+        return $Return;
+    }
+    
+    //  Loops through the result set, collecting the $Key column into an array
+    
+    /**
+     * @return array<int|string, mixed>
+     */
+    public function to_pair($KeyField, $ValField, $Escape = true): array
+    {
+        $Return = [];
+        while ($Row = mysqli_fetch_array($this->QueryID)) {
+            if ($Escape) {
+                $Key = display_str($Row[$KeyField]);
+                $Val = display_str($Row[$ValField]);
+            } else {
+                $Key = $Row[$KeyField];
+                $Val = $Row[$ValField];
+            }
+            $Return[$Key] = $Val;
+        }
+        mysqli_data_seek($this->QueryID, 0);
+        
+        return $Return;
+    }
+    
+    /**
+     * @return mixed[]
+     */
+    public function collect($Key, $Escape = true): array
+    {
+        $Return = [];
+        while ($Row = mysqli_fetch_array($this->QueryID)) {
+            $Return[] = $Escape ? display_str($Row[$Key]) : $Row[$Key];
+        }
+        mysqli_data_seek($this->QueryID, 0);
+        
+        return $Return;
+    }
+    
+    public function get_query_id(): bool|\mysqli_result
+    {
+        return $this->QueryID;
+    }
+    
+    public function set_query_id(bool|\mysqli_result &$ResultSet): void
+    {
+        $this->QueryID = $ResultSet;
+        $this->Row = 0;
+    }
+    
+    public function beginning(): void
+    {
+        mysqli_data_seek($this->QueryID, 0);
+        $this->Row = 0;
     }
 }

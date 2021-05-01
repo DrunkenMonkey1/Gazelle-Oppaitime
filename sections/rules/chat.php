@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //Include the header
 View::show_header('Chat Rules');
 ?>
@@ -21,7 +21,7 @@ View::show_header('Chat Rules');
   <div class="box pad rule_summary" style="padding: 10px 10px 10px 20px;">
 <?php    Rules::display_irc_chat_rules() ?>
   </div>
-<?php include 'jump.php'; ?>
+<?php include __DIR__ . '/jump.php'; ?>
 </div>
 <?php
 View::show_footer();

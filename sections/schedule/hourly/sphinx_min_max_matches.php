@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $SphQL = new SphinxqlQuery();
 $SphQL->where_match('_all', 'fake', false);
 $SphQL->select('id')->from('torrents, delta')->limit(0, 0, 10000);

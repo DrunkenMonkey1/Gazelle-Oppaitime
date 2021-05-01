@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!isset($_POST['id']) || !is_number($_POST['id'])) {
@@ -34,7 +36,7 @@ if (check_perms('admin_manage_wiki')) {
         error(0);
     }
     if ($Edit > $LoggedUser['EffectiveClass']) {
-        error('You can\'t restrict articles above your own level.');
+        error("You can't restrict articles above your own level.");
     }
     if ($Edit < $Read) {
         $Edit = $Read; //Human error fix.
@@ -62,8 +64,8 @@ $SQL = "
     Body = '$P[body]',";
 if ($Read && $Edit) {
     $SQL .= "
-    MinClassRead = '$Read',
-    MinClassEdit = '$Edit',";
+    MinClassRead = '{$Read}',
+    MinClassEdit = '{$Edit}',";
 }
 $SQL .= "
     Date = NOW(),
@@ -72,4 +74,4 @@ $SQL .= "
 $DB->query($SQL);
 Wiki::flush_article($ArticleID);
 
-header("Location: wiki.php?action=article&id=$ArticleID");
+header(sprintf('Location: wiki.php?action=article&id=%s', $ArticleID));

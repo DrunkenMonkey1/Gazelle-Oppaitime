@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query("
   UPDATE staff_pm_conversations
   SET Status = 'Resolved', ResolverID = '0'

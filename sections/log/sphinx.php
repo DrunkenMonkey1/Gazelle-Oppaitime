@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!empty($_GET['page']) && is_number($_GET['page'])) {
     $Page = min(SPHINX_MAX_MATCHES / LOG_ENTRIES_PER_PAGE, $_GET['page']);
     $Offset = ($Page - 1) * LOG_ENTRIES_PER_PAGE;
@@ -12,7 +14,7 @@ if (empty($_GET['search']) || '' == trim($_GET['search'])) {
     SELECT ID, Message, Time
     FROM log
     ORDER BY ID DESC
-    LIMIT $Offset, " . LOG_ENTRIES_PER_PAGE);
+    LIMIT {$Offset}, " . LOG_ENTRIES_PER_PAGE);
     $NumResults = $DB->record_count();
     if (!$NumResults) {
         $TotalMatches = 0;

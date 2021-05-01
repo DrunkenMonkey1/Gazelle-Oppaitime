@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * New transcode module:
  * $_GET['filter'] determines which torrents should be shown and can be empty/all (default), uploaded, snatched or seeding
@@ -61,7 +61,7 @@ function transcode_parse_groups($Groups)
             continue;
         }
         foreach ($Group['Torrents'] as $TorrentID => $Torrent) {
-            $RemIdent = "$Torrent[Media] $Torrent[RemasterYear] $Torrent[RemasterTitle] $Torrent[RemasterRecordLabel] $Torrent[RemasterCatalogueNumber]";
+            $RemIdent = sprintf('%s %s %s %s %s', $Torrent[Media], $Torrent[RemasterYear], $Torrent[RemasterTitle], $Torrent[RemasterRecordLabel], $Torrent[RemasterCatalogueNumber]);
             if (!isset($TorrentGroups[$GroupID])) {
                 $TorrentGroups[$GroupID] = [
                     'Year' => $Group['Year'],
@@ -153,7 +153,7 @@ if (in_array($_GET['filter'], ['all', 'uploaded'], true)) {
     WHERE t.Format='FLAC'
       AND (t.LogScore = '100' OR t.Media != 'CD')
       AND tg.CategoryID = 1
-      AND x.uid = '$UserID'
+      AND x.uid = '{$UserID}'
       " . ('seeding' === $_GET['filter'] ? 'AND x.active=1 AND x.Remaining=0' : ''));
     $Debug->set_flag('SELECTed ' . $_GET['filter'] . ' torrents');
     $Snatched = $DB->to_array();
@@ -165,9 +165,7 @@ if (in_array($_GET['filter'], ['all', 'uploaded'], true)) {
         $Snatched = array_slice($Snatched, TORRENTS_PER_PAGE);
 
         $SphQL = transcode_init_sphql();
-        $SphQL->where('groupid', array_map(function ($row) {
-            return $row['GroupID'];
-        }, $SnatchedTmp));
+        $SphQL->where('groupid', array_map(fn ($row) => $row['GroupID'], $SnatchedTmp));
 
         $SphQLResult = $SphQL->query();
         $ResultsTmp = $SphQLResult->collect('groupid');
@@ -258,7 +256,7 @@ View::show_header('Transcode Search');
       <tr>
         <td class="label"><strong>Search</strong></td>
         <td>
-          <input type="search" name="search" size="60" value="<?=(!empty($_GET['search']) ? display_str($_GET['search']) : '')?>" />
+          <input type="search" name="search" size="60" value="<?=(empty($_GET['search']) ? '' : display_str($_GET['search']))?>" />
         </td>
       </tr>
       <tr><td>&nbsp;</td><td><input type="submit" value="Search" /></td></tr>
@@ -307,9 +305,9 @@ if (0 == $ResultCount) {
             foreach ($Group['Editions'] as $RemIdent => $Edition) {
                 // TODO: point to the correct FLAC (?)
                 $FlacID = array_search(true, $Edition['FlacIDs'], true);
-                $DisplayName = $ArtistNames . "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$FlacID#torrent$FlacID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
+                $DisplayName = $ArtistNames . sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s#torrent%s" class="tooltip" title="View torrent" dir="ltr">%s</a>', $GroupID, $FlacID, $FlacID, $GroupName);
                 if ($GroupYear > 0) {
-                    $DisplayName .= " [$GroupYear]";
+                    $DisplayName .= sprintf(' [%s]', $GroupYear);
                 }
                 if ($ReleaseType > 0) {
                     $DisplayName .= ' [' . $ReleaseTypes[$ReleaseType] . ']';

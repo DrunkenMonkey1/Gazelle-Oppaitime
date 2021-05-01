@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * This page is to outline all of the views built into reports v2.
  * It's used as the main page as it also lists the current reports by type
@@ -24,7 +24,7 @@ $Owner = display_str($Owner);
 ?>
 <div class="header">
   <h2>Reports v2 Information</h2>
-<?php  include 'header.php'; ?>
+<?php  include __DIR__ . '/header.php'; ?>
 </div>
 <div class="thin float_clear">
   <div class="two_columns pad">
@@ -50,11 +50,7 @@ $Results = $DB->to_array();
 <?php
 foreach ($Results as $Result) {
     [$UserID, $Username, $Reports] = $Result;
-    if ($Username == $LoggedUser['Username']) {
-        $RowClass = ' class="highlight"';
-    } else {
-        $RowClass = '';
-    } ?>
+    $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -85,11 +81,7 @@ $Results = $DB->to_array();
 <?php
 foreach ($Results as $Result) {
     [$UserID, $Username, $Reports] = $Result;
-    if ($Username == $LoggedUser['Username']) {
-        $RowClass = ' class="highlight"';
-    } else {
-        $RowClass = '';
-    } ?>
+    $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -120,11 +112,7 @@ $Results = $DB->to_array();
 <?php
 foreach ($Results as $Result) {
     [$UserID, $Username, $Reports] = $Result;
-    if ($Username == $LoggedUser['Username']) {
-        $RowClass = ' class="highlight"';
-    } else {
-        $RowClass = '';
-    } ?>
+    $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -154,11 +142,7 @@ $Results = $DB->to_array();
 <?php
 foreach ($Results as $Result) {
     [$UserID, $Username, $Reports] = $Result;
-    if ($Username == $LoggedUser['Username']) {
-        $RowClass = ' class="highlight"';
-    } else {
-        $RowClass = '';
-    } ?>
+    $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><a href="reportsv2.php?view=resolver&amp;id=<?=$UserID?>"><?=$Username?></a></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -248,11 +232,7 @@ foreach ($Results as $Result) {
       </tr>
 <?php
   foreach ($Staff as $Array) {
-      if ($Array['Username'] == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Array['Username'] == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td>
           <a href="reportsv2.php?view=staff&amp;id=<?=$Array['ResolverID']?>"><?=display_str($Array['Username'])?>'s reports</a>

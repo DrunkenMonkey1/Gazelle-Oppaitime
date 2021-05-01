@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $ArticleID = Wiki::alias_to_id($_GET['alias']);
 
-$DB->query("SELECT MinClassEdit FROM wiki_articles WHERE ID = $ArticleID");
+$DB->query(sprintf('SELECT MinClassEdit FROM wiki_articles WHERE ID = %s', $ArticleID));
 [$MinClassEdit] = $DB->next_record();
 if ($MinClassEdit > $LoggedUser['EffectiveClass']) {
     error(403);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (check_perms('admin_reports') && !empty($_GET['remove']) && is_number($_GET['remove'])) {
     $DB->query("
@@ -26,7 +26,7 @@ $DB->query("
   SELECT tbt.TorrentID, t.GroupID
   FROM torrents_bad_tags AS tbt
     JOIN torrents AS t ON t.ID = tbt.TorrentID
-    $Join
+    {$Join}
   ORDER BY tbt.TimeAdded ASC");
 $TorrentsInfo = $DB->to_array('TorrentID', MYSQLI_ASSOC);
 foreach ($TorrentsInfo as $Torrent) {
@@ -66,9 +66,9 @@ foreach ($TorrentsInfo as $TorrentID => $Info) {
     } else {
         $DisplayName = '';
     }
-    $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$TorrentID#torrent$TorrentID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
+    $DisplayName .= sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s#torrent%s" class="tooltip" title="View torrent" dir="ltr">%s</a>', $GroupID, $TorrentID, $TorrentID, $GroupName);
     if ($GroupYear > 0) {
-        $DisplayName .= " [$GroupYear]";
+        $DisplayName .= sprintf(' [%s]', $GroupYear);
     }
     if ($ReleaseType > 0) {
         $DisplayName .= ' [' . $ReleaseTypes[$ReleaseType] . ']';

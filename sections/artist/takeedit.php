@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*********************************************************************\
 The page that handles the backend of the 'edit artist' function.
 \*********************************************************************/
@@ -41,13 +43,13 @@ if (!$RevisionID) { // edit
     INSERT INTO wiki_artists
       (PageID, Body, Image, UserID, Summary, Time)
     VALUES
-      ('$ArtistID', '$Body', '$Image', '$UserID', '$Summary', NOW())");
+      ('{$ArtistID}', '{$Body}', '{$Image}', '{$UserID}', '{$Summary}', NOW())");
 } else { // revert
     $DB->query("
     INSERT INTO wiki_artists (PageID, Body, Image, UserID, Summary, Time)
-    SELECT '$ArtistID', Body, Image, '$UserID', 'Reverted to revision $RevisionID', NOW()
+    SELECT '{$ArtistID}', Body, Image, '{$UserID}', 'Reverted to revision {$RevisionID}', NOW()
     FROM wiki_artists
-    WHERE RevisionID = '$RevisionID'");
+    WHERE RevisionID = '{$RevisionID}'");
 }
 
 $RevisionID = $DB->inserted_id();
@@ -56,9 +58,9 @@ $RevisionID = $DB->inserted_id();
 $DB->query("
   UPDATE artists_group
   SET
-    RevisionID = '$RevisionID'
-  WHERE ArtistID = '$ArtistID'");
+    RevisionID = '{$RevisionID}'
+  WHERE ArtistID = '{$ArtistID}'");
 
 // There we go, all done!
-$Cache->delete_value("artist_$ArtistID"); // Delete artist cache
-header("Location: artist.php?id=$ArtistID");
+$Cache->delete_value(sprintf('artist_%s', $ArtistID)); // Delete artist cache
+header(sprintf('Location: artist.php?id=%s', $ArtistID));

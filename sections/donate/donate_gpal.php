@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //TODO: Developer, add resend last donation when available AND add missing headers to Test IPN
 enforce_login();
 

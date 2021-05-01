@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //Include the header
 View::show_header('Uploading Rules', 'rules');
 ?>
@@ -130,7 +130,7 @@ View::show_header('Uploading Rules', 'rules');
               <strong>Subtitles are assumed to be in English.</strong> If a torrent contains only Japanese or other non-English subtitles, do not tag it as having subtitles. As with languages, torrents with multiple subtitles are fine so long as they contain at least English subtitles.
             </li>
             <li id="r1.1.11"><a href="#h1.1"><strong>&uarr;</strong></a> <a href="r1.1.11">1.1.11.</a>
-              <strong>Official English titles win.</strong> Translation can be hard. Some titles may have never been translated into English. We don't expect you to be a translator. If there's no official title, use the best English title you can find. If you find a torrent group with a poor English translation and you think you have a better one, you may replace it, so long as you're not replacing an official title. If you're unsure if your translation is better, ask a staff member for assistance, that way when they say yes and it's a shit translation, we can yell at them instead of you.
+              <strong>Official Titles win.</strong> Translation can be hard. Some titles may have never been translated into English. We don't expect you to be a translator. If there's no official title, use the best Title you can find. If you find a torrent group with a poor English translation and you think you have a better one, you may replace it, so long as you're not replacing an official title. If you're unsure if your translation is better, ask a staff member for assistance, that way when they say yes and it's a shit translation, we can yell at them instead of you.
             </li>
             <li id="r1.1.12"><a href="#h1.1"><strong>&uarr;</strong></a> <a href="#r1.1.12">1.1.12.</a>
               <strong>Watermarked uploads are allowed</strong>, however they may be trumpable by non-watermarked uploads (see <a href="#r2.2.7">rule 2.2.7.</a>).
@@ -414,7 +414,7 @@ View::show_header('Uploading Rules', 'rules');
         </div>
   </div>
 <!-- END Other Sections -->
-<?php include 'jump.php'; ?>
+<?php include __DIR__ . '/jump.php'; ?>
 </div>
 <?php
 View::show_footer();

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 enforce_login();
 authorize();
@@ -34,7 +34,7 @@ foreach ($EncEmails as $EncEmail) {
     $DB->query("
     SELECT Email
     FROM users_main
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
 
     if (!$DB->has_results()) {
         error(404);
@@ -54,7 +54,7 @@ $DB->query("
   INSERT INTO deletion_requests
     (UserID, Type, Value, Reason, Time)
   VALUES
-    ('$UserID', 'Email', '" . db_string($EncEmails[0]) . "', '" . db_string($Reason) . "', NOW())");
+    ('{$UserID}', 'Email', '" . db_string($EncEmails[0]) . "', '" . db_string($Reason) . "', NOW())");
 
 $Cache->delete_value('num_deletion_requests');
 

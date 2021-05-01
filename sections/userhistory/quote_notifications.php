@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($LoggedUser['DisableForums'])) {
     error(403);
 }
@@ -9,17 +9,13 @@ if ($_GET['showall'] ?? false) {
 }
 
 if ($_GET['catchup'] ?? false) {
-    $DB->query("UPDATE users_notify_quoted SET UnRead = '0' WHERE UserID = '$LoggedUser[ID]'");
+    $DB->query(sprintf('UPDATE users_notify_quoted SET UnRead = \'0\' WHERE UserID = \'%s\'', $LoggedUser[ID]));
     $Cache->delete_value('notify_quoted_' . $LoggedUser['ID']);
     header('Location: userhistory.php?action=quote_notifications');
     die();
 }
 
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+$PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
 [$Page, $Limit] = Format::page_limit($PerPage);
 
 // Get $Limit last quote notifications
@@ -46,15 +42,16 @@ $sql = "
   WHERE q.UserID = $LoggedUser[ID]
     AND (q.Page != 'forums' OR " . Forums::user_forums_sql() . ")
     AND (q.Page != 'collages' OR c.Deleted = '0')
-    $UnreadSQL
+    {$UnreadSQL}
   ORDER BY q.Date DESC
-  LIMIT $Limit";
+  LIMIT {$Limit}";
 $DB->query($sql);
 $Results = $DB->to_array(false, MYSQLI_ASSOC, false);
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();
 
-$TorrentGroups = $Requests = [];
+$TorrentGroups = [];
+$Requests = [];
 foreach ($Results as $Result) {
     if ('torrents' == $Result['Page']) {
         $TorrentGroups[] = $Result['PageID'];
@@ -73,11 +70,11 @@ View::show_header('Quote Notifications');
   <div class="header">
     <h2>
       Quote notifications
-      <?=$NumResults && !empty($UnreadSQL) ? " ($NumResults new)" : '' ?>
+      <?=$NumResults && !empty($UnreadSQL) ? sprintf(' (%s new)', $NumResults) : '' ?>
     </h2>
     <div class="linkbox pager">
       <br />
-<?php if ($UnreadSQL) { ?>
+<?php if ('' !== $UnreadSQL) { ?>
       <a href="userhistory.php?action=quote_notifications&amp;showall=1" class="brackets">Show all quotes</a>&nbsp;&nbsp;&nbsp;
 <?php } else { ?>
       <a href="userhistory.php?action=quote_notifications" class="brackets">Show unread quotes</a>&nbsp;&nbsp;&nbsp;
@@ -92,7 +89,7 @@ View::show_header('Quote Notifications');
     </div>
   </div>
 <?php if (!$NumResults) { ?>
-  <div class="center">No<?=($UnreadSQL ? ' new' : '')?> quotes.</div>
+  <div class="center">No<?=('' !== $UnreadSQL ? ' new' : '')?> quotes.</div>
 <?php } ?>
   <br />
 <?php
@@ -121,7 +118,7 @@ foreach ($Results as $Result) {
                   continue;
               }
               $GroupInfo = $TorrentGroups[$Result['PageID']];
-              $Links = 'Torrent: ' . Artists::display_artists($GroupInfo['ExtendedArtists']) . '<a href="torrents.php?id=' . $GroupInfo['ID'] . '">' . ($GroupInfo['Name'] ? $GroupInfo['Name'] : ($GroupInfo['NameRJ'] ? $GroupInfo['NameRJ'] : $GroupInfo['NameJP'])) . '</a> &gt; ';
+              $Links = 'Torrent: ' . Artists::display_artists($GroupInfo['ExtendedArtists']) . '<a href="torrents.php?id=' . $GroupInfo['ID'] . '">' . $GroupInfo['Name']  . '</a> &gt; ';
               $Links .= '<a href="torrents.php?id=' . $GroupInfo['ID'] . '&postid=' . $Result['PostID'] . '#post' . $Result['PostID'] . '"> Post #' . $Result['PostID'] . '</a>';
           } else {
               continue;

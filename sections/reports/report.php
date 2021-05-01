@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 include SERVER_ROOT . '/sections/reports/array.php';
 
@@ -19,7 +19,7 @@ switch ($Short) {
     $DB->query("
       SELECT Username
       FROM users_main
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -31,7 +31,7 @@ switch ($Short) {
     $DB->query("
       SELECT Title, Description, TorrentID, CategoryID, Year
       FROM requests
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -45,7 +45,7 @@ switch ($Short) {
     $DB->query("
       SELECT Title, Description, TorrentID
       FROM requests
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -56,7 +56,7 @@ switch ($Short) {
     $DB->query("
       SELECT Name, Description
       FROM collages
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -68,7 +68,7 @@ switch ($Short) {
       SELECT ft.Title, ft.ForumID, um.Username
       FROM forums_topics AS ft
         JOIN users_main AS um ON um.ID = ft.AuthorID
-      WHERE ft.ID = $ID");
+      WHERE ft.ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -76,7 +76,7 @@ switch ($Short) {
     $DB->query("
       SELECT MinClassRead
       FROM forums
-      WHERE ID = $ForumID");
+      WHERE ID = {$ForumID}");
     [$MinClassRead] = $DB->next_record();
     if (!empty($LoggedUser['DisableForums'])
         || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || 0 == $LoggedUser['CustomForums'][$ForumID]))
@@ -90,7 +90,7 @@ switch ($Short) {
       SELECT fp.Body, fp.TopicID, um.Username
       FROM forums_posts AS fp
         JOIN users_main AS um ON um.ID = fp.AuthorID
-      WHERE fp.ID = $ID");
+      WHERE fp.ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -98,12 +98,12 @@ switch ($Short) {
     $DB->query("
       SELECT ForumID
       FROM forums_topics
-      WHERE ID = $TopicID");
+      WHERE ID = {$TopicID}");
     [$ForumID] = $DB->next_record();
     $DB->query("
       SELECT MinClassRead
       FROM forums
-      WHERE ID = $ForumID");
+      WHERE ID = {$ForumID}");
     [$MinClassRead] = $DB->next_record();
     if (!empty($LoggedUser['DisableForums'])
         || ($MinClassRead > $LoggedUser['EffectiveClass'] && (!isset($LoggedUser['CustomForums'][$ForumID]) || 0 == $LoggedUser['CustomForums'][$ForumID]))
@@ -117,7 +117,7 @@ switch ($Short) {
       SELECT c.Body, um.Username
       FROM comments AS c
         JOIN users_main AS um ON um.ID = c.AuthorID
-      WHERE c.ID = $ID");
+      WHERE c.ID = {$ID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -186,7 +186,7 @@ switch ($Short) {
             <select id="releasetype" name="releasetype">
               <option value="0">---</option>
 <?php    foreach ($ReleaseTypes as $Key => $Val) { ?>
-              <option value="<?=$Key?>"<?=(!empty($ReleaseType) ? ($Key == $ReleaseType ? ' selected="selected"' : '') : '')?>><?=$Val?></option>
+              <option value="<?=$Key?>"<?=(empty($ReleaseType) ? ('') : ($Key == $ReleaseType ? ' selected="selected"' : ''))?>><?=$Val?></option>
 <?php    } ?>
             </select>
           </td>

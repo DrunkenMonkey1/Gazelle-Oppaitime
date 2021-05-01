@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 if (!isset($_REQUEST['authkey']) || !isset($_REQUEST['torrent_pass'])) {
     enforce_login();
     $TorrentPass = $LoggedUser['torrent_pass'];
     $UserID    = $LoggedUser['ID'];
     $AuthKey   = $LoggedUser['AuthKey'];
 } else {
-    if (false !== strpos($_REQUEST['torrent_pass'], '_')) {
+    if (str_contains($_REQUEST['torrent_pass'], '_')) {
         error(404);
     }
 
@@ -52,8 +54,8 @@ if (Misc::in_array_partial($_SERVER['HTTP_USER_AGENT'], $ScriptUAs)) {
     $DB->query("
     SELECT 1
     FROM users_downloads
-    WHERE UserID = $UserID
-      AND TorrentID = $TorrentID
+    WHERE UserID = {$UserID}
+      AND TorrentID = {$TorrentID}
     LIMIT 4");
     if (4 === $DB->record_count()) {
         error('You have already downloaded this torrent file four times. If you need to download it again, please do so from your browser.', true);
@@ -70,7 +72,7 @@ if (!is_array($Info) || !array_key_exists('PlainArtists', $Info) || empty($Info[
       t.Codec,
       tg.Year,
       tg.ID AS GroupID,
-      COALESCE(NULLIF(tg.Name,''), NULLIF(tg.NameRJ,''), tg.NameJP) AS Name,
+      tg.Name AS Name,
       tg.WikiImage,
       tg.CategoryID,
       t.Size,
@@ -86,7 +88,7 @@ if (!is_array($Info) || !array_key_exists('PlainArtists', $Info) || empty($Info[
     $Artists = Artists::get_artist($Info[0][4], false);
     $Info['Artists'] = Artists::display_artists($Artists, false, true);
     $Info['PlainArtists'] = Artists::display_artists($Artists, false, true, false);
-    $Cache->cache_value("torrent_download_$TorrentID", $Info, 0);
+    $Cache->cache_value(sprintf('torrent_download_%s', $TorrentID), $Info, 0);
 }
 if (!is_array($Info[0])) {
     error(404);
@@ -116,7 +118,7 @@ if ($_REQUEST['usetoken'] && '0' == $FreeTorrent) {
         if ($FLTokens <= 0) {
             error('You do not have any freeleech tokens left. Please use the regular DL link.');
         }
-        if ($Size >= 10737418240) {
+        if ($Size >= 10_737_418_240) {
             error('This torrent is too large. Please use the regular DL link.');
         }
 
@@ -128,7 +130,7 @@ if ($_REQUEST['usetoken'] && '0' == $FreeTorrent) {
         if (!Torrents::has_token($TorrentID)) {
             $DB->query("
         INSERT INTO users_freeleeches (UserID, TorrentID, Time)
-        VALUES ($UserID, $TorrentID, NOW())
+        VALUES ({$UserID}, {$TorrentID}, NOW())
         ON DUPLICATE KEY UPDATE
           Time = VALUES(Time),
           Expired = FALSE,
@@ -136,24 +138,24 @@ if ($_REQUEST['usetoken'] && '0' == $FreeTorrent) {
             $DB->query("
         UPDATE users_main
         SET FLTokens = FLTokens - 1
-        WHERE ID = $UserID");
+        WHERE ID = {$UserID}");
 
             // Fix for downloadthemall messing with the cached token count
             $UInfo = Users::user_heavy_info($UserID);
             $FLTokens = $UInfo['FLTokens'];
 
-            $Cache->begin_transaction("user_info_heavy_$UserID");
+            $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
             $Cache->update_row(false, ['FLTokens' => ($FLTokens - 1)]);
             $Cache->commit_transaction(0);
 
-            $Cache->delete_value("users_tokens_$UserID");
+            $Cache->delete_value(sprintf('users_tokens_%s', $UserID));
         }
     }
 }
 
 //Stupid Recent Snatches On User Page
 if ('' != $Image) {
-    $RecentSnatches = $Cache->get_value("recent_snatches_$UserID");
+    $RecentSnatches = $Cache->get_value(sprintf('recent_snatches_%s', $UserID));
     if (!empty($RecentSnatches)) {
         $Snatch = [
             'ID' => $GroupID,
@@ -168,13 +170,13 @@ if ('' != $Image) {
         } elseif (!is_array($RecentSnatches)) {
             $RecentSnatches = [$Snatch];
         }
-        $Cache->cache_value("recent_snatches_$UserID", $RecentSnatches, 0);
+        $Cache->cache_value(sprintf('recent_snatches_%s', $UserID), $RecentSnatches, 0);
     }
 }
 
 $DB->query("
   INSERT IGNORE INTO users_downloads (UserID, TorrentID, Time)
-  VALUES ('$UserID', '$TorrentID', NOW())");
+  VALUES ('{$UserID}', '{$TorrentID}', NOW())");
 
 Torrents::set_snatch_update_time($UserID, Torrents::SNATCHED_UPDATE_AFTERDL);
 $Contents = file_get_contents(TORRENT_STORE . $TorrentID . '.torrent');
@@ -189,7 +191,7 @@ function add_passkey($ann)
     return (is_array($ann)) ? array_map("add_passkey", $ann) : $ann . "/" . $TorrentPass . "/announce";
 }
 $UserAnnounceURL = ANNOUNCE_URLS[0][0] . "/" . $TorrentPass . "/announce";
-$UserAnnounceList = (1 == sizeof(ANNOUNCE_URLS) && 1 == sizeof(ANNOUNCE_URLS[0])) ? [] : array_map("add_passkey", ANNOUNCE_URLS);
+$UserAnnounceList = (1 == count(ANNOUNCE_URLS) && 1 == count(ANNOUNCE_URLS[0])) ? [] : array_map("add_passkey", ANNOUNCE_URLS);
 
 echo TorrentsDL::get_file($Contents, $UserAnnounceURL, $UserAnnounceList);
 

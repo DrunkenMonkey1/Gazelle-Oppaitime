@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_view_ips') || !check_perms('users_view_email')) {
     error(403);
 }
@@ -66,13 +66,13 @@ $RS = "
     LEFT JOIN users_info AS ii ON i.Inviter = ii.UserID
   WHERE";
 if ($DateSearch) {
-    $RS .= " i.JoinDate BETWEEN '$AfterDate' AND '$BeforeDate' ";
+    $RS .= sprintf(' i.JoinDate BETWEEN \'%s\' AND \'%s\' ', $AfterDate, $BeforeDate);
 } else {
     $RS .= " i.JoinDate > '" . time_minus(3600 * 24 * 3) . "'";
 }
 $RS .= "
   ORDER BY i.Joindate DESC
-  LIMIT $Limit";
+  LIMIT {$Limit}";
 $QueryID = $DB->query($RS);
 $DB->query('SELECT FOUND_ROWS()');
 [$Results] = $DB->next_record();

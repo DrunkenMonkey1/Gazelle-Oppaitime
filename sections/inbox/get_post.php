@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //TODO: make this use the cache version of the thread, save the db query
 /*********************************************************************\
 //--------------Get Post--------------------------------------------//
@@ -25,7 +27,7 @@ $DB->query("
   SELECT m.Body
   FROM pm_messages AS m
     JOIN pm_conversations_users AS u ON m.ConvID = u.ConvID
-  WHERE m.ID = '$PostID'
+  WHERE m.ID = '{$PostID}'
     AND u.UserID = " . $LoggedUser['ID']);
 [$Body] = $DB->next_record(MYSQLI_NUM);
 $Body = apcu_exists('DBKEY') ? Crypto::decrypt($Body) : '[Encrypted]';

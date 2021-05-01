@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * This page is used for viewing reports in every viewpoint except auto.
  * It doesn't AJAX grab a new report when you resolve each one, use auto
@@ -58,81 +58,69 @@ if (!$ID) {
       $DB->query("
         SELECT Username
         FROM users_main
-        WHERE ID = $ID");
+        WHERE ID = {$ID}");
       [$Username] = $DB->next_record();
-      if ($Username) {
-          $Title = "$Username's in-progress reports";
-      } else {
-          $Title = "$ID's in-progress reports";
-      }
+      $Title = $Username ? sprintf('%s\'s in-progress reports', $Username) : sprintf('%s\'s in-progress reports', $ID);
       $Where = "
         WHERE r.Status = 'InProgress'
-          AND r.ResolverID = $ID";
+          AND r.ResolverID = {$ID}";
       break;
     case 'resolver':
       $DB->query("
         SELECT Username
         FROM users_main
-        WHERE ID = $ID");
+        WHERE ID = {$ID}");
       [$Username] = $DB->next_record();
-      if ($Username) {
-          $Title = "$Username's resolved reports";
-      } else {
-          $Title = "$ID's resolved reports";
-      }
+      $Title = $Username ? sprintf('%s\'s resolved reports', $Username) : sprintf('%s\'s resolved reports', $ID);
       $Where = "
         WHERE r.Status = 'Resolved'
-          AND r.ResolverID = $ID";
+          AND r.ResolverID = {$ID}";
       $Order = 'ORDER BY r.LastChangeTime DESC';
       break;
     case 'group':
-      $Title = "Unresolved reports for the group $ID";
+      $Title = sprintf('Unresolved reports for the group %s', $ID);
       $Where = "
         WHERE r.Status != 'Resolved'
-          AND tg.ID = $ID";
+          AND tg.ID = {$ID}";
       break;
     case 'torrent':
-      $Title = "All reports for the torrent $ID";
-      $Where = "WHERE r.TorrentID = $ID";
+      $Title = sprintf('All reports for the torrent %s', $ID);
+      $Where = sprintf('WHERE r.TorrentID = %s', $ID);
       break;
     case 'report':
-      $Title = "Viewing resolution of report $ID";
-      $Where = "WHERE r.ID = $ID";
+      $Title = sprintf('Viewing resolution of report %s', $ID);
+      $Where = sprintf('WHERE r.ID = %s', $ID);
       break;
     case 'reporter':
       $DB->query("
         SELECT Username
         FROM users_main
-        WHERE ID = $ID");
+        WHERE ID = {$ID}");
       [$Username] = $DB->next_record();
-      if ($Username) {
-          $Title = "All torrents reported by $Username";
-      } else {
-          $Title = "All torrents reported by user $ID";
-      }
-      $Where = "WHERE r.ReporterID = $ID";
+      $Title = $Username ? sprintf('All torrents reported by %s', $Username) : sprintf('All torrents reported by user %s', $ID);
+      $Where = sprintf('WHERE r.ReporterID = %s', $ID);
       $Order = 'ORDER BY r.ReportedTime DESC';
       break;
     case 'uploader':
       $DB->query("
         SELECT Username
         FROM users_main
-        WHERE ID = $ID");
+        WHERE ID = {$ID}");
       [$Username] = $DB->next_record();
       if ($Username) {
-          $Title = "All reports for torrents uploaded by $Username";
+          $Title = sprintf('All reports for torrents uploaded by %s', $Username);
       } else {
-          $Title = "All reports for torrents uploaded by user $ID";
+          $Title = sprintf('All reports for torrents uploaded by user %s', $ID);
       }
       $Where = "
         WHERE r.Status != 'Resolved'
-          AND t.UserID = $ID";
+          AND t.UserID = {$ID}";
       break;
     case 'type':
       $Title = 'All new reports for the chosen type';
       $Where = "
         WHERE r.Status = 'New'
-          AND r.Type = '$ID'";
+          AND r.Type = '{$ID}'";
       break;
       break;
     default:
@@ -161,7 +149,7 @@ $DB->query("
     r.ExtraID,
     r.Link,
     r.LogMessage,
-    COALESCE(NULLIF(tg.Name, ''), NULLIF(tg.NameRJ, ''), tg.NameJP) AS Name,
+    tg.Name AS Name,
     tg.ID,
     CASE COUNT(ta.GroupID)
       WHEN 1 THEN ag.ArtistID
@@ -187,10 +175,10 @@ $DB->query("
     LEFT JOIN users_main AS resolver ON resolver.ID = r.ResolverID
     LEFT JOIN users_main AS reporter ON reporter.ID = r.ReporterID
     LEFT JOIN users_main AS uploader ON uploader.ID = t.UserID
-  $Where
+  {$Where}
   GROUP BY r.ID
-  $Order
-  LIMIT $Limit");
+  {$Order}
+  LIMIT {$Limit}");
 
 $Reports = $DB->to_array();
 
@@ -202,7 +190,7 @@ View::show_header('Reports V2!', 'reportsv2,bbcode');
 ?>
 <div class="header">
   <h2><?=$Title?></h2>
-<?php  include 'header.php'; ?>
+<?php  include __DIR__ . '/header.php'; ?>
 </div>
 <div class="buttonbox pad center">
 <?php  if ('resolved' !== $View) { ?>
@@ -242,7 +230,7 @@ if (0 === count($Reports)) {
           Status = 'Resolved',
           LastChangeTime = NOW(),
           ModComment = 'Report already dealt with (torrent deleted)'
-        WHERE ID = $ReportID");
+        WHERE ID = {$ReportID}");
               $Cache->decrement('num_torrent_reportsv2'); ?>
   <div id="report<?=$ReportID?>" class="report box pad center" data-load-report="<?=$ReportID?>">
     <a href="reportsv2.php?view=report&amp;id=<?=$ReportID?>">Report <?=$ReportID?></a> for torrent <?=$TorrentID?> (deleted) has been automatically resolved. <input type="button" value="Hide" onclick="ClearReport(<?=$ReportID?>);" />
@@ -251,16 +239,12 @@ if (0 === count($Reports)) {
           } else {
               if (!$CategoryID && false) {
                   //Torrent was deleted
+              } elseif (array_key_exists($Type, $Types['master'])) {
+                  $ReportType = $Types['master'][$Type];
               } else {
-//        if (array_key_exists($Type, $Types[$CategoryID])) {
-//          $ReportType = $Types[$CategoryID][$Type];
-                  /*        } else*/if (array_key_exists($Type, $Types['master'])) {
-                      $ReportType = $Types['master'][$Type];
-                  } else {
-                      //There was a type but it wasn't an option!
-                      $Type = 'other';
-                      $ReportType = $Types['master']['other'];
-                  }
+                  //There was a type but it wasn't an option!
+                  $Type = 'other';
+                  $ReportType = $Types['master']['other'];
               }
 //      $RemasterDisplayString = Reports::format_reports_remaster_info($Remastered, $RemasterTitle, $RemasterYear);
 
@@ -279,11 +263,11 @@ if (0 === count($Reports)) {
                       $BBName = "Various Artists - [url=torrents.php?id=$GroupID]$GroupName".($Year ? " ($Year)" : '')."[/url] [url=torrents.php?torrentid=$TorrentID][$Format/$Encoding/$Media]{$RemasterDisplayString}[/url] ".($HasCue ? ' (Cue)' : '').($HasLog ? " [url=torrents.php?action=viewlog&amp;torrentid=$TorrentID&amp;groupid=$GroupID](Log: {$LogScore}%)[/url]" : '').' ('.number_format($Size / (1024 * 1024), 2).' MB)';
                     } else {
               */
-              $RawName = "$ArtistName - $GroupName" . ($Year ? " ($Year)" : '') . " [$Media] (" . number_format($Size / (1024 * 1024), 2) . ' MB)';
+              $RawName = sprintf('%s - %s', $ArtistName, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf(' [%s] (', $Media) . number_format($Size / (1024 * 1024), 2) . ' MB)';
 
-              $LinkName = "<a href=\"artist.php?id=$ArtistID\">$ArtistName</a> - <a href=\"torrents.php?id=$GroupID\">$GroupName" . ($Year ? " ($Year)" : '') . "</a> <a href=\"torrents.php?torrentid=$TorrentID\"> [$Media]</a> (" . number_format($Size / (1024 * 1024), 2) . ' MB)';
+              $LinkName = sprintf('<a href="artist.php?id=%s">%s</a> - <a href="torrents.php?id=%s">%s', $ArtistID, $ArtistName, $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [%s]</a> (', $TorrentID, $Media) . number_format($Size / (1024 * 1024), 2) . ' MB)';
 
-              $BBName = "[url=artist.php?id=$ArtistID]" . $ArtistName . "[/url] - [url=torrents.php?id=$GroupID]$GroupName" . ($Year ? " ($Year)" : '') . "[/url] [url=torrents.php?torrentid=$TorrentID][$Media][/url] " . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
+              $BBName = sprintf('[url=artist.php?id=%s]', $ArtistID) . $ArtistName . sprintf('[/url] - [url=torrents.php?id=%s]%s', $GroupID, $GroupName) . ($Year ? sprintf(' (%s)', $Year) : '') . sprintf('[/url] [url=torrents.php?torrentid=%s][%s][/url] ', $TorrentID, $Media) . ' (' . number_format($Size / (1024 * 1024), 2) . ' MB)';
 //      }?>
   <div id="report<?=$ReportID?>" data-load-report="<?=$ReportID?>">
     <form class="manage_form" name="report" id="reportform_<?=$ReportID?>" action="reports.php" method="post">
@@ -326,12 +310,12 @@ if (0 === count($Reports)) {
             FROM reportsv2 AS r
               LEFT JOIN torrents AS t ON t.ID = r.TorrentID
             WHERE r.Status != 'Resolved'
-              AND t.GroupID = $GroupID");
+              AND t.GroupID = {$GroupID}");
     $GroupOthers = ($DB->record_count() - 1);
 
     if ($GroupOthers > 0) { ?>
             <div style="text-align: right;">
-              <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? "are $GroupOthers other reports" : "is 1 other report")?> for torrent(s) in this group</a>
+              <a href="reportsv2.php?view=group&amp;id=<?=$GroupID?>">There <?=(($GroupOthers > 1) ? sprintf('are %s other reports', $GroupOthers) : "is 1 other report")?> for torrent(s) in this group</a>
             </div>
 <?php          }
 
@@ -340,12 +324,12 @@ if (0 === count($Reports)) {
             FROM reportsv2 AS r
               JOIN torrents AS t ON t.ID = r.TorrentID
             WHERE r.Status != 'Resolved'
-              AND t.UserID = $UploaderID");
+              AND t.UserID = {$UploaderID}");
     $UploaderOthers = ($DB->record_count() - 1);
 
     if ($UploaderOthers > 0) { ?>
             <div style="text-align: right;">
-              <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? "are $UploaderOthers other reports" : "is 1 other report")?> for torrent(s) uploaded by this user</a>
+              <a href="reportsv2.php?view=uploader&amp;id=<?=$UploaderID?>">There <?=(($UploaderOthers > 1) ? sprintf('are %s other reports', $UploaderOthers) : "is 1 other report")?> for torrent(s) uploaded by this user</a>
             </div>
 <?php          }
 
@@ -360,7 +344,7 @@ if (0 === count($Reports)) {
               JOIN users_main AS um ON um.ID = req.FillerID
             WHERE rep.Status != 'Resolved'
               AND req.TimeFilled > '2010-03-04 02:31:49'
-              AND req.TorrentID = $TorrentID");
+              AND req.TorrentID = {$TorrentID}");
     $Requests = ($DB->has_results());
     if ($Requests > 0) {
         while ([$RequestID, $FillerID, $FillerName, $FilledTime] = $DB->next_record()) {
@@ -413,7 +397,7 @@ if (0 === count($Reports)) {
         foreach ($Extras as $ExtraID) {
             $DB->query("
             SELECT
-              COALESCE(NULLIF(tg.Name, ''), NULLIF(tg.NameRJ, ''), tg.NameJP) AS Name,
+            tg.Name AS Name,
               tg.ID,
               ta.ArtistID,
               CASE COUNT(ta.GroupID)
@@ -439,11 +423,11 @@ if (0 === count($Reports)) {
             $ExtraMedia, $ExtraSize, $ExtraUploaderID, $ExtraUploaderName] = Misc::display_array($DB->next_record());
             if ($ExtraGroupName) {
                 if (0 == $ArtistID && empty($ArtistName)) {
-                    $ExtraLinkName = "<a href=\"torrents.php?id=$ExtraGroupID\">$ExtraGroupName" . ($ExtraYear ? " ($ExtraYear)" : '') . "</a> <a href=\"torrents.php?torrentid=$ExtraID\"> [$ExtraFormat/$ExtraEncoding/$ExtraMedia]</a> " . ' (' . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
+                    $ExtraLinkName = sprintf('<a href="torrents.php?id=%s">%s', $ExtraGroupID, $ExtraGroupName) . ($ExtraYear ? sprintf(' (%s)', $ExtraYear) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [%s/%s/%s]</a> ', $ExtraID, $ExtraFormat, $ExtraEncoding, $ExtraMedia) . ' (' . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
                 } elseif (0 == $ArtistID && 'Various Artists' == $ArtistName) {
-                    $ExtraLinkName = "Various Artists - <a href=\"torrents.php?id=$ExtraGroupID\">$ExtraGroupName" . ($ExtraYear ? " ($ExtraYear)" : '') . "</a> <a href=\"torrents.php?torrentid=$ExtraID\"> [$ExtraFormat/$ExtraEncoding/$ExtraMedia]</a> (" . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
+                    $ExtraLinkName = sprintf('Various Artists - <a href="torrents.php?id=%s">%s', $ExtraGroupID, $ExtraGroupName) . ($ExtraYear ? sprintf(' (%s)', $ExtraYear) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [%s/%s/%s]</a> (', $ExtraID, $ExtraFormat, $ExtraEncoding, $ExtraMedia) . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
                 } else {
-                    $ExtraLinkName = "<a href=\"artist.php?id=$ExtraArtistID\">$ExtraArtistName</a> - <a href=\"torrents.php?id=$ExtraGroupID\">$ExtraGroupName" . ($ExtraYear ? " ($ExtraYear)" : '') . "</a> <a href=\"torrents.php?torrentid=$ExtraID\"> [//$ExtraMedia]</a>  (" . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
+                    $ExtraLinkName = sprintf('<a href="artist.php?id=%s">%s</a> - <a href="torrents.php?id=%s">%s', $ExtraArtistID, $ExtraArtistName, $ExtraGroupID, $ExtraGroupName) . ($ExtraYear ? sprintf(' (%s)', $ExtraYear) : '') . sprintf('</a> <a href="torrents.php?torrentid=%s"> [//%s]</a>  (', $ExtraID, $ExtraMedia) . number_format($ExtraSize / (1024 * 1024), 2) . ' MB)';
                 } ?>
             <?=($First ? '' : '<br />')?>
             <?=$ExtraLinkName?>
@@ -524,7 +508,7 @@ if (0 === count($Reports)) {
               <span class="tooltip" title="Warning length in weeks">
                 <label for="warning<?=$ReportID?>"><strong>Warning</strong></label>
                 <select name="warning" id="warning<?=$ReportID?>">
-<?php        for ($i = 0; $i < 9; $i++) { ?>
+<?php        for ($i = 0; $i < 9; ++$i) { ?>
                   <option value="<?=$i?>"><?=$i?></option>
 <?php        } ?>
                 </select>
@@ -561,7 +545,7 @@ if (0 === count($Reports)) {
               $Extras = explode(' ', $ExtraIDs);
               $Value = '';
               foreach ($Extras as $ExtraID) {
-                  $Value .= site_url() . "torrents.php?torrentid=$ExtraID ";
+                  $Value .= site_url() . sprintf('torrents.php?torrentid=%s ', $ExtraID);
               }
               echo ' value="' . trim($Value) . '"';
           } ?>

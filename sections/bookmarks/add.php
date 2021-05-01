@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 include SERVER_ROOT . '/classes/feed.class.php'; // RSS feeds
 
 authorize();
@@ -20,9 +22,9 @@ $PageID = $_GET['id'];
 
 $DB->query("
   SELECT UserID
-  FROM $Table
+  FROM {$Table}
   WHERE UserID = '$LoggedUser[ID]'
-    AND $Col = $PageID");
+    AND {$Col} = {$PageID}");
 if (!$DB->has_results()) {
     if ('torrent' === $Type) {
         $DB->query("
@@ -33,23 +35,23 @@ if (!$DB->has_results()) {
         if (!$Sort) {
             $Sort = 0;
         }
-        $Sort += 1;
+        ++$Sort;
         $DB->query("
-      INSERT IGNORE INTO $Table (UserID, $Col, Time, Sort)
-      VALUES ('$LoggedUser[ID]', $PageID, NOW(), $Sort)");
+      INSERT IGNORE INTO {$Table} (UserID, {$Col}, Time, Sort)
+      VALUES ('$LoggedUser[ID]', {$PageID}, NOW(), {$Sort})");
     } else {
         $DB->query("
-      INSERT IGNORE INTO $Table (UserID, $Col, Time)
-      VALUES ('$LoggedUser[ID]', $PageID, NOW())");
+      INSERT IGNORE INTO {$Table} (UserID, {$Col}, Time)
+      VALUES ('$LoggedUser[ID]', {$PageID}, NOW())");
     }
     $Cache->delete_value('bookmarks_' . $Type . '_' . $LoggedUser['ID']);
     if ('torrent' == $Type) {
-        $Cache->delete_value("bookmarks_group_ids_$UserID");
+        $Cache->delete_value(sprintf('bookmarks_group_ids_%s', $UserID));
 
         $DB->query("
       SELECT Name, Year, WikiBody, TagList
       FROM torrents_group
-      WHERE ID = $PageID");
+      WHERE ID = {$PageID}");
         [$GroupTitle, $Year, $Body, $TagList] = $DB->next_record();
         $TagList = str_replace('_', '.', $TagList);
 
@@ -62,18 +64,18 @@ if (!$DB->has_results()) {
         $DB->query("
       SELECT ID, Media, FreeTorrent, UserID
       FROM torrents
-      WHERE GroupID = $PageID");
+      WHERE GroupID = {$PageID}");
         // RSS feed stuff
         while ($Torrent = $DB->next_record()) {
             $Title = $GroupTitle;
             [$TorrentID, $Media, $Freeleech, $UploaderID] = $Torrent;
-            $Title .= " [$Year] - ";
-            $Title .= "$Format / $Bitrate";
+            $Title .= sprintf(' [%s] - ', $Year);
+            $Title .= sprintf('%s / %s', $Format, $Bitrate);
             if ("'1'" == $HasLog) {
                 $Title .= ' / Log';
             }
             if ($HasLog) {
-                $Title .= " / $LogScore%";
+                $Title .= sprintf(' / %s%', $LogScore);
             }
             if ("'1'" == $HasCue) {
                 $Title .= ' / Cue';
@@ -95,7 +97,7 @@ if (!$DB->has_results()) {
                 Text::strip_bbcode($Body),
                 'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id=' . $TorrentID,
                 $UploaderInfo['Username'],
-                "torrents.php?id=$PageID",
+                sprintf('torrents.php?id=%s', $PageID),
                 trim($TagList)
             );
             $Feed->populate('torrents_bookmarks_t_' . $LoggedUser['torrent_pass'], $Item);
@@ -103,14 +105,14 @@ if (!$DB->has_results()) {
     } elseif ('request' == $Type) {
         $DB->query("
       SELECT UserID
-      FROM $Table
-      WHERE $Col = '" . db_string($PageID) . "'");
+      FROM {$Table}
+      WHERE {$Col} = '" . db_string($PageID) . "'");
         if ($DB->record_count() < 100) {
             // Sphinx doesn't like huge MVA updates. Update sphinx_requests_delta
             // and live with the <= 1 minute delay if we have more than 100 bookmarkers
             $Bookmarkers = implode(',', $DB->collect('UserID'));
             $SphQL = new SphinxqlQuery();
-            $SphQL->raw_query("UPDATE requests, requests_delta SET bookmarker = ($Bookmarkers) WHERE id = $PageID");
+            $SphQL->raw_query(sprintf('UPDATE requests, requests_delta SET bookmarker = (%s) WHERE id = %s', $Bookmarkers, $PageID));
         } else {
             Requests::update_sphinx_requests($PageID);
         }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!$News = $Cache->get_value('news')) {
     $DB->query("
     SELECT
@@ -16,13 +18,13 @@ if (!$News = $Cache->get_value('news')) {
 }
 
 if ($LoggedUser['LastReadNews'] != $News[0][0]) {
-    $Cache->begin_transaction("user_info_heavy_$UserID");
+    $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
     $Cache->update_row(false, ['LastReadNews' => $News[0][0]]);
     $Cache->commit_transaction(0);
     $DB->query("
     UPDATE users_info
     SET LastReadNews = '" . $News[0][0] . "'
-    WHERE UserID = $UserID");
+    WHERE UserID = {$UserID}");
     $LoggedUser['LastReadNews'] = $News[0][0];
 }
 
@@ -41,19 +43,19 @@ if (($Blog = $Cache->get_value('blog')) === false) {
     ORDER BY Time DESC
     LIMIT 20");
     $Blog = $DB->to_array();
-    $Cache->cache_value('blog', $Blog, 1209600);
+    $Cache->cache_value('blog', $Blog, 1_209_600);
 }
 $JsonBlog = [];
-for ($i = 0; $i < 5; $i++) {
+for ($i = 0; $i < 5; ++$i) {
     [$BlogID, $Author, $AuthorID, $Title, $Body, $BlogTime, $ThreadID] = $Blog[$i];
     $JsonBlog[] = [
-        'blogId' => (int)$BlogID,
+        'blogId' => (int) $BlogID,
         'author' => $Author,
         'title' => $Title,
         'bbBody' => $Body,
         'body' => Text::full_format($Body),
         'blogTime' => $BlogTime,
-        'threadId' => (int)$ThreadID
+        'threadId' => (int) $ThreadID
     ];
 }
 
@@ -64,15 +66,15 @@ foreach ($News as $NewsItem) {
     if (strtotime($NewsTime) > time()) {
         continue;
     }
-
+    
     $JsonAnnouncements[] = [
-        'newsId' => (int)$NewsID,
+        'newsId' => (int) $NewsID,
         'title' => $Title,
         'bbBody' => $Body,
         'body' => Text::full_format($Body),
         'newsTime' => $NewsTime
     ];
-
+    
     if (++$Count > 4) {
         break;
     }

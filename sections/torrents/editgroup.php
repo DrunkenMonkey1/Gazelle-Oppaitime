@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| Edit torrent group wiki page ||-----------------------||
 
@@ -22,8 +22,6 @@ if (!is_number($GroupID) || !$GroupID) {
 $DB->query("
   SELECT
     tg.Name,
-    tg.NameRJ,
-    tg.NameJP,
     wt.Image,
     wt.Body,
     tg.WikiImage,
@@ -42,7 +40,7 @@ $DB->query("
 if (!$DB->has_results()) {
     error(404);
 }
-[$Name, $NameRJ, $NameJP, $Image, $Body, $WikiImage, $WikiBody, $Year, $Studio, $Series, $DLsiteID, $CatalogueNumber, $Pages, $CategoryID, $DLsiteID] = $DB->next_record();
+[$Name, $Image, $Body, $WikiImage, $WikiBody, $Year, $Studio, $Series, $DLsiteID, $CatalogueNumber, $Pages, $CategoryID, $DLsiteID] = $DB->next_record();
 
 $DB->query("
   SELECT
@@ -70,7 +68,7 @@ View::show_header('Edit torrent group', 'upload,bbcode');
 ?>
 <div class="thin">
   <div class="header">
-    <h2>Edit <a href="torrents.php?id=<?=$GroupID?>"><?=($Name ? $Name : ($NameRJ ? $NameRJ : $NameJP))?></a></h2>
+    <h2>Edit <a href="torrents.php?id=<?=$GroupID?>"><?=$Name?></a></h2>
   </div>
   <div class="box pad">
     <form class="edit_form" name="torrent_group" action="torrents.php" method="post">
@@ -86,7 +84,7 @@ View::show_header('Edit torrent group', 'upload,bbcode');
   $DB->query("
     SELECT UserID
     FROM torrents
-    WHERE GroupID = $GroupID");
+    WHERE GroupID = {$GroupID}");
 
   $Contributed = in_array($LoggedUser['ID'], $DB->collect('UserID'), true);
 ?>
@@ -177,8 +175,9 @@ if (1 == $CategoryID) {
         <td id="idolfields">
           <input type="text" id="idol_0" name="idols[]" size="45" value="<?=$Artists[0]['name']?>"/>
           <a class="add_artist_button brackets">+</a> <a class="remove_artist_button brackets">&minus;</a>
-<?php
-  for ($i = 1; $i < count($Artists); $i++) {
+
+$ArtistsCount = count($Artists);<?php
+  for ($i = 1; $i < $ArtistsCount; ++$i) {
       print '<br><input type="text" id="idol_' . $i . '" name="idols[]" size="45" value="' . $Artists[$i]['name'] . '"/>';
   }
 ?>
@@ -275,21 +274,9 @@ if (5 != $CategoryID) { ?>
           <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
           <input type="hidden" name="groupid" value="<?=$GroupID?>" />
           <tr>
-            <td class="label">English Title: </td>
+            <td class="label">Title: </td>
             <td>
               <input type="text" name="name" size="70" value="<?=$Name?>" />
-            </td>
-          </tr>
-          <tr>
-            <td class="label">Romaji Title: </td>
-            <td>
-              <input type="text" name="namerj" size="70" value="<?=$NameRJ?>" />
-            </td>
-          </tr>
-          <tr>
-            <td class="label">Japanese Title: </td>
-            <td>
-              <input type="text" name="namejp" size="70" value="<?=$NameJP?>" />
             </td>
           </tr>
         </table>

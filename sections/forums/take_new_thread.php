@@ -1,25 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
-/*
-'new' if the user is creating a new thread
-  It will be accompanied with:
-  $_POST['forum']
-  $_POST['title']
-  $_POST['body']
-
-  and optionally include:
-  $_POST['question']
-  $_POST['answers']
-  the latter of which is an array
-*/
-
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+$PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
 
 
 if (isset($_POST['thread']) && !is_number($_POST['thread'])) {
@@ -83,14 +68,14 @@ $DB->query("
   INSERT INTO forums_topics
     (Title, AuthorID, ForumID, LastPostTime, LastPostAuthorID, CreatedTime)
   Values
-    ('" . db_string($Title) . "', '" . $LoggedUser['ID'] . "', '$ForumID', NOW(), '" . $LoggedUser['ID'] . "', NOW())");
+    ('" . db_string($Title) . "', '" . $LoggedUser['ID'] . sprintf('\', \'%s\', NOW(), \'', $ForumID) . $LoggedUser['ID'] . "', NOW())");
 $TopicID = $DB->inserted_id();
 
 $DB->query("
   INSERT INTO forums_posts
     (TopicID, AuthorID, AddedTime, Body)
   VALUES
-    ('$TopicID', '" . $LoggedUser['ID'] . "', NOW(), '" . db_string($Body) . "')");
+    ('{$TopicID}', '" . $LoggedUser['ID'] . "', NOW(), '" . db_string($Body) . "')");
 
 $PostID = $DB->inserted_id();
 
@@ -99,20 +84,20 @@ $DB->query("
   SET
     NumPosts         = NumPosts + 1,
     NumTopics        = NumTopics + 1,
-    LastPostID       = '$PostID',
+    LastPostID       = '{$PostID}',
     LastPostAuthorID = '" . $LoggedUser['ID'] . "',
-    LastPostTopicID  = '$TopicID',
+    LastPostTopicID  = '{$TopicID}',
     LastPostTime     = NOW()
-  WHERE ID = '$ForumID'");
+  WHERE ID = '{$ForumID}'");
 
 $DB->query("
   UPDATE forums_topics
   SET
     NumPosts         = NumPosts + 1,
-    LastPostID       = '$PostID',
+    LastPostID       = '{$PostID}',
     LastPostAuthorID = '" . $LoggedUser['ID'] . "',
     LastPostTime     = NOW()
-  WHERE ID = '$TopicID'");
+  WHERE ID = '{$TopicID}'");
 
 if (isset($_POST['subscribe'])) {
     Subscriptions::subscribe($TopicID);
@@ -138,16 +123,16 @@ if (!$NoPoll) { // god, I hate double negatives...
     INSERT INTO forums_polls
       (TopicID, Question, Answers)
     VALUES
-      ('$TopicID', '" . db_string($Question) . "', '" . db_string(serialize($Answers)) . "')");
-    $Cache->cache_value("polls_$TopicID", [$Question, $Answers, $Votes, null, '0'], 0);
+      ('{$TopicID}', '" . db_string($Question) . "', '" . db_string(serialize($Answers)) . "')");
+    $Cache->cache_value(sprintf('polls_%s', $TopicID), [$Question, $Answers, $Votes, null, '0'], 0);
 
     if (STAFF_FORUM == $ForumID) {
-        send_irc('PRIVMSG ' . ADMIN_CHAN . ' :!mod Poll created by ' . $LoggedUser['Username'] . ": \"$Question\" " . site_url() . "forums.php?action=viewthread&threadid=$TopicID");
+        send_irc('PRIVMSG ' . ADMIN_CHAN . ' :!mod Poll created by ' . $LoggedUser['Username'] . sprintf(': "%s" ', $Question) . site_url() . sprintf('forums.php?action=viewthread&threadid=%s', $TopicID));
     }
 }
 
 // if cache exists modify it, if not, then it will be correct when selected next, and we can skip this block
-if ($Forum = $Cache->get_value("forums_$ForumID")) {
+if ($Forum = $Cache->get_value(sprintf('forums_%s', $ForumID))) {
     [$Forum, , , $Stickies] = $Forum;
 
     // Remove the last thread from the index
@@ -176,7 +161,7 @@ if ($Forum = $Cache->get_value("forums_$ForumID")) {
     ]]; // Bumped
     $Forum = $Part1 + $Part2 + $Part3;
 
-    $Cache->cache_value("forums_$ForumID", [$Forum, '', 0, $Stickies], 0);
+    $Cache->cache_value(sprintf('forums_%s', $ForumID), [$Forum, '', 0, $Stickies], 0);
 
     // Update the forum root
     $Cache->begin_transaction('forums_list');
@@ -197,7 +182,7 @@ if ($Forum = $Cache->get_value("forums_$ForumID")) {
     $Cache->delete_value('forums_list');
 }
 
-$Cache->begin_transaction("thread_$TopicID" . '_catalogue_0');
+$Cache->begin_transaction(sprintf('thread_%s', $TopicID) . '_catalogue_0');
 $Post = [
     'ID' => $PostID,
     'AuthorID' => $LoggedUser['ID'],
@@ -209,10 +194,10 @@ $Post = [
 $Cache->insert('', $Post);
 $Cache->commit_transaction(0);
 
-$Cache->begin_transaction("thread_$TopicID" . '_info');
+$Cache->begin_transaction(sprintf('thread_%s', $TopicID) . '_info');
 $Cache->update_row(false, ['Posts' => '+1', 'LastPostAuthorID' => $LoggedUser['ID']]);
 $Cache->commit_transaction(0);
 
 
-header("Location: forums.php?action=viewthread&threadid=$TopicID");
+header(sprintf('Location: forums.php?action=viewthread&threadid=%s', $TopicID));
 die();

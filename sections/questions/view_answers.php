@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 Text::$TOC = true;
 
 $UserID = $_GET['userid'];
@@ -22,12 +22,12 @@ G::$DB->query("
         SELECT COUNT(1)
         FROM staff_answers
         WHERE QuestionID = q.ID
-          AND UserID != '$UserID'
+          AND UserID != '{$UserID}'
       ) AS Responses
     FROM user_questions AS q
       JOIN staff_answers AS a ON q.ID = a.QuestionID
       JOIN users_main AS u ON u.ID = q.UserID
-    WHERE a.UserID = '$UserID'
+    WHERE a.UserID = '{$UserID}'
     ORDER BY AnswerDate DESC");
 
 $Questions = G::$DB->to_array();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (empty($_GET['query'])) {
     error(0);
 }
@@ -28,7 +30,7 @@ if (!$AutoSuggest) {
     WHERE a.Name LIKE '" . db_string(str_replace('\\', '\\\\', $Letters), true) . "%'
     GROUP BY ta.ArtistID
     ORDER BY t.Snatched DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
     $AutoSuggest = $DB->to_array(false, MYSQLI_NUM, false);
     $Cache->cache_value('autocomplete_artist_' . $KeySize . '_' . $Letters, $AutoSuggest, 1800 + 7200 * ($MaxKeySize - $KeySize)); // Can't cache things for too long in case names are edited
 }

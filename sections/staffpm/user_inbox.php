@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 View::show_header('Staff PMs', 'staffpm');
 
@@ -56,14 +56,10 @@ if (!$DB->has_results()) {
   // List messages
   $ShowBox = 1;
     while ([$ID, $Subject, $UserID, $Status, $Level, $AssignedToUser, $Date, $Unread] = $DB->next_record()) {
-        if ('1' === $Unread) {
-            $RowClass = 'unreadpm';
-        } else {
-            $RowClass = "row";
-        }
+        $RowClass = '1' === $Unread ? 'unreadpm' : "row";
 
         if ('Resolved' == $Status) {
-            $ShowBox++;
+            ++$ShowBox;
         }
         if (2 == $ShowBox) {
             // First resolved PM

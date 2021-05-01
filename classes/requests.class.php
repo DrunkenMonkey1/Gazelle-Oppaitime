@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class Requests
 {
     /**
@@ -7,10 +9,10 @@ class Requests
      *
      * @param $RequestID
      */
-    public static function update_sphinx_requests($RequestID)
+    public static function update_sphinx_requests($RequestID): void
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         G::$DB->query("
       SELECT REPLACE(t.Name, '.', '_')
       FROM tags AS t
@@ -18,7 +20,7 @@ class Requests
       WHERE rt.RequestID = $RequestID");
         $TagList = G::$DB->collect(0, false);
         $TagList = db_string(implode(' ', $TagList));
-
+        
         G::$DB->query("
       REPLACE INTO sphinx_requests_delta (
         ID, UserID, TimeAdded, LastVote, CategoryID, Title, TagList,
@@ -45,24 +47,43 @@ class Requests
           )
       WHERE ID = $RequestID");
         G::$DB->set_query_id($QueryID);
-
+        
         G::$Cache->delete_value("request_$RequestID");
     }
-
-
-
+    
+    
+    
     /**
      * Function to get data from an array of $RequestIDs. Order of keys doesn't matter (let's keep it that way).
      *
-     * @param  array $RequestIDs
-     * @param  bool  $Return     if set to false, data won't be returned (ie. if we just want to prime the cache.)
-     * @return The   array of requests.
-     *                          Format: array(RequestID => Associative array)
-     *                          To see what's exactly inside each associate array, peek inside the function. It won't bite.
+     * @param array $RequestIDs
+     * @param bool  $Return if set to false, data won't be returned (ie. if we just want to prime the cache.)
+     *
+     * @return mixed[]|void array of requests.
+     * Format: array(RequestID => Associative array)
+     * To see what's exactly inside each associate array, peek inside the function. It won't bite.
      */
     //
     //In places where the output from this is merged with sphinx filters, it will be in a different order.
-    public static function get_requests($RequestIDs, $Return = true)
+    /**
+     * Return a single request. Wrapper for get_requests
+     *
+     * @param int $RequestID
+     *
+     * @return mixed array or false if request doesn't exist. See get_requests for a description of the format
+     */
+    public static function get_request(int $RequestID): mixed
+    {
+        $Request = self::get_requests([$RequestID]);
+        if (isset($Request[$RequestID])) {
+            return $Request[$RequestID];
+        }
+        
+        return false;
+    }
+    
+
+    public static function get_requests(array $RequestIDs, bool $Return = true): array
     {
         $Found = $NotFound = array_fill_keys($RequestIDs, false);
         // Try to fetch the requests from the cache first.
@@ -78,18 +99,18 @@ class Requests
             }
         }
         // Make sure there's something in $RequestIDs, otherwise the SQL will break
-        if (0 === count($RequestIDs)) {
+        if ([] === $RequestIDs) {
             return [];
         }
         $IDs = implode(',', array_keys($NotFound));
-
+        
         /*
           Don't change without ensuring you change everything else that uses get_requests()
         */
-
-        if (count($NotFound) > 0) {
+        
+        if ([] !== $NotFound) {
             $QueryID = G::$DB->get_query_id();
-
+            
             G::$DB->query("
         SELECT
           ID,
@@ -98,8 +119,6 @@ class Requests
           LastVote,
           CategoryID,
           Title,
-          TitleRJ,
-          TitleJP,
           Image,
           Description,
           CatalogueNumber,
@@ -126,68 +145,31 @@ class Requests
                     }
                 }
                 unset($NotFound[$Request['ID']]);
-                $Request['Tags'] = isset($Tags[$Request['ID']]) ? $Tags[$Request['ID']] : [];
+                $Request['Tags'] = $Tags[$Request['ID']] ?? [];
                 $Found[$Request['ID']] = $Request;
                 G::$Cache->cache_value('request_' . $Request['ID'], $Request, 0);
             }
             G::$DB->set_query_id($QueryID);
-
+            
             // Orphan requests. There shouldn't ever be any
-            if (count($NotFound) > 0) {
+            if ([] !== $NotFound) {
                 foreach (array_keys($NotFound) as $GroupID) {
                     unset($Found[$GroupID]);
                 }
             }
         }
-
+        
         if ($Return) { // If we're interested in the data, and not just caching it
             return $Found;
         }
     }
-
+    
     /**
-     * Return a single request. Wrapper for get_requests
+     * @param $RequestIDs
      *
-     * @param  int     $RequestID
-     * @return request array or false if request doesn't exist. See get_requests for a description of the format
+     * @return array
      */
-    public static function get_request($RequestID)
-    {
-        $Request = self::get_requests([$RequestID]);
-        if (isset($Request[$RequestID])) {
-            return $Request[$RequestID];
-        }
-        return false;
-    }
-
-    public static function get_artists($RequestID)
-    {
-        $Artists = G::$Cache->get_value("request_artists_$RequestID");
-        if (is_array($Artists)) {
-            $Results = $Artists;
-        } else {
-            $Results = [];
-            $QueryID = G::$DB->get_query_id();
-            G::$DB->query("
-        SELECT
-          ra.ArtistID,
-          ag.Name
-        FROM requests_artists AS ra
-          JOIN artists_group AS ag ON ra.ArtistID = ag.ArtistID
-        WHERE ra.RequestID = $RequestID
-        ORDER BY ag.Name ASC;");
-            $ArtistRaw = G::$DB->to_array();
-            G::$DB->set_query_id($QueryID);
-            foreach ($ArtistRaw as $ArtistRow) {
-                [$ArtistID, $ArtistName] = $ArtistRow;
-                $Results[] = ['id' => $ArtistID, 'name' => $ArtistName];
-            }
-            G::$Cache->cache_value("request_artists_$RequestID", $Results);
-        }
-        return $Results;
-    }
-
-    public static function get_tags($RequestIDs)
+    public static function get_tags($RequestIDs): array
     {
         if (empty($RequestIDs)) {
             return [];
@@ -212,10 +194,49 @@ class Requests
             [$RequestID, $TagID, $TagName] = $TagsRow;
             $Results[$RequestID][$TagID] = $TagName;
         }
+        
         return $Results;
     }
-
-    public static function get_votes_array($RequestID)
+    
+    /**
+     * @param $RequestID
+     *
+     * @return mixed[]
+     */
+    public static function get_artists($RequestID): array
+    {
+        $Artists = G::$Cache->get_value("request_artists_$RequestID");
+        if (is_array($Artists)) {
+            $Results = $Artists;
+        } else {
+            $Results = [];
+            $QueryID = G::$DB->get_query_id();
+            G::$DB->query("
+        SELECT
+          ra.ArtistID,
+          ag.Name
+        FROM requests_artists AS ra
+          JOIN artists_group AS ag ON ra.ArtistID = ag.ArtistID
+        WHERE ra.RequestID = $RequestID
+        ORDER BY ag.Name ASC;");
+            $ArtistRaw = G::$DB->to_array();
+            G::$DB->set_query_id($QueryID);
+            foreach ($ArtistRaw as $ArtistRow) {
+                [$ArtistID, $ArtistName] = $ArtistRow;
+                $Results[] = ['id' => $ArtistID, 'name' => $ArtistName];
+            }
+            G::$Cache->cache_value("request_artists_$RequestID", $Results);
+        }
+        
+        return $Results;
+    }
+    
+    /**
+     * @param $RequestID
+     *
+     * @return array
+     */
+    public static function get_votes_array($RequestID): array
     {
         $RequestVotes = G::$Cache->get_value("request_votes_$RequestID");
         if (!is_array($RequestVotes)) {
@@ -232,23 +253,25 @@ class Requests
             if (!G::$DB->has_results()) {
                 return [
                     'TotalBounty' => 0,
-                    'Voters' => []];
+                    'Voters' => []
+                ];
             }
             $Votes = G::$DB->to_array();
-
+            
             $RequestVotes = [];
             $RequestVotes['TotalBounty'] = array_sum(G::$DB->collect('Bounty'));
-
+            
             foreach ($Votes as $Vote) {
                 [$UserID, $Bounty, $Username] = $Vote;
                 $VoteArray = [];
                 $VotesArray[] = ['UserID' => $UserID, 'Username' => $Username, 'Bounty' => $Bounty];
             }
-
+            
             $RequestVotes['Voters'] = $VotesArray;
             G::$Cache->cache_value("request_votes_$RequestID", $RequestVotes);
             G::$DB->set_query_id($QueryID);
         }
+        
         return $RequestVotes;
     }
 }

@@ -1,11 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
-if ($ConvID = (int)$_GET['id']) {
+if (($ConvID = (int)$_GET['id']) !== 0) {
     // Get conversation info
     $DB->query("
     SELECT Subject, UserID, Level, AssignedToUser, Unread, Status
     FROM staff_pm_conversations
-    WHERE ID = $ConvID");
+    WHERE ID = {$ConvID}");
     [$Subject, $UserID, $Level, $AssignedToUser, $Unread, $Status] = $DB->next_record();
 
     $LevelCap = 1000;
@@ -25,9 +25,9 @@ if ($ConvID = (int)$_GET['id']) {
         $DB->query("
       UPDATE staff_pm_conversations
       SET Unread = false
-      WHERE ID = $ConvID");
+      WHERE ID = {$ConvID}");
         // Clear cache for user
-        $Cache->delete_value("staff_pm_new_$LoggedUser[ID]");
+        $Cache->delete_value(sprintf('staff_pm_new_%s', $LoggedUser[ID]));
     }
 
     View::show_header('Staff PM', 'staffpm,bbcode');
@@ -71,7 +71,7 @@ if ($ConvID = (int)$_GET['id']) {
   $StaffPMs = $DB->query("
     SELECT UserID, SentDate, Message, ID
     FROM staff_pm_messages
-    WHERE ConvID = $ConvID");
+    WHERE ConvID = {$ConvID}");
 
     while ([$UserID, $SentDate, $Message, $MessageID] = $DB->next_record()) {
         // Set user string

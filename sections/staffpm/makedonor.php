@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!check_perms('users_give_donor')) {
     error(403);
@@ -14,7 +16,7 @@ $DB->query("
   SELECT c.Subject, c.UserID, c.Level, c.AssignedToUser, c.Unread, c.Status, u.Donor
   FROM staff_pm_conversations AS c
     JOIN users_info AS u ON u.UserID = c.UserID
-  WHERE ID = $ConvID");
+  WHERE ID = {$ConvID}");
 [$Subject, $UserID, $Level, $AssignedToUser, $Unread, $Status, $Donor] = $DB->next_record();
 if (0 == $DB->record_count()) {
     error(404);
@@ -33,7 +35,7 @@ $DB->query("
     Unread = true,
     Status = 'Resolved',
     ResolverID = " . $LoggedUser['ID'] . "
-  WHERE ID = $ConvID");
+  WHERE ID = {$ConvID}");
 
 Donations::donate($UserID, [
     "Source" => "Staff PM",

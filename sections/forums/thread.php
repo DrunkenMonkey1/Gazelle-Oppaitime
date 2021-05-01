@@ -37,11 +37,7 @@ if (!isset($_GET['threadid']) || !is_number($_GET['threadid'])) {
     $ThreadID = $_GET['threadid'];
 }
 
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+$PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
 
 //---------- Get some data to start processing
 
@@ -405,7 +401,7 @@ if (0 == $ThreadInfo['NoPoll']) {
         <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
         <input type="hidden" name="topicid" value="<?=$ThreadID?>" />
         <input type="hidden" name="close" value="1" />
-        <input type="submit" value="<?=(!$Closed ? 'Close' : 'Open')?>" />
+        <input type="submit" value="<?=($Closed ? 'Open' : 'Close')?>" />
       </form>
 <?php
     } ?>
@@ -470,19 +466,25 @@ foreach ($Thread as $Key => $Post) {
         - <a href="#post<?=$PostID?>" onclick="Delete('<?=$PostID?>');" class="brackets">Delete</a>
 <?php
   }
-    if ($PostID == $ThreadInfo['StickyPostID']) { ?>
+    if ($PostID == $ThreadInfo['StickyPostID']) {
+        ?>
         <strong><span class="sticky_post_label brackets">Sticky</span></strong>
-<?php    if (check_perms('site_moderate_forums')) { ?>
-        - <a href="forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;remove=true&amp;auth=<?=$LoggedUser['AuthKey']?>" title="Unsticky this post" class="brackets tooltip">X</a>
-<?php
-    }
-  } else {
-      if (check_perms('site_moderate_forums')) {
-          ?>
-        - <a href="forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;auth=<?=$LoggedUser['AuthKey']?>" title="Sticky this post" class="brackets tooltip">&#x21d5;</a>
-<?php
-      }
-  } ?>
+<?php 
+        if (check_perms('site_moderate_forums')) { ?>
+            - <a href="forums.php?action=sticky_post&amp;threadid=<?=$ThreadID?>&amp;postid=<?=$PostID?>&amp;remove=true&amp;auth=<?=$LoggedUser['AuthKey']?>" title="Unsticky this post" class="brackets tooltip">X</a>
+    <?php
+        }
+    } elseif (check_perms('site_moderate_forums')) {
+        ?>
+        - <a href="forums.php?action=sticky_post&amp;threadid=<?php 
+        <?=$ThreadID?>
+        ?>&amp;postid=<?php 
+        <?=$PostID?>
+        ?>&amp;auth=<?php 
+        <?=$LoggedUser['AuthKey']?>
+        ?>" title="Sticky this post" class="brackets tooltip">&#x21d5;</a>
+<?php 
+    } ?>
       </div>
       <div id="bar<?=$PostID?>" class="float_right">
         <a href="reports.php?action=report&amp;type=post&amp;id=<?=$PostID?>" class="brackets">Report</a>
@@ -541,16 +543,14 @@ foreach ($Thread as $Key => $Post) {
   <?=$Pages?>
 </div>
 <?php
-if (!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) {
-      if (Forums::check_forumperm($ForumID, 'Write') && !$LoggedUser['DisablePosting']) {
-          View::parse('generic/reply/quickreply.php', [
-              'InputTitle' => 'Post reply',
-              'InputName' => 'thread',
-              'InputID' => $ThreadID,
-              'ForumID' => $ForumID,
-              'TextareaCols' => 90
-          ]);
-      }
+if ((!$ThreadInfo['IsLocked'] || check_perms('site_moderate_forums')) && (Forums::check_forumperm($ForumID, 'Write') && !$LoggedUser['DisablePosting'])) {
+      View::parse('generic/reply/quickreply.php', [
+          'InputTitle' => 'Post reply',
+          'InputName' => 'thread',
+          'InputID' => $ThreadID,
+          'ForumID' => $ForumID,
+          'TextareaCols' => 90
+      ]);
   }
 if (check_perms('site_moderate_forums')) {
     G::$DB->query("
@@ -598,7 +598,7 @@ if (check_perms('site_moderate_forums')) {
   } ?> tabindex="2" />
         </td>
       </tr>
-      <tr id="ranking_row"<?=!$ThreadInfo['IsSticky'] ? ' class="hidden"' : ''?>>
+      <tr id="ranking_row"<?=$ThreadInfo['IsSticky'] ? '' : ' class="hidden"'?>>
         <td class="label"><label for="thread_ranking_textbox">Ranking</label></td>
         <td>
           <input type="text" id="thread_ranking_textbox" name="ranking" value="<?=$ThreadInfo['Ranking']?>" tabindex="2" />

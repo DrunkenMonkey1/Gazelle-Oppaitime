@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| User email history page ||---------------------------||
 
@@ -21,7 +21,7 @@ $DB->query("
   FROM users_main AS um
     JOIN users_info AS ui ON um.ID = ui.UserID
     JOIN permissions AS p ON p.ID = um.PermissionID
-  WHERE um.ID = $UserID");
+  WHERE um.ID = {$UserID}");
 [$Joined, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_email', $Class)) {
@@ -33,9 +33,9 @@ $UsersOnly = $_GET['usersonly'];
 $DB->query("
   SELECT Username
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 [$Username]= $DB->next_record();
-View::show_header("Email history for $Username");
+View::show_header(sprintf('Email history for %s', $Username));
 
 if (1 == $UsersOnly) {
     $DB->query("
@@ -45,9 +45,9 @@ if (1 == $UsersOnly) {
       u.IP,
       c.Code
     FROM users_main AS u
-      LEFT JOIN users_main AS u2 ON u2.Email = u.Email AND u2.ID != '$UserID'
+      LEFT JOIN users_main AS u2 ON u2.Email = u.Email AND u2.ID != '{$UserID}'
       LEFT JOIN geoip_country AS c ON INET_ATON(u.IP) BETWEEN c.StartIP AND c.EndIP
-    WHERE u.ID = '$UserID'
+    WHERE u.ID = '{$UserID}'
       AND u2.ID > 0
     UNION
     SELECT
@@ -56,9 +56,9 @@ if (1 == $UsersOnly) {
       h.IP,
       c.Code
     FROM users_history_emails AS h
-      LEFT JOIN users_history_emails AS h2 ON h2.email = h.email and h2.UserID != '$UserID'
+      LEFT JOIN users_history_emails AS h2 ON h2.email = h.email and h2.UserID != '{$UserID}'
       LEFT JOIN geoip_country AS c ON INET_ATON(h.IP) BETWEEN c.StartIP AND c.EndIP
-    WHERE h.UserID = '$UserID'
+    WHERE h.UserID = '{$UserID}'
       AND h2.UserID > 0"
       /*AND Time IS NOT NULL*/ . "
     ORDER BY Time DESC");
@@ -71,7 +71,7 @@ if (1 == $UsersOnly) {
       c.Code
     FROM users_main AS u
       LEFT JOIN geoip_country AS c ON INET_ATON(u.IP) BETWEEN c.StartIP AND c.EndIP
-    WHERE u.ID = '$UserID'
+    WHERE u.ID = '{$UserID}'
     UNION
     SELECT
       h.Email,
@@ -80,7 +80,7 @@ if (1 == $UsersOnly) {
       c.Code
     FROM users_history_emails AS h
       LEFT JOIN geoip_country AS c ON INET_ATON(h.IP) BETWEEN c.StartIP AND c.EndIP
-    WHERE UserID = '$UserID' "
+    WHERE UserID = '{$UserID}' "
       /*AND Time IS NOT NULL*/ . "
     ORDER BY Time DESC");
 }
@@ -103,11 +103,7 @@ $History = $DB->to_array();
   </tr>
 <?php
 foreach ($History as $Key => $Values) {
-    if (isset($History[$Key + 1])) {
-        $Values['Time'] = $History[$Key + 1]['Time'];
-    } else {
-        $Values['Time'] = $Joined;
-    }
+    $Values['Time'] = isset($History[$Key + 1]) ? $History[$Key + 1]['Time'] : $Joined;
 
     $ValuesIP = apcu_exists('DBKEY') ? Crypto::decrypt($Values['IP']) : '[Encrypted]'; ?>
   <tr class="row">
@@ -124,7 +120,7 @@ foreach ($History as $Key => $Values) {
             ue.IP
           FROM users_history_emails AS ue, users_main AS um
           WHERE ue.Email = '" . db_string($Values['Email']) . "'
-            AND ue.UserID != $UserID
+            AND ue.UserID != {$UserID}
             AND um.ID = ue.UserID");
       while ([$UserID2, $Time, $IP] = $DB->next_record()) {
           $IP = apcu_exists('DBKEY') ? Crypto::decrypt($IP) : '[Encrypted]'; ?>
@@ -134,11 +130,11 @@ foreach ($History as $Key => $Values) {
     <td><?=time_diff($Time)?></td>
     <td><?=display_str($IP)?></td>
 <?php
-      $UserURL = site_url() . "user.php?id=$UserID2";
+      $UserURL = site_url() . sprintf('user.php?id=%s', $UserID2);
           $DB->query("
         SELECT Enabled
         FROM users_main
-        WHERE ID = $UserID2");
+        WHERE ID = {$UserID2}");
           [$Enabled] = $DB->next_record();
           $DB->set_query_id($ueQuery); ?>
     <td><a href="<?=display_str($UserURL)?>"><?=Users::format_username($UserID2, false, false, true)?></a></td>

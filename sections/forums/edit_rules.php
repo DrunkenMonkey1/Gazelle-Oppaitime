@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 enforce_login();
 if (!check_perms('site_moderate_forums')) {
@@ -13,20 +13,16 @@ if (!is_number($ForumID)) {
 
 
 if (!empty($_POST['add']) || (!empty($_POST['del']))) {
-    if (!empty($_POST['add'])) {
-        if (is_number($_POST['new_thread'])) {
-            $DB->query("
+    if (!empty($_POST['add']) && is_number($_POST['new_thread'])) {
+        $DB->query("
         INSERT INTO forums_specific_rules (ForumID, ThreadID)
-        VALUES ($ForumID, " . $_POST['new_thread'] . ')');
-        }
+        VALUES ({$ForumID}, " . $_POST['new_thread'] . ')');
     }
-    if (!empty($_POST['del'])) {
-        if (is_number($_POST['threadid'])) {
-            $DB->query("
+    if (!empty($_POST['del']) && is_number($_POST['threadid'])) {
+        $DB->query("
         DELETE FROM forums_specific_rules
-        WHERE ForumID = $ForumID
+        WHERE ForumID = {$ForumID}
           AND ThreadID = " . $_POST['threadid']);
-        }
     }
     $Cache->delete_value('forums_list');
 }
@@ -35,7 +31,7 @@ if (!empty($_POST['add']) || (!empty($_POST['del']))) {
 $DB->query("
   SELECT ThreadID
   FROM forums_specific_rules
-  WHERE ForumID = $ForumID");
+  WHERE ForumID = {$ForumID}");
 $ThreadIDs = $DB->collect('ThreadID');
 
 View::show_header();

@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 class Collages
 {
-    public static function increase_subscriptions($CollageID)
+    public static function increase_subscriptions($CollageID): void
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
@@ -11,8 +13,8 @@ class Collages
       WHERE ID = '$CollageID'");
         G::$DB->set_query_id($QueryID);
     }
-
-    public static function decrease_subscriptions($CollageID)
+    
+    public static function decrease_subscriptions($CollageID): void
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
@@ -21,8 +23,8 @@ class Collages
       WHERE ID = '$CollageID'");
         G::$DB->set_query_id($QueryID);
     }
-
-    public static function create_personal_collage()
+    
+    public static function create_personal_collage(): void
     {
         G::$DB->query("
       SELECT
@@ -32,7 +34,7 @@ class Collages
         AND CategoryID = '0'
         AND Deleted = '0'");
         [$CollageCount] = G::$DB->next_record();
-
+        
         if ($CollageCount >= G::$LoggedUser['Permissions']['MaxCollages']) {
             // TODO: fix this, the query was for COUNT(ID), so I highly doubt that this works... - Y
             [$CollageID] = G::$DB->next_record();

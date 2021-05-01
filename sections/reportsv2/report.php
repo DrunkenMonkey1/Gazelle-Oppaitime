@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * This is the frontend of reporting a torrent, it's what users see when
  * they visit reportsv2.php?id=xxx
@@ -33,7 +33,7 @@ if (!isset($_GET['id']) || !is_number($_GET['id'])) {
     }
 
     // Group details
-    [$WikiBody, $WikiImage, $GroupID, $GroupName, $GroupNameRJ, $GroupNameJP,
+    [$WikiBody, $WikiImage, $GroupID, $GroupName,
     $GroupYear, $GroupStudio, $GroupSeries, $GroupCatalogueNumber,
     $GroupCategoryID, $GroupDLSite, $GroupTime, $TorrentTags, $TorrentTagIDs,
     $TorrentTagUserIDs, $Screenshots, $GroupFlags] = array_values($GroupDetails);
@@ -46,14 +46,14 @@ if (!isset($_GET['id']) || !is_number($_GET['id'])) {
     //Get the artist name, group name etc.
     $Artists = Artists::get_artist($GroupID);
     if ($Artists) {
-        $DisplayName = '<span dir="ltr">' . Artists::display_artists($Artists, true) . "<a href=\"torrents.php?torrentid=$TorrentID\">$DisplayName</a></span>";
+        $DisplayName = '<span dir="ltr">' . Artists::display_artists($Artists, true) . sprintf('<a href="torrents.php?torrentid=%s">%s</a></span>', $TorrentID, $DisplayName);
         $AltName = display_str(Artists::display_artists($Artists, false)) . $AltName;
         $Title = $AltName;
     }
     if ($GroupYear > 0) {
-        $DisplayName .= " [$GroupYear]";
-        $AltName .= " [$GroupYear]";
-        $Title .= " [$GroupYear]";
+        $DisplayName .= sprintf(' [%s]', $GroupYear);
+        $AltName .= sprintf(' [%s]', $GroupYear);
+        $Title .= sprintf(' [%s]', $GroupYear);
     }
     /*
       if ($GroupCategoryID == 1) {
@@ -89,7 +89,7 @@ View::show_header('Report', 'reportsv2,browse,torrent,bbcode,recommend');
         </td>
       </tr>
       <?php
-      $LangName = $GroupName ? $GroupName : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP);
+      $LangName = $GroupName;
       build_torrents_table($Cache, $DB, $LoggedUser, $GroupID, $LangName, $GroupCategoryID, $TorrentList, $Types, $Username);
       ?>
     </table>
@@ -142,11 +142,11 @@ View::show_header('Report', 'reportsv2,browse,torrent,bbcode,recommend');
          * The following malarky is needed so that if you get sent back here, the fields are filled in.
          */
         ?>
-        <input id="sitelink" type="hidden" name="sitelink" size="50" value="<?=(!empty($_POST['sitelink']) ? display_str($_POST['sitelink']) : '')?>" />
-        <input id="image" type="hidden" name="image" size="50" value="<?=(!empty($_POST['image']) ? display_str($_POST['image']) : '')?>" />
-        <input id="track" type="hidden" name="track" size="8" value="<?=(!empty($_POST['track']) ? display_str($_POST['track']) : '')?>" />
-        <input id="link" type="hidden" name="link" size="50" value="<?=(!empty($_POST['link']) ? display_str($_POST['link']) : '')?>" />
-        <input id="extra" type="hidden" name="extra" value="<?=(!empty($_POST['extra']) ? display_str($_POST['extra']) : '')?>" />
+        <input id="sitelink" type="hidden" name="sitelink" size="50" value="<?=(empty($_POST['sitelink']) ? '' : display_str($_POST['sitelink']))?>" />
+        <input id="image" type="hidden" name="image" size="50" value="<?=(empty($_POST['image']) ? '' : display_str($_POST['image']))?>" />
+        <input id="track" type="hidden" name="track" size="8" value="<?=(empty($_POST['track']) ? '' : display_str($_POST['track']))?>" />
+        <input id="link" type="hidden" name="link" size="50" value="<?=(empty($_POST['link']) ? '' : display_str($_POST['link']))?>" />
+        <input id="extra" type="hidden" name="extra" value="<?=(empty($_POST['extra']) ? '' : display_str($_POST['extra']))?>" />
       </div>
     </div>
   <input type="submit" value="Submit report" />

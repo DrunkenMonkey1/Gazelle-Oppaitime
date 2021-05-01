@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $LastRead = Forums::get_last_read($Forums);
 View::show_header('Forums');
 ?>
@@ -17,7 +17,7 @@ foreach ($Forums as $Forum) {
 
     $ForumDescription = display_str($ForumDescription);
 
-    if ($CategoryID != $LastCategoryID) {
+    if ($CategoryID !== $LastCategoryID) {
         $LastCategoryID = $CategoryID;
         if ($OpenTable) { ?>
   </table>

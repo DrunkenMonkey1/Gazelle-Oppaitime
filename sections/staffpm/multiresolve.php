@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if ($IDs = $_POST['id']) {
     $Queries = [];
     foreach ($IDs as &$ID) {
@@ -9,7 +11,7 @@ if ($IDs = $_POST['id']) {
         $DB->query("
       SELECT UserID, AssignedToUser
       FROM staff_pm_conversations
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
         [$UserID, $AssignedToUser] = $DB->next_record();
 
         if ($UserID == $LoggedUser['ID'] || '1' == $DisplayStaff || $UserID == $AssignedToUser) {
@@ -17,7 +19,7 @@ if ($IDs = $_POST['id']) {
             $Queries[] = "
         UPDATE staff_pm_conversations
         SET Status = 'Resolved', ResolverID = " . $LoggedUser['ID'] . "
-        WHERE ID = $ID";
+        WHERE ID = {$ID}";
         } else {
             // Trying to run disallowed query
             error(403);
@@ -29,8 +31,8 @@ if ($IDs = $_POST['id']) {
         $DB->query($Query);
     }
     // Clear cache for user
-    $Cache->delete_value("staff_pm_new_$LoggedUser[ID]");
-    $Cache->delete_value("num_staff_pms_$LoggedUser[ID]");
+    $Cache->delete_value(sprintf('staff_pm_new_%s', $LoggedUser[ID]));
+    $Cache->delete_value(sprintf('num_staff_pms_%s', $LoggedUser[ID]));
 
     // Done! Return to inbox
     header("Location: staffpm.php");

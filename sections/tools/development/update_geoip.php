@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ini_set('memory_limit', '1G');
 set_time_limit(0);
 
@@ -27,8 +29,8 @@ if (($fd = fopen('GeoIPCountry.csv', 'r')) !== false) {
     $Count = 0;
     while (($Data = fgetcsv($fd)) !== false) {
         [$StartIP, $EndIP, $CountryID] = $Data;
-        $Values[] = "($StartIP, $EndIP, '$CountryID')";
-        $Count++;
+        $Values[] = sprintf('(%s, %s, \'%s\')', $StartIP, $EndIP, $CountryID);
+        ++$Count;
         if (0 == $Count % $LIMIT) {
             $DB->query("
         INSERT INTO geoip_country (StartIP, EndIP, Code)
@@ -36,7 +38,7 @@ if (($fd = fopen('GeoIPCountry.csv', 'r')) !== false) {
             $Values = [];
         }
     }
-    if (count($Values) > 0) {
+    if ([] !== $Values) {
         $DB->query("
       INSERT INTO geoip_country (StartIP, EndIP, Code)
       VALUES " . implode(', ', $Values));
@@ -58,8 +60,8 @@ if (($fd = fopen('GeoIPASNum2.csv', 'r')) !== false) {
     while (($Data = fgetcsv($fd)) !== false) {
         [$StartIP, $EndIP, $ASN] = $Data;
         $ASN = substr($ASN, 2, strpos($ASN, ' ') ? strpos($ASN, ' ')-2 : strlen($ASN)-2);
-        $Values[] = "(INET6_ATON(INET_NTOA($StartIP)), INET6_ATON(INET_NTOA($EndIP)), $ASN)";
-        $Count++;
+        $Values[] = sprintf('(INET6_ATON(INET_NTOA(%s)), INET6_ATON(INET_NTOA(%s)), %s)', $StartIP, $EndIP, $ASN);
+        ++$Count;
         if (0 == $Count % $LIMIT) {
             $DB->query("
         INSERT INTO geoip_asn (StartIP, EndIP, ASN)
@@ -67,7 +69,7 @@ if (($fd = fopen('GeoIPASNum2.csv', 'r')) !== false) {
             $Values = [];
         }
     }
-    if (count($Values) > 0) {
+    if ([] !== $Values) {
         $DB->query("
       INSERT INTO geoip_asn (StartIP, EndIP, ASN)
       VALUES " . implode(', ', $Values));
@@ -88,8 +90,8 @@ if (($fd = fopen('GeoIPASNum2v6.csv', 'r')) !== false) {
     while (($Data = fgetcsv($fd)) !== false) {
         [$ASN, $StartIP, $EndIP] = $Data;
         $ASN = substr($ASN, 2, strpos($ASN, ' ') ? strpos($ASN, ' ')-2 : strlen($ASN)-2);
-        $Values[] = "(INET6_ATON('$StartIP'), INET6_ATON('$EndIP'), $ASN)";
-        $Count++;
+        $Values[] = sprintf('(INET6_ATON(\'%s\'), INET6_ATON(\'%s\'), %s)', $StartIP, $EndIP, $ASN);
+        ++$Count;
         if (0 == $Count % $LIMIT) {
             $DB->query("
         INSERT INTO geoip_asn (StartIP, EndIP, ASN)
@@ -97,7 +99,7 @@ if (($fd = fopen('GeoIPASNum2v6.csv', 'r')) !== false) {
             $Values = [];
         }
     }
-    if (count($Values) > 0) {
+    if ([] !== $Values) {
         $DB->query("
       INSERT INTO geoip_asn (StartIP, EndIP, ASN)
       VALUES " . implode(', ', $Values));

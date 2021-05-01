@@ -1,49 +1,51 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 include SERVER_ROOT . '/classes/validate.class.php';
 $Val = new VALIDATE();
 
-function add_torrent($CollageID, $GroupID)
+function add_torrent($CollageID, $GroupID): void
 {
     global $Cache, $LoggedUser, $DB;
 
     $DB->query("
     SELECT MAX(Sort)
     FROM collages_torrents
-    WHERE CollageID = '$CollageID'");
+    WHERE CollageID = '{$CollageID}'");
     [$Sort] = $DB->next_record();
     $Sort += 10;
 
     $DB->query("
     SELECT GroupID
     FROM collages_torrents
-    WHERE CollageID = '$CollageID'
-      AND GroupID = '$GroupID'");
+    WHERE CollageID = '{$CollageID}'
+      AND GroupID = '{$GroupID}'");
     if (!$DB->has_results()) {
         $DB->query("
       INSERT IGNORE INTO collages_torrents
         (CollageID, GroupID, UserID, Sort, AddedOn)
       VALUES
-        ('$CollageID', '$GroupID', '$LoggedUser[ID]', '$Sort', '" . sqltime() . "')");
+        ('{$CollageID}', '{$GroupID}', '$LoggedUser[ID]', '{$Sort}', '" . sqltime() . "')");
 
         $DB->query("
       UPDATE collages
       SET NumTorrents = NumTorrents + 1, Updated = '" . sqltime() . "'
-      WHERE ID = '$CollageID'");
+      WHERE ID = '{$CollageID}'");
 
-        $Cache->delete_value("collage_$CollageID");
-        $Cache->delete_value("torrents_details_$GroupID");
-        $Cache->delete_value("torrent_collages_$GroupID");
-        $Cache->delete_value("torrent_collages_personal_$GroupID");
+        $Cache->delete_value(sprintf('collage_%s', $CollageID));
+        $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
+        $Cache->delete_value(sprintf('torrent_collages_%s', $GroupID));
+        $Cache->delete_value(sprintf('torrent_collages_personal_%s', $GroupID));
 
         $DB->query("
       SELECT UserID
       FROM users_collage_subs
-      WHERE CollageID = $CollageID");
+      WHERE CollageID = {$CollageID}");
         while ([$CacheUserID] = $DB->next_record()) {
-            $Cache->delete_value("collage_subs_user_new_$CacheUserID");
+            $Cache->delete_value(sprintf('collage_subs_user_new_%s', $CacheUserID));
         }
     }
 }
@@ -55,7 +57,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT UserID, CategoryID, Locked, NumTorrents, MaxGroups, MaxGroupsPerUser
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$UserID, $CategoryID, $Locked, $NumTorrents, $MaxGroups, $MaxGroupsPerUser] = $DB->next_record();
 
 if (!check_perms('site_collages_delete')) {
@@ -63,7 +65,7 @@ if (!check_perms('site_collages_delete')) {
         $Err = 'This collage is locked';
     }
     if (0 == $CategoryID && $UserID != $LoggedUser['ID']) {
-        $Err = 'You cannot edit someone else\'s personal collage.';
+        $Err = "You cannot edit someone else's personal collage.";
     }
     if ($MaxGroups > 0 && $NumTorrents >= $MaxGroups) {
         $Err = 'This collage already holds its maximum allowed number of torrents.';
@@ -78,7 +80,7 @@ if ($MaxGroupsPerUser > 0) {
     $DB->query("
     SELECT COUNT(*)
     FROM collages_torrents
-    WHERE CollageID = '$CollageID'
+    WHERE CollageID = '{$CollageID}'
       AND UserID = '$LoggedUser[ID]'");
     [$GroupsForUser] = $DB->next_record();
     if (!check_perms('site_collages_delete') && $GroupsForUser >= $MaxGroupsPerUser) {
@@ -106,7 +108,7 @@ if ('add_torrent' == $_REQUEST['action']) {
     $DB->query("
     SELECT ID
     FROM torrents_group
-    WHERE ID = '$TorrentID'");
+    WHERE ID = '{$TorrentID}'");
     [$GroupID] = $DB->next_record();
     if (!$GroupID) {
         error('The torrent was not found in the database.');
@@ -127,10 +129,10 @@ if ('add_torrent' == $_REQUEST['action']) {
 
     if (!check_perms('site_collages_delete')) {
         if ($MaxGroups > 0 && ($NumTorrents + count($URLs) > $MaxGroups)) {
-            $Err = "This collage can only hold $MaxGroups torrents.";
+            $Err = sprintf('This collage can only hold %s torrents.', $MaxGroups);
         }
         if ($MaxGroupsPerUser > 0 && ($GroupsForUser + count($URLs) > $MaxGroupsPerUser)) {
-            $Err = "You may only have $MaxGroupsPerUser torrents in this collage.";
+            $Err = sprintf('You may only have %s torrents in this collage.', $MaxGroupsPerUser);
         }
     }
 
@@ -140,21 +142,21 @@ if ('add_torrent' == $_REQUEST['action']) {
             $GroupIDs[] = $Matches[4];
             $GroupID = $Matches[4];
         } else {
-            $Err = "One of the entered URLs ($URL) does not correspond to a torrent group on the site.";
+            $Err = sprintf('One of the entered URLs (%s) does not correspond to a torrent group on the site.', $URL);
             break;
         }
 
         $DB->query("
       SELECT ID
       FROM torrents_group
-      WHERE ID = '$GroupID'");
+      WHERE ID = '{$GroupID}'");
         if (!$DB->has_results()) {
-            $Err = "One of the entered URLs ($URL) does not correspond to a torrent group on the site.";
+            $Err = sprintf('One of the entered URLs (%s) does not correspond to a torrent group on the site.', $URL);
             break;
         }
     }
 
-    if ($Err) {
+    if ('' !== $Err) {
         error($Err);
     }
 

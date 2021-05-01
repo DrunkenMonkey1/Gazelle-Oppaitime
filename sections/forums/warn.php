@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!check_perms('users_warn')) {
     error(404);
@@ -12,7 +12,7 @@ $DB->query("
   SELECT p.Body, t.ForumID
   FROM forums_posts AS p
     JOIN forums_topics AS t ON p.TopicID = t.ID
-  WHERE p.ID = '$PostID'");
+  WHERE p.ID = '{$PostID}'");
 [$PostBody, $ForumID] = $DB -> next_record();
 View::show_header('Warn User');
 ?>

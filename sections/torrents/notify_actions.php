@@ -1,8 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 switch ($_GET['action']) {
   case 'notify_clear':
-    $DB->query("DELETE FROM users_notify_torrents WHERE UserID = '$LoggedUser[ID]' AND UnRead = '0'");
+    $DB->query(sprintf('DELETE FROM users_notify_torrents WHERE UserID = \'%s\' AND UnRead = \'0\'', $LoggedUser[ID]));
     $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     header('Location: torrents.php?action=notify');
     break;
@@ -12,7 +14,7 @@ switch ($_GET['action']) {
     if (!isset($_GET['torrentid']) || !is_number($_GET['torrentid'])) {
         error(0);
     }
-    $DB->query("DELETE FROM users_notify_torrents WHERE UserID = '$LoggedUser[ID]' AND TorrentID = '$_GET[torrentid]'");
+    $DB->query(sprintf('DELETE FROM users_notify_torrents WHERE UserID = \'%s\' AND TorrentID = \'%s\'', $LoggedUser[ID], $_GET[torrentid]));
     $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     break;
 
@@ -26,7 +28,7 @@ switch ($_GET['action']) {
             error(0);
         }
     }
-    $DB->query("DELETE FROM users_notify_torrents WHERE UserID = $LoggedUser[ID] AND TorrentID IN ($_GET[torrentids])");
+    $DB->query(sprintf('DELETE FROM users_notify_torrents WHERE UserID = %s AND TorrentID IN (%s)', $LoggedUser[ID], $_GET[torrentids]));
     $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     break;
 
@@ -35,13 +37,13 @@ switch ($_GET['action']) {
     if (!isset($_GET['filterid']) || !is_number($_GET['filterid'])) {
         error(0);
     }
-    $DB->query("DELETE FROM users_notify_torrents WHERE UserID = '$LoggedUser[ID]' AND FilterID = '$_GET[filterid]' AND UnRead = '0'");
+    $DB->query(sprintf('DELETE FROM users_notify_torrents WHERE UserID = \'%s\' AND FilterID = \'%s\' AND UnRead = \'0\'', $LoggedUser[ID], $_GET[filterid]));
     $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     header('Location: torrents.php?action=notify');
     break;
 
   case 'notify_catchup':
-    $DB->query("UPDATE users_notify_torrents SET UnRead = '0' WHERE UserID=$LoggedUser[ID]");
+    $DB->query(sprintf('UPDATE users_notify_torrents SET UnRead = \'0\' WHERE UserID=%s', $LoggedUser[ID]));
     if ($DB->affected_rows()) {
         $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     }
@@ -52,7 +54,7 @@ switch ($_GET['action']) {
     if (!isset($_GET['filterid']) || !is_number($_GET['filterid'])) {
         error(0);
     }
-    $DB->query("UPDATE users_notify_torrents SET UnRead='0' WHERE UserID = $LoggedUser[ID] AND FilterID = $_GET[filterid]");
+    $DB->query(sprintf('UPDATE users_notify_torrents SET UnRead=\'0\' WHERE UserID = %s AND FilterID = %s', $LoggedUser[ID], $_GET[filterid]));
     if ($DB->affected_rows()) {
         $Cache->delete_value('notifications_new_' . $LoggedUser['ID']);
     }

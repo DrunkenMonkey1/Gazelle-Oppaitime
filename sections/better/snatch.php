@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($_GET['userid']) && is_number($_GET['userid'])) {
     if (check_perms('users_override_paranoia')) {
         $UserID = $_GET['userid'];
@@ -12,11 +12,7 @@ if (!empty($_GET['userid']) && is_number($_GET['userid'])) {
 $Encodings = ['V0 (VBR)', 'V2 (VBR)', '320'];
 $EncodingKeys = array_fill_keys($Encodings, true);
 
-if (!empty($_GET['filter']) && 'seeding' === $_GET['filter']) {
-    $SeedingOnly = true;
-} else {
-    $SeedingOnly = false;
-}
+$SeedingOnly = !empty($_GET['filter']) && 'seeding' === $_GET['filter'];
 
 // Get list of FLAC snatches
 $DB->query("
@@ -28,7 +24,7 @@ $DB->query("
     AND ((t.LogScore = '100' AND t.Media = 'CD')
       OR t.Media != 'CD')
     AND tg.CategoryID = 1
-    AND x.uid = '$UserID'" .
+    AND x.uid = '{$UserID}'" .
     ($SeedingOnly ? ' AND x.active = 1 AND x.remaining = 0' : ''));
 
 $SnatchedTorrentIDs = array_fill_keys($DB->collect('fid'), true);
@@ -38,7 +34,7 @@ if (count($SnatchedGroupIDs) > 1000) {
     $SnatchedGroupIDs = array_slice($SnatchedGroupIDs, 0, 1000);
 }
 
-if (0 === count($SnatchedGroupIDs)) {
+if ([] === $SnatchedGroupIDs) {
     error(($SeedingOnly ? "You aren't seeding any perfect FLACs!" : "You haven't snatched any perfect FLACs!"));
 }
 // Create hash table
@@ -66,7 +62,7 @@ $DB->query("
 
 $GroupIDs = array_fill_keys($DB->collect('GroupID'), true);
 
-if (0 === count($GroupIDs)) {
+if ([] === $GroupIDs) {
     error('No results found');
 }
 
@@ -78,7 +74,7 @@ foreach ($Groups as $GroupID => $Group) {
         continue;
     }
     foreach ($Group['Torrents'] as $Torrent) {
-        $TorRemIdent = "$Torrent[Media] $Torrent[RemasterYear] $Torrent[RemasterTitle] $Torrent[RemasterRecordLabel] $Torrent[RemasterCatalogueNumber]";
+        $TorRemIdent = sprintf('%s %s %s %s %s', $Torrent[Media], $Torrent[RemasterYear], $Torrent[RemasterTitle], $Torrent[RemasterRecordLabel], $Torrent[RemasterCatalogueNumber]);
         if (!isset($TorrentGroups[$Group['ID']])) {
             $TorrentGroups[$Group['ID']] = [
                 $TorRemIdent => [
@@ -127,7 +123,7 @@ foreach ($TorrentGroups as $Editions) {
         foreach ($Encodings as $Encoding) {
             if (!isset($Edition['Formats'][$Encoding])) {
                 ++$edition_miss;
-                ++$Counter["miss_$Encoding"];
+                ++$Counter[sprintf('miss_%s', $Encoding)];
             }
         }
         $Counter['miss_total'] += $edition_miss;
@@ -187,7 +183,7 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
         }
         $DisplayName = $ArtistNames . '<a href="torrents.php?id=' . $GroupID . '&amp;torrentid=' . $Edition['FlacID'] . '#torrent' . $Edition['FlacID'] . '" class="tooltip" title="View torrent" dir="ltr">' . $GroupName . '</a>';
         if ($GroupYear > 0) {
-            $DisplayName .= " [$GroupYear]";
+            $DisplayName .= sprintf(' [%s]', $GroupYear);
         }
         if ($ReleaseType > 0) {
             $DisplayName .= ' [' . $ReleaseTypes[$ReleaseType] . ']';
@@ -195,11 +191,7 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
         $DisplayName .= ' [' . $Edition['Medium'] . ']';
 
         $EditionInfo = [];
-        if (!empty($Edition['RemasterYear'])) {
-            $ExtraInfo = $Edition['RemasterYear'];
-        } else {
-            $ExtraInfo = '';
-        }
+        $ExtraInfo = empty($Edition['RemasterYear']) ? '' : $Edition['RemasterYear'];
         if (!empty($Edition['RemasterRecordLabel'])) {
             $EditionInfo[] = $Edition['RemasterRecordLabel'];
         }

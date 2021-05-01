@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 Text::$TOC = true;
 
 $ArticleID = false;
@@ -105,7 +105,7 @@ if ($Aliases != $Title) {
     foreach ($AliasArray as $AliasItem) {
         ?>
             <li id="alias_<?=$AliasItem?>"><a href="wiki.php?action=article&amp;name=<?=$AliasItem?>"><?=Format::cut_string($AliasItem, 20, 1)?></a><?php if (check_perms('admin_manage_wiki')) { ?> <a href="#" onclick="Remove_Alias('<?=$AliasItem?>'); return false;" class="brackets tooltip" title="Delete alias">X</a> <a href="user.php?id=<?=$UserArray[$i]?>" class="brackets tooltip" title="View user">U</a><?php } ?></li>
-<?php    $i++;
+<?php    ++$i;
     }
 }
 ?>

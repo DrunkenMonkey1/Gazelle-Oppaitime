@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 
 if (!check_perms('site_top10')) {
@@ -15,22 +15,12 @@ include SERVER_ROOT . '/sections/torrents/functions.php'; //Has get_reports($Tor
 if (empty($_GET['type']) || 'torrents' == $_GET['type']) {
     include SERVER_ROOT . '/sections/top10/torrents.php';
 } else {
-    switch ($_GET['type']) {
-    case 'users':
-      include SERVER_ROOT . '/sections/top10/users.php';
-      break;
-    case 'tags':
-      include SERVER_ROOT . '/sections/top10/tags.php';
-      break;
-    case 'history':
-      include SERVER_ROOT . '/sections/top10/history.php';
-      break;
-    case 'donors':
-      include SERVER_ROOT . '/sections/top10/donors.php';
-      break;
-    default:
-      error(404);
-      break;
-  }
+    match ($_GET['type']) {
+        'users' => include SERVER_ROOT . '/sections/top10/users.php',
+        'tags' => include SERVER_ROOT . '/sections/top10/tags.php',
+        'history' => include SERVER_ROOT . '/sections/top10/history.php',
+        'donors' => include SERVER_ROOT . '/sections/top10/donors.php',
+        default => error(404),
+    };
 }
 ?>

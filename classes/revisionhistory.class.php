@@ -1,14 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 class RevisionHistory
 {
     /**
      * Read the revision history of an artist or torrent page
-     * @param  string $Page   artists or torrents
-     * @param  in     $PageID
-     * @return array
+     *
+     * @param string $Page artists or torrents
+     * @param in     $PageID
+     *
+     * @return mixed[]
      */
-    public static function get_revision_history($Page, $PageID)
+    public static function get_revision_history(string $Page, $PageID): array
     {
         $Table = ('artists' == $Page) ? 'wiki_artists' : 'wiki_torrents';
         $QueryID = G::$DB->get_query_id();
@@ -23,6 +27,7 @@ class RevisionHistory
       ORDER BY RevisionID DESC");
         $Ret = G::$DB->to_array();
         G::$DB->set_query_id($QueryID);
+        
         return $Ret;
     }
 }

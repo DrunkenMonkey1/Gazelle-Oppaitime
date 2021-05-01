@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $P = [];
@@ -37,7 +39,7 @@ if (check_perms('admin_manage_wiki')) {
         error(0);
     }
     if ($Edit > $LoggedUser['EffectiveClass']) {
-        error('You can\'t restrict articles above your own level');
+        error("You can't restrict articles above your own level");
     }
     if ($Edit < $Read) {
         $Edit = $Read; //Human error fix.
@@ -51,7 +53,7 @@ $DB->query("
   INSERT INTO wiki_articles
     (Revision, Title, Body, MinClassRead, MinClassEdit, Date, Author)
   VALUES
-    ('1', '$P[title]', '$P[body]', '$Read', '$Edit', NOW(), '$LoggedUser[ID]')");
+    ('1', '$P[title]', '$P[body]', '{$Read}', '{$Edit}', NOW(), '$LoggedUser[ID]')");
 
 $ArticleID = $DB->inserted_id();
 
@@ -60,10 +62,10 @@ $Dupe = Wiki::alias_to_id($_POST['title']);
 if ('' != $TitleAlias && false === $Dupe) {
     $DB->query("
     INSERT INTO wiki_aliases (Alias, ArticleID)
-    VALUES ('" . db_string($TitleAlias) . "', '$ArticleID')");
+    VALUES ('" . db_string($TitleAlias) . sprintf('\', \'%s\')', $ArticleID));
     Wiki::flush_aliases();
 }
 
-Misc::write_log("Wiki article $ArticleID (" . $_POST['title'] . ") was created by " . $LoggedUser['Username']);
+Misc::write_log(sprintf('Wiki article %s (', $ArticleID) . $_POST['title'] . ") was created by " . $LoggedUser['Username']);
 
-header("Location: wiki.php?action=article&id=$ArticleID");
+header(sprintf('Location: wiki.php?action=article&id=%s', $ArticleID));

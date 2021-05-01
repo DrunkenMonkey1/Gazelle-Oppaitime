@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class Inbox
 {
     /*
@@ -9,23 +11,18 @@ class Inbox
      * @param string - whether the inbox or sentbox should be loaded
      * @return string - the URL to a user's inbox
      */
-    public static function get_inbox_link($WhichBox = 'inbox')
+    public static function get_inbox_link($WhichBox = 'inbox'): string
     {
-        $ListFirst = isset(G::$LoggedUser['ListUnreadPMsFirst']) ? G::$LoggedUser['ListUnreadPMsFirst'] : false;
-
+        $ListFirst = G::$LoggedUser['ListUnreadPMsFirst'] ?? false;
+        
         if ('inbox' == $WhichBox) {
-            if ($ListFirst) {
-                $InboxURL = 'inbox.php?sort=unread';
-            } else {
-                $InboxURL = 'inbox.php';
-            }
+            $InboxURL = $ListFirst ? 'inbox.php?sort=unread' : 'inbox.php';
+        } elseif ($ListFirst) {
+            $InboxURL = 'inbox.php?action=sentbox&amp;sort=unread';
         } else {
-            if ($ListFirst) {
-                $InboxURL = 'inbox.php?action=sentbox&amp;sort=unread';
-            } else {
-                $InboxURL = 'inbox.php?action=sentbox';
-            }
+            $InboxURL = 'inbox.php?action=sentbox';
         }
+        
         return $InboxURL;
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms("users_mod")) {
@@ -18,7 +20,7 @@ if (!is_number($ID) || empty($Answer)) {
 $DB->query("
   SELECT 1
   FROM staff_answers
-  WHERE QuestionID = '$ID'
+  WHERE QuestionID = '{$ID}'
     AND UserID = '$LoggedUser[ID]'");
 
 if (!$DB->has_results()) {
@@ -26,13 +28,13 @@ if (!$DB->has_results()) {
     INSERT INTO staff_answers
       (QuestionID, UserID, Answer, Date)
     VALUES
-      ('$ID', '$UserID', '$Answer', '$Date')");
+      ('{$ID}', '{$UserID}', '{$Answer}', '{$Date}')");
     $DB->query("
     SELECT UserID
     FROM user_questions
-    WHERE ID = '$ID'");
+    WHERE ID = '{$ID}'");
     [$ToID] = $DB->next_record();
-    Misc::send_pm($ToID, 0, "Your question has been answered", "One of your questions has been answered! View the response [url=" . site_url() . "questions.php?action=view_answers&userid=$UserID#question$ID]here[/url].");
+    Misc::send_pm($ToID, 0, "Your question has been answered", "One of your questions has been answered! View the response [url=" . site_url() . sprintf('questions.php?action=view_answers&userid=%s#question%s]here[/url].', $UserID, $ID));
 } else {
     error("You have already answered this question");
 }

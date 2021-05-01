@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * The backend to changing the report type when making a report.
  * It prints out the relevant report_messages from the array, then
@@ -37,7 +37,7 @@ if (array_key_exists('image', $ReportType['report_fields'])) {
       Image(s)<?=('1' == $ReportType['report_fields']['image'] ? ' <strong class="important_text">(Required)</strong>:' : '')?>
     </td>
     <td>
-      <input id="image" type="text" name="image" size="50" value="<?=(!empty($_POST['image']) ? display_str($_POST['image']) : '')?>" />
+      <input id="image" type="text" name="image" size="50" value="<?=(empty($_POST['image']) ? '' : display_str($_POST['image']))?>" />
     </td>
   </tr>
 <?php
@@ -49,7 +49,7 @@ if (array_key_exists('track', $ReportType['report_fields'])) {
       Track Number(s)<?=('1' == $ReportType['report_fields']['track'] || '2' == $ReportType['report_fields']['track'] ? ' <strong class="important_text">(Required)</strong>:' : '')?>
     </td>
     <td>
-      <input id="track" type="text" name="track" size="8" value="<?=(!empty($_POST['track']) ? display_str($_POST['track']) : '')?>" /><?=('1' == $ReportType['report_fields']['track'] ? '<input id="all_tracks" type="checkbox" onclick="AllTracks()" /> All' : '')?>
+      <input id="track" type="text" name="track" size="8" value="<?=(empty($_POST['track']) ? '' : display_str($_POST['track']))?>" /><?=('1' == $ReportType['report_fields']['track'] ? '<input id="all_tracks" type="checkbox" onclick="AllTracks()" /> All' : '')?>
     </td>
   </tr>
 <?php
@@ -61,7 +61,7 @@ if (array_key_exists('link', $ReportType['report_fields'])) {
       Link(s) to external source<?=('1' == $ReportType['report_fields']['link'] ? ' <strong class="important_text">(Required)</strong>:' : '')?>
     </td>
     <td>
-      <input id="link" type="text" name="link" size="50" value="<?=(!empty($_POST['link']) ? display_str($_POST['link']) : '')?>" />
+      <input id="link" type="text" name="link" size="50" value="<?=(empty($_POST['link']) ? '' : display_str($_POST['link']))?>" />
     </td>
   </tr>
 <?php
@@ -73,7 +73,7 @@ if (array_key_exists('sitelink', $ReportType['report_fields'])) {
       Permalink to <strong>other relevant</strong> torrent(s)<?=('1' == $ReportType['report_fields']['sitelink'] ? ' <strong class="important_text">(Required)</strong>:' : '')?>
     </td>
     <td>
-      <input id="sitelink" type="text" name="sitelink" size="50" value="<?=(!empty($_POST['sitelink']) ? display_str($_POST['sitelink']) : '')?>" />
+      <input id="sitelink" type="text" name="sitelink" size="50" value="<?=(empty($_POST['sitelink']) ? '' : display_str($_POST['sitelink']))?>" />
     </td>
   </tr>
 

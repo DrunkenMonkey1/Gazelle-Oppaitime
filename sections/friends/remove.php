@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query("
   DELETE FROM friends
   WHERE UserID='$LoggedUser[ID]'

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 
 // Get user level
@@ -20,11 +22,11 @@ if (!$IsFLS) {
     error(403);
 }
 
-if ($ID = (int)$_GET['id']) {
+if (($ID = (int)$_GET['id']) !== 0) {
     $DB->query("
     SELECT Message
     FROM staff_pm_responses
-    WHERE ID = $ID");
+    WHERE ID = {$ID}");
     [$Message] = $DB->next_record();
     if (1 == $_GET['plain']) {
         echo $Message;

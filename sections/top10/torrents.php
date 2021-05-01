@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $Where = [];
 
 if (!empty($_GET['advanced']) && check_perms('site_advanced_top10')) {
@@ -9,24 +9,18 @@ if (!empty($_GET['advanced']) && check_perms('site_advanced_top10')) {
         $TagWhere = [];
         $Tags = explode(',', str_replace('.', '_', trim($_GET['tags'])));
         foreach ($Tags as $Tag) {
-            $Tag = preg_replace('/[^a-z0-9_]/', '', $Tag);
+            $Tag = preg_replace('#[^a-z0-9_]#', '', $Tag);
             if ('' != $Tag) {
                 $TagWhere[] = "g.TagList REGEXP '[[:<:]]" . db_string($Tag) . "[[:>:]]'";
             }
         }
         if (!empty($TagWhere)) {
-            if ('any' == $_GET['anyall']) {
-                $Where[] = '(' . implode(' OR ', $TagWhere) . ')';
-            } else {
-                $Where[] = '(' . implode(' AND ', $TagWhere) . ')';
-            }
+            $Where[] = 'any' == $_GET['anyall'] ? '(' . implode(' OR ', $TagWhere) . ')' : '(' . implode(' AND ', $TagWhere) . ')';
         }
     }
 
-    if ($_GET['category']) {
-        if (in_array($_GET['category'], $Categories, true)) {
-            $Where[] = "g.CategoryID = '" . (array_search($_GET['category'], $Categories, true)+1) . "'";
-        }
+    if ($_GET['category'] && in_array($_GET['category'], $Categories, true)) {
+        $Where[] = "g.CategoryID = '" . (array_search($_GET['category'], $Categories, true)+1) . "'";
     }
 } else {
     // error out on invalid requests (before caching)
@@ -41,11 +35,11 @@ if (!empty($_GET['advanced']) && check_perms('site_advanced_top10')) {
     }
 
     // defaults to 10 (duh)
-    $Limit = (isset($_GET['limit']) ? intval($_GET['limit']) : 10);
+    $Limit = (isset($_GET['limit']) ? (int) $_GET['limit'] : 10);
     $Limit = (in_array($Limit, [10, 100, 250], true) ? $Limit : 10);
 }
 $Filtered = !empty($Where);
-View::show_header("Top $Limit Torrents", 'browse');
+View::show_header(sprintf('Top %s Torrents', $Limit), 'browse');
 ?>
 <div class="thin">
   <div class="header">
@@ -66,7 +60,7 @@ if (check_perms('site_advanced_top10')) {
           <input type="text" name="tags" id="tags" size="75" value="<?php if (!empty($_GET['tags'])) {
         echo display_str($_GET['tags']);
     } ?>"<?php Users::has_autocomplete_enabled('other'); ?> />&nbsp;
-          <input type="radio" id="rdoAll" name="anyall" value="all"<?=((!isset($_GET['anyall'])||'any'!=$_GET['anyall'])?' checked="checked"':'')?> /><label for="rdoAll"> All</label>&nbsp;&nbsp;
+          <input type="radio" id="rdoAll" name="anyall" value="all"<?=((!isset($_GET['anyall'])||'any' != $_GET['anyall'])?' checked="checked"':'')?> /><label for="rdoAll"> All</label>&nbsp;&nbsp;
           <input type="radio" id="rdoAny" name="anyall" value="any"<?=((!isset($_GET['anyall'])||'any'==$_GET['anyall'])?' checked="checked"':'')?> /><label for="rdoAny"> Any</label>
         </td>
       </tr>
@@ -157,8 +151,6 @@ $BaseQuery = '
     t.ID,
     g.ID,
     g.Name,
-    g.NameRJ,
-    g.NameJP,
     g.CategoryID,
     g.WikiImage,
     g.TagList,
@@ -175,17 +167,18 @@ $BaseQuery = '
 if ('all' == $Details || 'day' == $Details) {
     $TopTorrentsActiveLastDay = $Cache->get_value('top10tor_day_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsActiveLastDay) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             $DayAgo = time_minus(86400);
             $Query = $BaseQuery . ' WHERE t.Seeders>0 AND ';
             if (!empty($Where)) {
                 $Query .= $Where . ' AND ';
             }
             $Query .= "
-        t.Time>'$DayAgo'
-        $GroupBy
+        t.Time>'{$DayAgo}'
+        {$GroupBy}
         ORDER BY (t.Seeders + t.Leechers) DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsActiveLastDay = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_day_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsActiveLastDay, 3600 * 2);
@@ -199,17 +192,18 @@ if ('all' == $Details || 'day' == $Details) {
 if ('all' == $Details || 'week' == $Details) {
     $TopTorrentsActiveLastWeek = $Cache->get_value('top10tor_week_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsActiveLastWeek) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             $WeekAgo = time_minus(604800);
             $Query = $BaseQuery . ' WHERE ';
             if (!empty($Where)) {
                 $Query .= $Where . ' AND ';
             }
             $Query .= "
-        t.Time>'$WeekAgo'
-        $GroupBy
+        t.Time>'{$WeekAgo}'
+        {$GroupBy}
         ORDER BY (t.Seeders + t.Leechers) DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsActiveLastWeek = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_week_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsActiveLastWeek, 3600 * 6);
@@ -224,16 +218,17 @@ if ('all' == $Details || 'week' == $Details) {
 if ('all' == $Details || 'month' == $Details) {
     $TopTorrentsActiveLastMonth = $Cache->get_value('top10tor_month_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsActiveLastMonth) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             $Query = $BaseQuery . ' WHERE ';
             if (!empty($Where)) {
                 $Query .= $Where . ' AND ';
             }
             $Query .= "
         t.Time > NOW() - INTERVAL 1 MONTH
-        $GroupBy
+        {$GroupBy}
         ORDER BY (t.Seeders + t.Leechers) DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsActiveLastMonth = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_month_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsActiveLastMonth, 3600 * 6);
@@ -248,7 +243,8 @@ if ('all' == $Details || 'month' == $Details) {
 if ('all' == $Details || 'year' == $Details) {
     $TopTorrentsActiveLastYear = $Cache->get_value('top10tor_year_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsActiveLastYear) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             // IMPORTANT NOTE - we use WHERE t.Seeders>200 in order to speed up this query. You should remove it!
             $Query = $BaseQuery . ' WHERE ';
             if ('all' == $Details && !$Filtered) {
@@ -261,9 +257,9 @@ if ('all' == $Details || 'year' == $Details) {
             }
             $Query .= "
         t.Time > NOW() - INTERVAL 1 YEAR
-        $GroupBy
+        {$GroupBy}
         ORDER BY (t.Seeders + t.Leechers) DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsActiveLastYear = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_year_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsActiveLastYear, 3600 * 6);
@@ -278,7 +274,8 @@ if ('all' == $Details || 'year' == $Details) {
 if ('all' == $Details || 'overall' == $Details) {
     $TopTorrentsActiveAllTime = $Cache->get_value('top10tor_overall_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsActiveAllTime) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             // IMPORTANT NOTE - we use WHERE t.Seeders>500 in order to speed up this query. You should remove it!
             $Query = $BaseQuery;
             if ('all'==$Details && !$Filtered) {
@@ -290,9 +287,9 @@ if ('all' == $Details || 'overall' == $Details) {
                 $Query .= ' WHERE ' . $Where;
             }
             $Query .= "
-        $GroupBy
+        {$GroupBy}
         ORDER BY (t.Seeders + t.Leechers) DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsActiveAllTime = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_overall_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsActiveAllTime, 3600 * 6);
@@ -307,15 +304,16 @@ if ('all' == $Details || 'overall' == $Details) {
 if (('all' == $Details || 'snatched' == $Details) && !$Filtered) {
     $TopTorrentsSnatched = $Cache->get_value('top10tor_snatched_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsSnatched) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             $Query = $BaseQuery;
             if (!empty($Where)) {
                 $Query .= ' WHERE ' . $Where;
             }
             $Query .= "
-        $GroupBy
+        {$GroupBy}
         ORDER BY t.Snatched DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsSnatched = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_snatched_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsSnatched, 3600 * 6);
@@ -330,19 +328,18 @@ if (('all' == $Details || 'snatched' == $Details) && !$Filtered) {
 if (('all' == $Details || 'data' == $Details) && !$Filtered) {
     $TopTorrentsTransferred = $Cache->get_value('top10tor_data_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsTransferred) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             // IMPORTANT NOTE - we use WHERE t.Snatched>100 in order to speed up this query. You should remove it!
             $Query = $BaseQuery;
-            if ('all'==$Details) {
-//        $Query .= " WHERE t.Snatched>=100 ";
-                if (!empty($Where)) {
-                    $Query .= ' WHERE ' . $Where;
-                }
+            //        $Query .= " WHERE t.Snatched>=100 ";
+            if ('all'==$Details && !empty($Where)) {
+                $Query .= ' WHERE ' . $Where;
             }
             $Query .= "
-        $GroupBy
+        {$GroupBy}
         ORDER BY Data DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsTransferred = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_data_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsTransferred, 3600 * 6);
@@ -357,15 +354,16 @@ if (('all' == $Details || 'data' == $Details) && !$Filtered) {
 if (('all' == $Details || 'seeded' == $Details) && !$Filtered) {
     $TopTorrentsSeeded = $Cache->get_value('top10tor_seeded_' . $Limit . $WhereSum . $GroupBySum);
     if (false === $TopTorrentsSeeded) {
-        if ($Cache->get_query_lock('top10')) {
+        $top10Cache_query_lock = $Cache->get_query_lock('top10');
+        if ($top10Cache_query_lock) {
             $Query = $BaseQuery;
             if (!empty($Where)) {
                 $Query .= ' WHERE ' . $Where;
             }
             $Query .= "
-        $GroupBy
+        {$GroupBy}
         ORDER BY t.Seeders DESC
-        LIMIT $Limit;";
+        LIMIT {$Limit};";
             $DB->query($Query);
             $TopTorrentsSeeded = $DB->to_array(false, MYSQLI_NUM);
             $Cache->cache_value('top10tor_seeded_' . $Limit . $WhereSum . $GroupBySum, $TopTorrentsSeeded, 3600 * 6);
@@ -383,10 +381,10 @@ if (('all' == $Details || 'seeded' == $Details) && !$Filtered) {
 View::show_footer();
 
 // generate a table based on data from most recent query to $DB
-function generate_torrent_table($Caption, $Tag, $Details, $Limit)
+function generate_torrent_table($Caption, $Tag, $Details, $Limit): void
 {
     global $LoggedUser, $Categories, $ReleaseTypes, $GroupBy; ?>
-    <h3>Top <?="$Limit $Caption"?>
+    <h3>Top <?=sprintf('%s %s', $Limit, $Caption)?>
 <?php  if (empty($_GET['advanced'])) { ?>
     <small class="top10_quantity_links">
 <?php
@@ -453,13 +451,13 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
     $Artists = Artists::get_artists($GroupIDs);
 
     foreach ($Details as $Detail) {
-        [$TorrentID, $GroupID, $GroupName, $GroupNameRJ, $GroupNameJP, $GroupCategoryID, $WikiImage, $TagsList,
+        [$TorrentID, $GroupID, $GroupName, $GroupCategoryID, $WikiImage, $TagsList,
       $Media, $Year, $Snatched, $Seeders, $Leechers, $Data, $Size] = $Detail;
 
         $IsBookmarked = Bookmarks::has_bookmarked('torrent', $GroupID);
         $IsSnatched = Torrents::has_snatched($TorrentID);
 
-        $Rank++;
+        ++$Rank;
 
         // generate torrent's title
         $DisplayName = '';
@@ -468,14 +466,14 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
             $DisplayName = Artists::display_artists($Artists[$GroupID], true, true);
         }
 
-        $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$TorrentID\" ";
+        $DisplayName .= sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s" ', $GroupID, $TorrentID);
         if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
             $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage, 'thumb') . '" ';
         }
 
 
-        $Name = empty($GroupName) ? (empty($GroupNameRJ) ? $GroupNameJP : $GroupNameRJ) : $GroupName;
-        $DisplayName .= "dir=\"ltr\">$Name</a>";
+        $Name = $GroupName;
+        $DisplayName .= sprintf('dir="ltr">%s</a>', $Name);
 
         // append extra info to torrent title
         $ExtraInfo = '';
@@ -496,7 +494,7 @@ function generate_torrent_table($Caption, $Tag, $Details, $Limit)
                 $ExtraInfo .= Format::torrent_label('Snatched!');
             }
             if ('' != $ExtraInfo) {
-                $ExtraInfo = "- [$ExtraInfo]";
+                $ExtraInfo = sprintf('- [%s]', $ExtraInfo);
             }
         }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 if (!check_perms('site_upload')) {
     error(403);
@@ -10,7 +12,7 @@ if ($LoggedUser['DisableUpload']) {
 // build the page
 
 if (!empty($_POST['submit'])) {
-    include 'upload_handle.php';
+    include __DIR__ . '/upload_handle.php';
 } else {
     include SERVER_ROOT . '/sections/upload/upload.php';
 }

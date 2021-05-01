@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $LoggedUser['ID'];
 $PermID = $LoggedUser['PermissionID'];
 
@@ -24,9 +24,9 @@ if (!$LoggedUser['DisablePoints']) {
     GROUP BY um.ID", $UserID);
     if ($DB->has_results()) {
         [$BonusPoints, $NumTorr, $TSize, $TTime, $TSeeds] = $DB->next_record();
-        $PointsRate = (0.5 + (0.55*($NumTorr * (sqrt(($TSize/$NumTorr)/1073741824) * pow(1.5, ($TTime/$NumTorr)/(24*365))))) / (max(1, sqrt(($TSeeds/$NumTorr)+4)/3)))**0.95;
+        $PointsRate = (0.5 + (0.55*($NumTorr * (sqrt(($TSize/$NumTorr)/1_073_741_824) * pow(1.5, ($TTime/$NumTorr)/(24*365))))) / (max(1, sqrt(($TSeeds/$NumTorr)+4)/3)))**0.95;
     }
-    $PointsRate = intval(max(min($PointsRate, ($PointsRate * 2) - ($BonusPoints/1440)), 0));
+    $PointsRate = (int) max(min($PointsRate, ($PointsRate * 2) - ($BonusPoints/1440)), 0);
     $PointsPerHour = number_format($PointsRate) . " " . BONUS_POINTS . "/hour";
     $PointsPerDay = number_format($PointsRate*24) . " " . BONUS_POINTS . "/day";
 } else {
@@ -169,23 +169,13 @@ View::show_header('Store');
           Purchase an invite for your friend
         </td>
       </tr>
-<?php switch ($PermID) {
-  case USER:
-    $To = ['Modest Mounds', '1,000'];
-    break;
-  case MEMBER:
-    $To = ['Well Endowed', '10,000'];
-    break;
-  case POWER:
-    $To = ['Bombshell', '30,000'];
-    break;
-  case ELITE:
-    $To = ['Top Heavy', '60,000'];
-    break;
-  case TORRENT_MASTER:
-    $To = ['Titty Monster', '100,000'];
-    break;
-}
+<?php $To = match ($PermID) {
+    USER => ['Modest Mounds', '1,000'],
+    MEMBER => ['Well Endowed', '10,000'],
+    POWER => ['Bombshell', '30,000'],
+    ELITE => ['Top Heavy', '60,000'],
+    TORRENT_MASTER => ['Titty Monster', '100,000'],
+};
 if (isset($To)) { ?>
       <tr class="row">
         <td class="nobr">

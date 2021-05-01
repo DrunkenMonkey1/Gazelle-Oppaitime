@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query("
   UPDATE friends
   SET Comment='$P[comment]'

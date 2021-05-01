@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 enforce_login();
 authorize();
@@ -34,7 +34,7 @@ foreach ($EncIPs as $EncIP) {
     $DB->query("
     SELECT IP
     FROM users_main
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
 
     if (!$DB->has_results()) {
         error(404);
@@ -54,7 +54,7 @@ $DB->query("
   INSERT INTO deletion_requests
     (UserID, Type, Value, Reason, Time)
   VALUES
-    ('$UserID', 'IP', '" . db_string($EncIPs[0]) . "', '" . db_string($Reason) . "', NOW())");
+    ('{$UserID}', 'IP', '" . db_string($EncIPs[0]) . "', '" . db_string($Reason) . "', NOW())");
 
 $Cache->delete_value('num_deletion_requests');
 

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_torrents_notify')) {
     error(403);
 }
@@ -20,17 +20,9 @@ if (empty($_GET['order_by']) || !isset($OrderBys[$_GET['order_by']])) {
 $OrderTbl = key($OrderBys[$_GET['order_by']]);
 $OrderCol = current($OrderBys[$_GET['order_by']]);
 
-if (!empty($_GET['order_way']) && 'asc' == $_GET['order_way']) {
-    $OrderWay = 'ASC';
-} else {
-    $OrderWay = 'DESC';
-}
+$OrderWay = !empty($_GET['order_way']) && 'asc' == $_GET['order_way'] ? 'ASC' : 'DESC';
 
-if (!empty($_GET['filterid']) && is_number($_GET['filterid'])) {
-    $FilterID = $_GET['filterid'];
-} else {
-    $FilterID = false;
-}
+$FilterID = !empty($_GET['filterid']) && is_number($_GET['filterid']) ? $_GET['filterid'] : false;
 
 [$Page, $Limit] = Format::page_limit(NOTIFICATIONS_PER_PAGE);
 
@@ -39,15 +31,11 @@ function header_link($SortKey, $DefaultWay = 'desc')
 {
     global $OrderWay;
     if ($SortKey == $_GET['order_by']) {
-        if ('DESC' == $OrderWay) {
-            $NewWay = 'asc';
-        } else {
-            $NewWay = 'desc';
-        }
+        $NewWay = 'DESC' == $OrderWay ? 'asc' : 'desc';
     } else {
         $NewWay = $DefaultWay;
     }
-    return "?action=notify&amp;order_way=$NewWay&amp;order_by=$SortKey&amp;" . Format::get_url(['page', 'order_way', 'order_by']);
+    return sprintf('?action=notify&amp;order_way=%s&amp;order_by=%s&amp;', $NewWay, $SortKey) . Format::get_url(['page', 'order_way', 'order_by']);
 }
 //Perhaps this should be a feature at some point
 if (check_perms('users_mod') && !empty($_GET['userid']) && is_number($_GET['userid']) && $_GET['userid'] != $LoggedUser['ID']) {
@@ -65,9 +53,9 @@ if ('tg' == $OrderTbl) {
     SELECT COUNT(*)
     FROM users_notify_torrents AS unt
       JOIN torrents AS t ON t.ID=unt.TorrentID
-    WHERE unt.UserID=$UserID" .
+    WHERE unt.UserID={$UserID}" .
     ($FilterID
-      ? " AND FilterID=$FilterID"
+      ? sprintf(' AND FilterID=%s', $FilterID)
       : ''));
     [$TorrentCount] = $DB->next_record();
     if ($TorrentCount > NOTIFICATIONS_MAX_SLOWSORT) {
@@ -83,9 +71,9 @@ if ('tg' == $OrderTbl) {
     SELECT t.ID, t.GroupID, unt.UnRead, unt.FilterID
     FROM users_notify_torrents AS unt
       JOIN torrents AS t ON t.ID=unt.TorrentID
-    WHERE unt.UserID=$UserID" .
+    WHERE unt.UserID={$UserID}" .
     ($FilterID
-      ? " AND unt.FilterID=$FilterID"
+      ? sprintf(' AND unt.FilterID=%s', $FilterID)
       : ''));
     $DB->query("
     UPDATE temp_notify_torrents AS tnt
@@ -95,8 +83,8 @@ if ('tg' == $OrderTbl) {
     $DB->query("
     SELECT TorrentID, GroupID, UnRead, FilterID
     FROM temp_notify_torrents AS tnt
-    ORDER BY $OrderCol $OrderWay, GroupID $OrderWay
-    LIMIT $Limit");
+    ORDER BY {$OrderCol} {$OrderWay}, GroupID {$OrderWay}
+    LIMIT {$Limit}");
     $Results = $DB->to_array(false, MYSQLI_ASSOC, false);
 } else {
     $DB->query("
@@ -108,18 +96,19 @@ if ('tg' == $OrderTbl) {
       t.GroupID
     FROM users_notify_torrents AS unt
       JOIN torrents AS t ON t.ID = unt.TorrentID
-    WHERE unt.UserID = $UserID" .
+    WHERE unt.UserID = {$UserID}" .
     ($FilterID
-      ? " AND unt.FilterID = $FilterID"
+      ? sprintf(' AND unt.FilterID = %s', $FilterID)
       : '') . "
-    ORDER BY $OrderCol $OrderWay
-    LIMIT $Limit");
+    ORDER BY {$OrderCol} {$OrderWay}
+    LIMIT {$Limit}");
     $Results = $DB->to_array(false, MYSQLI_ASSOC, false);
     $DB->query('SELECT FOUND_ROWS()');
     [$TorrentCount] = $DB->next_record();
 }
 
-$GroupIDs = $FilterIDs = $UnReadIDs = [];
+$GroupIDs = $UnReadIDs = [];
+$FilterIDs = $UnReadIDs = [];
 foreach ($Results as $Torrent) {
     $GroupIDs[$Torrent['GroupID']] = 1;
     $FilterIDs[$Torrent['FilterID']] = 1;
@@ -161,7 +150,7 @@ if (!empty($GroupIDs)) {
 }
 if ($Sneaky) {
     $UserInfo = Users::user_info($UserID);
-    View::show_header($UserInfo['Username'] . '\'s notifications', 'notifications');
+    View::show_header($UserInfo['Username'] . "'s notifications", 'notifications');
 } else {
     View::show_header('My notifications', 'notifications');
 }
@@ -172,7 +161,7 @@ if ($Sneaky) {
 </div>
 <div class="linkbox">
 <?php  if ($FilterID) { ?>
-  <a href="torrents.php?action=notify<?=($Sneaky ? "&amp;userid=$UserID" : '')?>" class="brackets">View all</a>&nbsp;&nbsp;&nbsp;
+  <a href="torrents.php?action=notify<?=($Sneaky ? sprintf('&amp;userid=%s', $UserID) : '')?>" class="brackets">View all</a>&nbsp;&nbsp;&nbsp;
 <?php  } elseif (!$Sneaky) { ?>
   <a href="torrents.php?action=notify_clear&amp;auth=<?=$LoggedUser['AuthKey']?>" class="brackets">Clear all old</a>&nbsp;&nbsp;&nbsp;
   <a href="#" onclick="clearSelected(); return false;" class="brackets">Clear selected</a>&nbsp;&nbsp;&nbsp;
@@ -213,7 +202,7 @@ if (empty($Results)) {
 <div class="header">
   <h3>
 <?php    if (false !== $FilterResults['FilterLabel']) { ?>
-    Matches for <a href="torrents.php?action=notify&amp;filterid=<?=$FilterID . ($Sneaky ? "&amp;userid=$UserID" : '')?>"><?=$FilterResults['FilterLabel']?></a>
+    Matches for <a href="torrents.php?action=notify&amp;filterid=<?=$FilterID . ($Sneaky ? sprintf('&amp;userid=%s', $UserID) : '')?>"><?=$FilterResults['FilterLabel']?></a>
 <?php    } else { ?>
     Matches for unknown filter[<?=$FilterID?>]
 <?php    } ?>
@@ -249,7 +238,7 @@ if (empty($Results)) {
                     // If $GroupInfo['ID'] is unset, the torrent group associated with the torrent doesn't exist
                     continue;
                 }
-                $GroupName = empty($GroupInfo['Name']) ? (empty($GroupInfo['NameRJ']) ? $GroupInfo['NameJP'] : $GroupInfo['NameRJ']) : $GroupInfo['Name'];
+                $GroupName = $GroupInfo['Name'];
                 $TorrentInfo = $GroupInfo['Torrents'][$TorrentID];
                 // generate torrent's title
                 $DisplayName = '';
@@ -262,21 +251,21 @@ if (empty($Results)) {
                             }
                         }
                     }
-                    $MatchingArtistsText = (!empty($MatchingArtists) ? 'Caught by filter for ' . implode(', ', $MatchingArtists) : '');
+                    $MatchingArtistsText = (empty($MatchingArtists) ? '' : 'Caught by filter for ' . implode(', ', $MatchingArtists));
                     $DisplayName = Artists::display_artists($GroupInfo['Artists'], true, true);
                 }
-                $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$TorrentID#torrent$TorrentID\" ";
+                $DisplayName .= sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s#torrent%s" ', $GroupID, $TorrentID, $TorrentID);
                 if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
                     $DisplayName .= 'data-cover="' . ImageTools::process($GroupInfo['WikiImage'], 'thumb') . '" ';
                 }
-                $DisplayName .= "class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">" . $GroupName . '</a>';
+                $DisplayName .= 'class="tooltip" title="View torrent" dir="ltr">' . $GroupName . '</a>';
 
                 $GroupCategoryID = $GroupInfo['CategoryID'];
                 /*
                       if ($GroupCategoryID == 1) {
                 */
                 if ($GroupInfo['Year'] > 0) {
-                    $DisplayName .= " [$GroupInfo[Year]]";
+                    $DisplayName .= sprintf(' [%s]', $GroupInfo[Year]);
                 }
                 /*
                         if ($GroupInfo['ReleaseType'] > 0) {

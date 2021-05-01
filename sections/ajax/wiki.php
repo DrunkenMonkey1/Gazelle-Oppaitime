@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!empty($_GET['id']) && is_number($_GET['id'])) { //Visiting article via ID
     $ArticleID = $_GET['id'];
 } elseif ('' != $_GET['name']) { //Retrieve article ID via alias.
@@ -29,8 +31,8 @@ json_die("success", [
     'bbBody' => $Body,
     'body' => $TextBody,
     'aliases' => $Aliases,
-    'authorID' => (int)$AuthorID,
+    'authorID' => (int) $AuthorID,
     'authorName' => $AuthorName,
     'date' => $Date,
-    'revision' => (int)$Revision
+    'revision' => (int) $Revision
 ]);

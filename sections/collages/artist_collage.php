@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 // TODO: Cache this
 $DB->query("
   SELECT
@@ -9,7 +9,7 @@ $DB->query("
   FROM collages_artists AS ca
     JOIN artists_group AS ag ON ag.ArtistID = ca.ArtistID
     LEFT JOIN wiki_artists AS aw ON aw.RevisionID = ag.RevisionID
-  WHERE ca.CollageID = '$CollageID'
+  WHERE ca.CollageID = '{$CollageID}'
   ORDER BY ca.Sort");
 
 $Artists = $DB->to_array('ArtistID', MYSQLI_ASSOC);
@@ -26,13 +26,13 @@ $UserAdditions = [];
 foreach ($Artists as $Artist) {
     $UserID = $Artist['UserID'];
     if ($UserID == $LoggedUser['ID']) {
-        $NumGroupsByUser++;
+        ++$NumGroupsByUser;
     }
 
     if (!isset($UserAdditions[$UserID])) {
         $UserAdditions[$UserID] = 0;
     }
-    $UserAdditions[$UserID]++;
+    ++$UserAdditions[$UserID];
 
     ob_start(); ?>
       <tr>
@@ -66,12 +66,12 @@ $CollagePages = [];
 
 // Pad it out
 if ($NumGroups > $CollageCovers) {
-    for ($i = $NumGroups + 1; $i <= ceil($NumGroups / $CollageCovers) * $CollageCovers; $i++) {
+    for ($i = $NumGroups + 1; $i <= ceil($NumGroups / $CollageCovers) * $CollageCovers; ++$i) {
         $Collage[] = '<li></li>';
     }
 }
 
-for ($i = 0; $i < $NumGroups / $CollageCovers; $i++) {
+for ($i = 0; $i < $NumGroups / $CollageCovers; ++$i) {
     $Groups = array_slice($Collage, $i * $CollageCovers, $CollageCovers);
     $CollagePage = '';
     foreach ($Groups as $Group) {
@@ -149,7 +149,7 @@ View::show_header($Name, 'browse,collage,bbcode,recommend');
 arsort($UserAdditions);
 $i = 0;
 foreach ($UserAdditions as $UserID => $Additions) {
-    $i++;
+    ++$i;
     if ($i > 5) {
         break;
     } ?>
@@ -206,7 +206,7 @@ if (null === $CommentList) {
     FROM comments AS c
       LEFT JOIN users_main AS um ON um.ID = c.AuthorID
     WHERE c.Page = 'collages'
-      AND c.PageID = $CollageID
+      AND c.PageID = {$CollageID}
     ORDER BY c.ID DESC
     LIMIT 15");
     $CommentList = $DB->to_array(false, MYSQLI_NUM);
@@ -269,7 +269,7 @@ if (0 != $CollageCovers) {
     <div class="linkbox pager" style="clear: left;" id="pageslinksdiv">
       <span id="firstpage" class="invisible"><a href="#" class="pageslink" onclick="collageShow.page(0, this); return false;"><strong>&lt;&lt; First</strong></a> | </span>
       <span id="prevpage" class="invisible"><a href="#" class="pageslink" onclick="collageShow.prevPage(); return false;"><strong>&lt; Prev</strong></a> | </span>
-<?php    for ($i = 0; $i < $NumGroups / $CollageCovers; $i++) { ?>
+<?php    for ($i = 0; $i < $NumGroups / $CollageCovers; ++$i) { ?>
       <span id="pagelink<?=$i?>" class="<?=($i > 4 ? 'hidden' : '')?><?=(0 == $i ? 'selected' : '')?>"><a href="#" class="pageslink" onclick="collageShow.page(<?=$i?>, this); return false;"><strong><?=$CollageCovers * $i + 1?>-<?=min($NumGroups, $CollageCovers * ($i + 1))?></strong></a><?=(($i != ceil($NumGroups / $CollageCovers) - 1) ? ' | ' : '')?></span>
 <?php    } ?>
       <span id="nextbar" class="<?=($NumGroups / $CollageCovers > 5) ? 'hidden' : ''?>"> | </span>

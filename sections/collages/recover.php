@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_collages_recover')) {
     error(403);
 }
@@ -10,17 +10,17 @@ if ($_POST['collage_id'] && is_number($_POST['collage_id'])) {
     $DB->query("
     SELECT Name
     FROM collages
-    WHERE ID = $CollageID");
+    WHERE ID = {$CollageID}");
     if (!$DB->has_results()) {
         error('Collage is completely deleted');
     } else {
         $DB->query("
       UPDATE collages
       SET Deleted = '0'
-      WHERE ID = $CollageID");
-        $Cache->delete_value("collage_$CollageID");
-        Misc::write_log("Collage $CollageID was recovered by " . $LoggedUser['Username']);
-        header("Location: collages.php?id=$CollageID");
+      WHERE ID = {$CollageID}");
+        $Cache->delete_value(sprintf('collage_%s', $CollageID));
+        Misc::write_log(sprintf('Collage %s was recovered by ', $CollageID) . $LoggedUser['Username']);
+        header(sprintf('Location: collages.php?id=%s', $CollageID));
     }
 }
 View::show_header('Collage recovery!');

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Main feeds page
 // The feeds don't use script_start.php, their code resides entirely in feeds.php in the document root
 // Bear this in mind when you try to use script_start functions.
@@ -23,15 +25,15 @@ if (
 
 $User = (int)$_GET['user'];
 
-if (!$Enabled = $Cache->get_value("enabled_$User")) {
+if (!$Enabled = $Cache->get_value(sprintf('enabled_%s', $User))) {
     require_once SERVER_ROOT . '/classes/mysql.class.php';
     $DB = new DB_MYSQL(); //Load the database wrapper
     $DB->query("
     SELECT Enabled
     FROM users_main
-    WHERE ID = '$User'");
+    WHERE ID = '{$User}'");
     [$Enabled] = $DB->next_record();
-    $Cache->cache_value("enabled_$User", $Enabled, 0);
+    $Cache->cache_value(sprintf('enabled_%s', $User), $Enabled, 0);
 }
 
 if (md5($User . RSS_HASH . $_GET['passkey']) !== $_GET['auth'] || 1 != $Enabled) {
@@ -59,7 +61,7 @@ switch ($_GET['feed']) {
         ORDER BY Time DESC
         LIMIT 10");
         $News = $DB->to_array(false, MYSQLI_NUM, false);
-        $Cache->cache_value('news', $News, 1209600);
+        $Cache->cache_value('news', $News, 1_209_600);
     }
     $Count = 0;
     foreach ($News as $NewsItem) {
@@ -67,7 +69,7 @@ switch ($_GET['feed']) {
         if (strtotime($NewsTime) >= time()) {
             continue;
         }
-        echo $Feed->item($Title, Text::strip_bbcode($Body), "index.php#news$NewsID", SITE_NAME . ' Staff', '', '', $NewsTime);
+        echo $Feed->item($Title, Text::strip_bbcode($Body), sprintf('index.php#news%s', $NewsID), SITE_NAME . ' Staff', '', '', $NewsTime);
         if (++$Count > 4) {
             break;
         }
@@ -92,19 +94,19 @@ switch ($_GET['feed']) {
         ORDER BY Time DESC
         LIMIT 20");
         $Blog = $DB->to_array();
-        $Cache->cache_value('blog', $Blog, 1209600);
+        $Cache->cache_value('blog', $Blog, 1_209_600);
     }
     foreach ($Blog as $BlogItem) {
         [$BlogID, $Author, $AuthorID, $Title, $Body, $BlogTime, $ThreadID] = $BlogItem;
         if ($ThreadID) {
-            echo $Feed->item($Title, Text::strip_bbcode($Body), "forums.php?action=viewthread&amp;threadid=$ThreadID", SITE_NAME . ' Staff', '', '', $BlogTime);
+            echo $Feed->item($Title, Text::strip_bbcode($Body), sprintf('forums.php?action=viewthread&amp;threadid=%s', $ThreadID), SITE_NAME . ' Staff', '', '', $BlogTime);
         } else {
-            echo $Feed->item($Title, Text::strip_bbcode($Body), "blog.php#blog$BlogID", SITE_NAME . ' Staff', '', '', $BlogTime);
+            echo $Feed->item($Title, Text::strip_bbcode($Body), sprintf('blog.php#blog%s', $BlogID), SITE_NAME . ' Staff', '', '', $BlogTime);
         }
     }
     break;
   case 'feed_changelog':
-    $Feed->channel('Gazelle Change Log', 'RSS feed for Gazelle\'s changelog.');
+    $Feed->channel('Gazelle Change Log', "RSS feed for Gazelle's changelog.");
     if (!$Changelog = $Cache->get_value('changelog')) {
         require_once SERVER_ROOT . '/classes/mysql.class.php';
         require_once SERVER_ROOT . '/classes/misc.class.php';
@@ -120,7 +122,7 @@ switch ($_GET['feed']) {
     }
     foreach ($Changelog as $Change) {
         [$Message, $Author, $Date] = $Change;
-        echo $Feed->item("$Date by $Author", $Message, 'tools.php?action=change_log', SITE_NAME . ' Staff', '', '', $Date);
+        echo $Feed->item(sprintf('%s by %s', $Date, $Author), $Message, 'tools.php?action=change_log', SITE_NAME . ' Staff', '', '', $Date);
     }
     break;
   case 'torrents_all':

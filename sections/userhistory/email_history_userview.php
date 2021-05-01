@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
     error(404);
@@ -17,7 +17,7 @@ if (!apcu_exists('DBKEY')) {
 $DB->query("
   SELECT DISTINCT Email
   FROM users_history_emails
-  WHERE UserID = '$UserID'");
+  WHERE UserID = '{$UserID}'");
 
 $EncEmails = $DB->collect("Email");
 $Emails = [];
@@ -32,16 +32,16 @@ foreach ($EncEmails as $Enc) {
 $DB->query("
   SELECT Email
   FROM users_main
-  WHERE ID = '$UserID'");
+  WHERE ID = '{$UserID}'");
 
 [$Curr] = $DB->next_record();
 $Curr = Crypto::decrypt($Curr);
 
 if (!$Self) {
-    $DB->query("SELECT Username FROM users_main WHERE ID = '$UserID'");
+    $DB->query(sprintf('SELECT Username FROM users_main WHERE ID = \'%s\'', $UserID));
     [$Username] = $DB->next_record();
 
-    View::show_header("Email history for $Username");
+    View::show_header(sprintf('Email history for %s', $Username));
 } else {
     View::show_header("Your email history");
 }

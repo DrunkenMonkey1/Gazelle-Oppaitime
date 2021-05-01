@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
 User collage subscription page
 */
@@ -82,17 +82,13 @@ if (!$NumResults) {
             $RS = $DB->query("
       SELECT GroupID
       FROM collages_torrents
-      WHERE CollageID = $CollageID
+      WHERE CollageID = {$CollageID}
         AND AddedOn > '" . db_string($LastVisit) . "'
       ORDER BY AddedOn");
             $NewTorrentCount = $DB->record_count();
 
             $GroupIDs = $DB->collect('GroupID', false);
-            if (count($GroupIDs) > 0) {
-                $TorrentList = Torrents::get_groups($GroupIDs);
-            } else {
-                $TorrentList = [];
-            }
+            $TorrentList = count($GroupIDs) > 0 ? Torrents::get_groups($GroupIDs) : [];
 
             $Artists = Artists::get_artists($GroupIDs);
             $Number = 0;
@@ -111,13 +107,13 @@ if (!$NumResults) {
                 if (isset($Artists)) {
                     $DisplayName .= '<div class="torrent_artists">' . Artists::display_artists($Artists) . '</div> ';
                 }
-                $DisplayName .= "<a class=\"torrent_title\" href=\"torrents.php?id=$GroupID\" ";
+                $DisplayName .= sprintf('<a class="torrent_title" href="torrents.php?id=%s" ', $GroupID);
                 if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
                     $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage) . '" ';
                 }
-                $DisplayName .= "dir=\"ltr\">" . ($GroupName ? $GroupName : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP)) . "</a>";
+                $DisplayName .= 'dir="ltr">' . $GroupName . "</a>";
                 if ($GroupYear > 0) {
-                    $DisplayName = "$DisplayName [$GroupYear]";
+                    $DisplayName = sprintf('%s [%s]', $DisplayName, $GroupYear);
                 }
 
                 $SnatchedGroupClass = $GroupFlags['IsSnatched'] ? ' snatched_group' : '';
@@ -128,7 +124,7 @@ if (!$NumResults) {
                     ?>
       <tr class="group<?=$SnatchedGroupClass?>" id="group_<?=$CollageID?>_<?=$GroupID?>">
         <td class="center">
-          <div id="showimg_<?=$CollageID?>_<?=$GroupID?>" class="<?=($ShowGroups ? 'hide' : 'show')?>_torrents">
+          <div id="showimg_<?=$CollageID?>_<?=$GroupID?>" class="<?=(0 !== $ShowGroups ? 'hide' : 'show')?>_torrents">
             <a class="tooltip show_torrents_link" onclick="toggle_group('<?=$CollageID?>_<?=$GroupID?>', this, event);" title="Toggle this group (Hold &quot;Shift&quot; to toggle all groups)"></a>
           </div>
         </td>
@@ -171,11 +167,11 @@ if (!$NumResults) {
                     if (isset($Artists)) {
                         $DisplayName .= '<div class="torrent_artists">' . Artists::display_artists($Artists) . '</div> ';
                     }
-                    $DisplayName .= "<a class=\"torrent_title\" href=\"torrents.php?id=$GroupID\" ";
+                    $DisplayName .= sprintf('<a class="torrent_title" href="torrents.php?id=%s" ', $GroupID);
                     if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
                         $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage) . '" ';
                     }
-                    $DisplayName .= "dir=\"ltr\">" . ($GroupName ? $GroupName : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP)) . "</a>";
+                    $DisplayName .= 'dir="ltr">' . $GroupName . "</a>";
 
                     if ($Torrent['IsSnatched']) {
                         $DisplayName .= ' ' . Format::torrent_label('Snatched!');

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!isset($_GET['type']) || !is_number($_GET['type']) || $_GET['type'] > 3) {
     error(0);
 }
@@ -43,7 +43,7 @@ foreach ($Groups as $GroupID => $Group) {
         continue;
     }
     foreach ($Group['Torrents'] as $Torrent) {
-        $TorRemIdent = "$Torrent[Media] $Torrent[RemasterYear] $Torrent[RemasterTitle] $Torrent[RemasterRecordLabel] $Torrent[RemasterCatalogueNumber]";
+        $TorRemIdent = sprintf('%s %s %s %s %s', $Torrent[Media], $Torrent[RemasterYear], $Torrent[RemasterTitle], $Torrent[RemasterRecordLabel], $Torrent[RemasterCatalogueNumber]);
         if (!isset($TorrentGroups[$Group['ID']])) {
             $TorrentGroups[$Group['ID']] = [
                 $TorRemIdent => [
@@ -90,7 +90,7 @@ View::show_header('Transcode Search');
         <td>
           <input type="hidden" name="method" value="transcode" />
           <input type="hidden" name="type" value="<?=$_GET['type']?>" />
-          <input type="search" name="search" size="60" value="<?=(!empty($_GET['search']) ? display_str($_GET['search']) : '')?>" />
+          <input type="search" name="search" size="60" value="<?=(empty($_GET['search']) ? '' : display_str($_GET['search']))?>" />
           &nbsp;
           <input type="submit" value="Search" />
         </td>
@@ -126,13 +126,13 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
     foreach ($Editions as $RemIdent => $Edition) {
         if (!$Edition['FlacID'] //no FLAC in this group
         || !empty($Edition['Formats']) && '3' === $_GET['type'] //at least one transcode present when we only wanted groups containing no transcodes at all (type 3)
-        || true == $Edition['Formats'][$Encodings[$_GET['type']]] //the transcode we asked for is already there
+        || $Edition['Formats'][$Encodings[$_GET['type']]] //the transcode we asked for is already there
         || 3 === count($Edition['Formats'])) { //all 3 transcodes are there already (this can happen due to the caching of Sphinx's better_transcode table)
       continue;
         }
         $DisplayName = $ArtistNames . '<a href="torrents.php?id=' . $GroupID . '&amp;torrentid=' . $Edition['FlacID'] . '#torrent' . $Edition['FlacID'] . '" class="tooltip" title="View torrent" dir="ltr">' . $GroupName . '</a>';
         if ($GroupYear > 0) {
-            $DisplayName .= " [$GroupYear]";
+            $DisplayName .= sprintf(' [%s]', $GroupYear);
         }
         if ($ReleaseType > 0) {
             $DisplayName .= ' [' . $ReleaseTypes[$ReleaseType] . ']';
@@ -142,11 +142,7 @@ foreach ($TorrentGroups as $GroupID => $Editions) {
         }
 
         $EditionInfo = [];
-        if (!empty($Edition['RemasterYear'])) {
-            $ExtraInfo = $Edition['RemasterYear'];
-        } else {
-            $ExtraInfo = '';
-        }
+        $ExtraInfo = empty($Edition['RemasterYear']) ? '' : $Edition['RemasterYear'];
         if (!empty($Edition['RemasterRecordLabel'])) {
             $EditionInfo[] = $Edition['RemasterRecordLabel'];
         }

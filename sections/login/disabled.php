@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header('Disabled');
 
 if (isset($_POST['email']) && FEATURE_EMAIL_REENABLE) {
@@ -61,13 +61,11 @@ Please use your <?=SITE_NAME?> username.
 <?php
 } elseif (!isset($Output)) {
         $Nick = $_POST['username'];
-        $Nick = preg_replace('/[^a-zA-Z0-9\[\]\\`\^\{\}\|_]/', '', $Nick);
+        $Nick = preg_replace('#[^a-zA-Z0-9\[\]\`\^\{\}\|_]#', '', $Nick);
         if (0 == strlen($Nick)) {
             $Nick = SITE_NAME . 'Guest????';
-        } else {
-            if (is_numeric(substr($Nick, 0, 1))) {
-                $Nick = '_' . $Nick;
-            }
+        } elseif (is_numeric(substr($Nick, 0, 1))) {
+            $Nick = '_' . $Nick;
         } ?>
 <div class="thin">
   <div class="header">

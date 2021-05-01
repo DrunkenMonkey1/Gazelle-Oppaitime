@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!isset($_GET['id']) || !is_number($_GET['id'])) {
     error(404);
 }
@@ -47,7 +47,7 @@ $DB->query("
     Author,
     Date
   FROM wiki_revisions
-  WHERE ID = '$ArticleID'
+  WHERE ID = '{$ArticleID}'
   ORDER BY Revision DESC");
 while ([$Revision, $Title, $AuthorID, $Date] = $DB->next_record()) { ?>
       <tr>

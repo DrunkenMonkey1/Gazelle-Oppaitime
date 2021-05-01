@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header('Top 10 Donors');
 ?>
 <div class="thin">
@@ -8,7 +8,7 @@ View::show_header('Top 10 Donors');
   </div>
 <?php
 
-$Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+$Limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 10;
 $Limit = in_array($Limit, [10, 100, 250], true) ? $Limit : 10;
 
 $IsMod = check_perms("users_mod");
@@ -18,7 +18,7 @@ $DB->query("
   FROM users_donor_ranks
   WHERE TotalRank > 0
   ORDER BY TotalRank DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 
 $Results = $DB->to_array();
 
@@ -29,10 +29,10 @@ echo '</div>';
 View::show_footer();
 
 // generate a table based on data from most recent query to $DB
-function generate_user_table($Caption, $Results, $Limit)
+function generate_user_table($Caption, $Results, $Limit): void
 {
     global $Time, $IsMod; ?>
-  <h3>Top <?="$Limit $Caption"; ?>
+  <h3>Top <?=sprintf('%s %s', $Limit, $Caption); ?>
     <small class="top10_quantity_links">
 <?php
   switch ($Limit) {
@@ -75,7 +75,7 @@ function generate_user_table($Caption, $Results, $Limit)
   }
     $Position = 0;
     foreach ($Results as $Result) {
-        $Position++; ?>
+        ++$Position; ?>
   <tr class="row">
     <td class="center"><?=$Position?></td>
     <td><?=$Result['Hidden'] && !$IsMod ? 'Hidden' : Users::format_username($Result['UserID'], false, false, false)?></td>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 
 if (!empty($LoggedUser['DisableForums'])) {
@@ -10,35 +12,17 @@ $Forums = Forums::get_forums();
 $ForumCats = Forums::get_forum_categories();
 
 if (!empty($_POST['action'])) {
-    switch ($_POST['action']) {
-    case 'reply':
-      require SERVER_ROOT . '/sections/forums/take_reply.php';
-      break;
-    case 'new':
-      require SERVER_ROOT . '/sections/forums/take_new_thread.php';
-      break;
-    case 'mod_thread':
-      require SERVER_ROOT . '/sections/forums/mod_thread.php';
-      break;
-    case 'poll_mod':
-      require SERVER_ROOT . '/sections/forums/poll_mod.php';
-      break;
-    case 'add_poll_option':
-      require SERVER_ROOT . '/sections/forums/add_poll_option.php';
-      break;
-    case 'warn':
-      require SERVER_ROOT . '/sections/forums/warn.php';
-      break;
-    case 'take_warn':
-      require SERVER_ROOT . '/sections/forums/take_warn.php';
-      break;
-    case 'take_topic_notes':
-      require SERVER_ROOT . '/sections/forums/take_topic_notes.php';
-      break;
-
-    default:
-      error(0);
-  }
+    match ($_POST['action']) {
+        'reply' => require SERVER_ROOT . '/sections/forums/take_reply.php',
+        'new' => require SERVER_ROOT . '/sections/forums/take_new_thread.php',
+        'mod_thread' => require SERVER_ROOT . '/sections/forums/mod_thread.php',
+        'poll_mod' => require SERVER_ROOT . '/sections/forums/poll_mod.php',
+        'add_poll_option' => require SERVER_ROOT . '/sections/forums/add_poll_option.php',
+        'warn' => require SERVER_ROOT . '/sections/forums/warn.php',
+        'take_warn' => require SERVER_ROOT . '/sections/forums/take_warn.php',
+        'take_topic_notes' => require SERVER_ROOT . '/sections/forums/take_topic_notes.php',
+        default => error(0),
+    };
 } elseif (!empty($_GET['action'])) {
     switch ($_GET['action']) {
     case 'viewforum':

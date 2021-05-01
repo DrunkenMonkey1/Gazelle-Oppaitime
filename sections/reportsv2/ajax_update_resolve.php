@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // perform the back end of updating a resolve type
 
 if (!check_perms('admin_reports')) {
@@ -33,5 +35,5 @@ if (!array_key_exists($NewType, $TypeList)) {
 
 $DB->query("
   UPDATE reportsv2
-  SET Type = '$NewType'
-  WHERE ID = $ReportID");
+  SET Type = '{$NewType}'
+  WHERE ID = {$ReportID}");

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Hide old requests ---------------------------------------//
 
 $DB->query("

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // Note: at the time this file is loaded, check_perms is not defined. Don't
 // call check_paranoia in /classes/script_start.php without ensuring check_perms has been defined
 
@@ -30,28 +32,29 @@
 // invitedcount: the number of users this user has directly invited
 
 /**
- * Return whether currently logged in user can see $Property on a user with $Paranoia, $UserClass and (optionally) $UserID
- * If $Property is an array of properties, returns whether currently logged in user can see *all* $Property ...
+ * Return whether currently logged in user can see $Property on a user with $Paranoia, $UserClass and (optionally)
+ * $UserID If $Property is an array of properties, returns whether currently logged in user can see *all* $Property ...
  *
- * @param $Property The property to check, or an array of properties.
- * @param $Paranoia The paranoia level to check against.
+ * @param $Property  The property to check, or an array of properties.
+ * @param $Paranoia  The paranoia level to check against.
  * @param $UserClass The user class to check against (Staff can see through paranoia of lower classed staff)
- * @param $UserID Optional. The user ID of the person being viewed
+ * @param $UserID    Optional. The user ID of the person being viewed
+ *
  * @return mixed 1 representing the user has normal access
-           2 representing that the paranoia was overridden,
-           false representing access denied.
+ * 2 representing that the paranoia was overridden,
+ * false representing access denied.
  */
 
 define("PARANOIA_ALLOWED", 1);
 define("PARANOIA_OVERRIDDEN", 2);
 
-function check_paranoia($Property, $Paranoia = false, $UserClass = false, $UserID = false)
+function check_paranoia($Property, $Paranoia = false, $UserClass = false, $UserID = false): bool|int
 {
     global $Classes;
     if (false == $Property) {
         return false;
     }
-    if (!is_array($Paranoia)) {
+    if (!is_array($Paranoia) && !is_null($Paranoia)) {
         $Paranoia = json_decode($Paranoia, true);
     }
     if (!is_array($Paranoia)) {
@@ -62,48 +65,54 @@ function check_paranoia($Property, $Paranoia = false, $UserClass = false, $UserI
         foreach ($Property as $P) {
             $all = $all && check_paranoia($P, $Paranoia, $UserClass, $UserID);
         }
+        
         return $all;
-    } else {
-        if ((false !== $UserID) && (G::$LoggedUser['ID'] == $UserID)) {
-            return PARANOIA_ALLOWED;
-        }
-
-        $May = !in_array($Property, $Paranoia, true) && !in_array($Property . '+', $Paranoia, true);
-        if ($May) {
-            return PARANOIA_ALLOWED;
-        }
-
-        if (check_perms('users_override_paranoia', $UserClass)) {
-            return PARANOIA_OVERRIDDEN;
-        }
-        $Override=false;
-        switch ($Property) {
-      case 'downloaded':
-      case 'ratio':
-      case 'uploaded':
-      case 'lastseen':
-        if (check_perms('users_mod', $UserClass)) {
-            return PARANOIA_OVERRIDDEN;
-        }
-        break;
-      case 'snatched': case 'snatched+':
-        if (check_perms('users_view_torrents_snatchlist', $UserClass)) {
-            return PARANOIA_OVERRIDDEN;
-        }
-        break;
-      case 'uploads': case 'uploads+':
-      case 'seeding': case 'seeding+':
-      case 'leeching': case 'leeching+':
-        if (check_perms('users_view_seedleech', $UserClass)) {
-            return PARANOIA_OVERRIDDEN;
-        }
-        break;
-      case 'invitedcount':
-        if (check_perms('users_view_invites', $UserClass)) {
-            return PARANOIA_OVERRIDDEN;
-        }
-        break;
     }
-        return false;
+    
+    if ((false !== $UserID) && (G::$LoggedUser['ID'] == $UserID)) {
+        return PARANOIA_ALLOWED;
     }
+    
+    $May = !in_array($Property, $Paranoia, true) && !in_array($Property . '+', $Paranoia, true);
+    if ($May) {
+        return PARANOIA_ALLOWED;
+    }
+    
+    if (check_perms('users_override_paranoia', $UserClass)) {
+        return PARANOIA_OVERRIDDEN;
+    }
+    $Override = false;
+    switch ($Property) {
+        case 'downloaded':
+        case 'ratio':
+        case 'uploaded':
+        case 'lastseen':
+            if (check_perms('users_mod', $UserClass)) {
+                return PARANOIA_OVERRIDDEN;
+            }
+            break;
+        case 'snatched':
+        case 'snatched+':
+            if (check_perms('users_view_torrents_snatchlist', $UserClass)) {
+                return PARANOIA_OVERRIDDEN;
+            }
+            break;
+        case 'uploads':
+        case 'uploads+':
+        case 'seeding':
+        case 'seeding+':
+        case 'leeching':
+        case 'leeching+':
+            if (check_perms('users_view_seedleech', $UserClass)) {
+                return PARANOIA_OVERRIDDEN;
+            }
+            break;
+        case 'invitedcount':
+            if (check_perms('users_view_invites', $UserClass)) {
+                return PARANOIA_OVERRIDDEN;
+            }
+            break;
+    }
+    
+    return false;
 }

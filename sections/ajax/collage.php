@@ -1,15 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 define('ARTIST_COLLAGE', 'Artists');
 if (empty($_GET['id']) || !is_number($_GET['id'])) {
     json_die("failure", "bad parameters");
 }
 $CollageID = $_GET['id'];
 
-$CacheKey = "collage_$CollageID";
+$CacheKey = sprintf('collage_%s', $CollageID);
 $CollageData = $Cache->get_value($CacheKey);
 if ($CollageData) {
-    [$Name, $Description, $CommentList, $Deleted, $CollageCategoryID, $CreatorID, $Locked, $MaxGroups, $MaxGroupsPerUser, $Updated, $Subscribers] = $CollageData;
+    [
+        $Name,
+        $Description,
+        $CommentList,
+        $Deleted,
+        $CollageCategoryID,
+        $CreatorID,
+        $Locked,
+        $MaxGroups,
+        $MaxGroupsPerUser,
+        $Updated,
+        $Subscribers
+    ] = $CollageData;
 } else {
     $DB->query("
     SELECT
@@ -24,11 +38,22 @@ if ($CollageData) {
       Updated,
       Subscribers
     FROM collages
-    WHERE ID = '$CollageID'");
+    WHERE ID = '{$CollageID}'");
     if (!$DB->has_results()) {
-        json_die("failure");
+        json_die("failure",'Not Found');
     }
-    [$Name, $Description, $CreatorID, $Deleted, $CollageCategoryID, $Locked, $MaxGroups, $MaxGroupsPerUser, $Updated, $Subscribers] = $DB->next_record(MYSQLI_NUM);
+    [
+        $Name,
+        $Description,
+        $CreatorID,
+        $Deleted,
+        $CollageCategoryID,
+        $Locked,
+        $MaxGroups,
+        $MaxGroupsPerUser,
+        $Updated,
+        $Subscribers
+    ] = $DB->next_record(MYSQLI_NUM);
     $CommentList = null;
     $SetCache = true;
 }
@@ -37,23 +62,23 @@ if ($CollageData) {
 $DB->query("
   SELECT GroupID
   FROM collages_torrents
-  WHERE CollageID = $CollageID");
+  WHERE CollageID = {$CollageID}");
 $TorrentGroups = $DB->collect('GroupID');
 
 $JSON = [
-    'id'                  => (int)$CollageID,
-    'name'                => $Name,
-    'description'         => Text::full_format($Description),
-    'creatorID'           => (int)$CreatorID,
-    'deleted'             => (bool)$Deleted,
-    'collageCategoryID'   => (int)$CollageCategoryID,
-    'collageCategoryName' => $CollageCats[(int)$CollageCategoryID],
-    'locked'              => (bool)$Locked,
-    'maxGroups'           => (int)$MaxGroups,
-    'maxGroupsPerUser'    => (int)$MaxGroupsPerUser,
-    'hasBookmarked'       => Bookmarks::has_bookmarked('collage', $CollageID),
-    'subscriberCount'     => (int)$Subscribers,
-    'torrentGroupIDList'  => $TorrentGroups
+    'id' => (int) $CollageID,
+    'name' => $Name,
+    'description' => Text::full_format($Description),
+    'creatorID' => (int) $CreatorID,
+    'deleted' => (bool) $Deleted,
+    'collageCategoryID' => (int) $CollageCategoryID,
+    'collageCategoryName' => $CollageCats[(int) $CollageCategoryID],
+    'locked' => (bool) $Locked,
+    'maxGroups' => (int) $MaxGroups,
+    'maxGroupsPerUser' => (int) $MaxGroupsPerUser,
+    'hasBookmarked' => Bookmarks::has_bookmarked('collage', $CollageID),
+    'subscriberCount' => (int) $Subscribers,
+    'torrentGroupIDList' => $TorrentGroups
 ];
 
 if ($CollageCategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
@@ -64,7 +89,7 @@ if ($CollageCategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
       ct.GroupID
     FROM collages_torrents AS ct
       JOIN torrents_group AS tg ON tg.ID = ct.GroupID
-    WHERE ct.CollageID = '$CollageID'
+    WHERE ct.CollageID = '{$CollageID}'
     ORDER BY ct.Sort");
     $GroupIDs = $DB->collect('GroupID');
     $GroupList = Torrents::get_groups($GroupIDs);
@@ -75,12 +100,12 @@ if ($CollageCategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
                 $ArtistForm = $GroupDetails['ExtendedArtists'];
                 $JsonMusicInfo = [
                     'composers' => isset($ArtistForm[4]) ? pullmediainfo($ArtistForm[4]) : [],
-                    'dj'        => isset($ArtistForm[6]) ? pullmediainfo($ArtistForm[6]) : [],
-                    'artists'   => isset($ArtistForm[1]) ? pullmediainfo($ArtistForm[1]) : [],
-                    'with'      => isset($ArtistForm[2]) ? pullmediainfo($ArtistForm[2]) : [],
+                    'dj' => isset($ArtistForm[6]) ? pullmediainfo($ArtistForm[6]) : [],
+                    'artists' => isset($ArtistForm[1]) ? pullmediainfo($ArtistForm[1]) : [],
+                    'with' => isset($ArtistForm[2]) ? pullmediainfo($ArtistForm[2]) : [],
                     'conductor' => isset($ArtistForm[5]) ? pullmediainfo($ArtistForm[5]) : [],
                     'remixedBy' => isset($ArtistForm[3]) ? pullmediainfo($ArtistForm[3]) : [],
-                    'producer'  => isset($ArtistForm[7]) ? pullmediainfo($ArtistForm[7]) : []
+                    'producer' => isset($ArtistForm[7]) ? pullmediainfo($ArtistForm[7]) : []
                 ];
             } else {
                 $JsonMusicInfo = null;
@@ -88,42 +113,42 @@ if ($CollageCategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
             $TorrentList = [];
             foreach ($GroupDetails['Torrents'] as $Torrent) {
                 $TorrentList[] = [
-                    'torrentid'               => (int)$Torrent['ID'],
-                    'media'                   => $Torrent['Media'],
-                    'format'                  => $Torrent['Format'],
-                    'encoding'                => $Torrent['Encoding'],
-                    'remastered'              => (1 == $Torrent['Remastered']),
-                    'remasterYear'            => (int)$Torrent['RemasterYear'],
-                    'remasterTitle'           => $Torrent['RemasterTitle'],
-                    'remasterRecordLabel'     => $Torrent['RemasterRecordLabel'],
+                    'torrentid' => (int) $Torrent['ID'],
+                    'media' => $Torrent['Media'],
+                    'format' => $Torrent['Format'],
+                    'encoding' => $Torrent['Encoding'],
+                    'remastered' => (1 == $Torrent['Remastered']),
+                    'remasterYear' => (int) $Torrent['RemasterYear'],
+                    'remasterTitle' => $Torrent['RemasterTitle'],
+                    'remasterRecordLabel' => $Torrent['RemasterRecordLabel'],
                     'remasterCatalogueNumber' => $Torrent['RemasterCatalogueNumber'],
-                    'scene'                   => (1 == $Torrent['Scene']),
-                    'hasLog'                  => (1 == $Torrent['HasLog']),
-                    'hasCue'                  => (1 == $Torrent['HasCue']),
-                    'logScore'                => (int)$Torrent['LogScore'],
-                    'fileCount'               => (int)$Torrent['FileCount'],
-                    'size'                    => (int)$Torrent['Size'],
-                    'seeders'                 => (int)$Torrent['Seeders'],
-                    'leechers'                => (int)$Torrent['Leechers'],
-                    'snatched'                => (int)$Torrent['Snatched'],
-                    'freeTorrent'             => (1 == $Torrent['FreeTorrent']),
-                    'reported'                => (count(Torrents::get_reports((int)$Torrent['ID'])) > 0),
-                    'time'                    => $Torrent['Time']
+                    'scene' => (1 == $Torrent['Scene']),
+                    'hasLog' => (1 == $Torrent['HasLog']),
+                    'hasCue' => (1 == $Torrent['HasCue']),
+                    'logScore' => (int) $Torrent['LogScore'],
+                    'fileCount' => (int) $Torrent['FileCount'],
+                    'size' => (int) $Torrent['Size'],
+                    'seeders' => (int) $Torrent['Seeders'],
+                    'leechers' => (int) $Torrent['Leechers'],
+                    'snatched' => (int) $Torrent['Snatched'],
+                    'freeTorrent' => (1 == $Torrent['FreeTorrent']),
+                    'reported' => (count(Torrents::get_reports((int) $Torrent['ID'])) > 0),
+                    'time' => $Torrent['Time']
                 ];
             }
             $TorrentGroups[] = [
-                'id'              => $GroupDetails['GroupID'],
-                'name'            => $GroupDetails['GroupName'],
-                'year'            => $GroupDetails['GroupYear'],
-                'categoryId'      => $GroupDetails['GroupCategoryID'],
-                'recordLabel'     => $GroupDetails['GroupRecordLabel'],
+                'id' => $GroupDetails['GroupID'],
+                'name' => $GroupDetails['GroupName'],
+                'year' => $GroupDetails['GroupYear'],
+                'categoryId' => $GroupDetails['GroupCategoryID'],
+                'recordLabel' => $GroupDetails['GroupRecordLabel'],
                 'catalogueNumber' => $GroupDetails['GroupCatalogueNumber'],
-                'vanityHouse'     => $GroupDetails['GroupVanityHouse'],
-                'tagList'         => $GroupDetails['TagList'],
-                'releaseType'     => $GroupDetails['ReleaseType'],
-                'wikiImage'       => $GroupDetails['WikiImage'],
-                'musicInfo'       => $JsonMusicInfo,
-                'torrents'        => $TorrentList
+                'vanityHouse' => $GroupDetails['GroupVanityHouse'],
+                'tagList' => $GroupDetails['TagList'],
+                'releaseType' => $GroupDetails['ReleaseType'],
+                'wikiImage' => $GroupDetails['WikiImage'],
+                'musicInfo' => $JsonMusicInfo,
+                'torrents' => $TorrentList
             ];
         }
     }
@@ -138,13 +163,13 @@ if ($CollageCategoryID != array_search(ARTIST_COLLAGE, $CollageCats, true)) {
     FROM collages_artists AS ca
       JOIN artists_group AS ag ON ag.ArtistID=ca.ArtistID
       LEFT JOIN wiki_artists AS aw ON aw.RevisionID = ag.RevisionID
-    WHERE ca.CollageID='$CollageID'
+    WHERE ca.CollageID='{$CollageID}'
     ORDER BY ca.Sort");
     $Artists = [];
     while ([$ArtistID, $ArtistName, $ArtistImage] = $DB->next_record()) {
         $Artists[] = [
-            'id'    => (int)$ArtistID,
-            'name'  => $ArtistName,
+            'id' => (int) $ArtistID,
+            'name' => $ArtistName,
             'image' => $ArtistImage
         ];
     }
@@ -156,14 +181,15 @@ if (isset($SetCache)) {
         $Name,
         $Description,
         $CommentList,
-        (bool)$Deleted,
-        (int)$CollageCategoryID,
-        (int)$CreatorID,
-        (bool)$Locked,
-        (int)$MaxGroups,
-        (int)$MaxGroupsPerUser,
+        (bool) $Deleted,
+        (int) $CollageCategoryID,
+        (int) $CreatorID,
+        (bool) $Locked,
+        (int) $MaxGroups,
+        (int) $MaxGroupsPerUser,
         $Updated,
-        (int)$Subscribers];
+        (int) $Subscribers
+    ];
     $Cache->cache_value($CacheKey, $CollageData, 3600);
 }
 

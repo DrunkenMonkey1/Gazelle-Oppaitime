@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('admin_whitelist')) {
     error(403);
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(403);
 }
@@ -12,7 +12,7 @@ if (isset($_REQUEST['addtokens'])) {
     }
     $sql = "
     UPDATE users_main
-    SET FLTokens = FLTokens + $Tokens
+    SET FLTokens = FLTokens + {$Tokens}
     WHERE Enabled = '1'";
     if (!isset($_REQUEST['leechdisabled'])) {
         $sql .= "
@@ -29,9 +29,9 @@ if (isset($_REQUEST['addtokens'])) {
     }
     $DB->query($sql);
     while ([$UserID] = $DB->next_record()) {
-        $Cache->delete_value("user_info_heavy_$UserID");
+        $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
     }
-    $message = '<strong>' . number_format($Tokens) . 'freeleech tokens added to all enabled users' . (!isset($_REQUEST['leechdisabled']) ? ' with enabled leeching privs' : '') . '.</strong><br /><br />';
+    $message = '<strong>' . number_format($Tokens) . 'freeleech tokens added to all enabled users' . (isset($_REQUEST['leechdisabled']) ? '' : ' with enabled leeching privs') . '.</strong><br /><br />';
 } elseif (isset($_REQUEST['cleartokens'])) {
     authorize();
     $Tokens = $_REQUEST['numtokens'];
@@ -41,25 +41,25 @@ if (isset($_REQUEST['addtokens'])) {
     }
 
     if (isset($_REQUEST['onlydrop'])) {
-        $Where = "WHERE FLTokens > $Tokens";
+        $Where = sprintf('WHERE FLTokens > %s', $Tokens);
     } elseif (!isset($_REQUEST['leechdisabled'])) {
-        $Where = "WHERE (Enabled = '1' AND can_leech = 1) OR FLTokens > $Tokens";
+        $Where = sprintf('WHERE (Enabled = \'1\' AND can_leech = 1) OR FLTokens > %s', $Tokens);
     } else {
-        $Where = "WHERE Enabled = '1' OR FLTokens > $Tokens";
+        $Where = sprintf('WHERE Enabled = \'1\' OR FLTokens > %s', $Tokens);
     }
     $DB->query("
     SELECT ID
     FROM users_main
-    $Where");
+    {$Where}");
     $Users = $DB->to_array();
     $DB->query("
     UPDATE users_main
-    SET FLTokens = $Tokens
-    $Where");
+    SET FLTokens = {$Tokens}
+    {$Where}");
 
     foreach ($Users as $UserID) {
         [$UserID] = $UserID;
-        $Cache->delete_value("user_info_heavy_$UserID");
+        $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
     }
 
     $where = '';

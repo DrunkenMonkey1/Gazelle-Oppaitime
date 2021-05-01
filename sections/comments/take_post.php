@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!isset($_REQUEST['page']) || !in_array($_REQUEST['page'], ['artist', 'collages', 'requests', 'torrents'], true) || !isset($_POST['pageid']) || !is_number($_POST['pageid']) || !isset($_POST['body']) || '' === trim($_POST['body'])) {
@@ -12,7 +14,7 @@ if ($LoggedUser['DisablePosting']) {
 
 $Page = $_REQUEST['page'];
 $PageID = (int)$_POST['pageid'];
-if (!$PageID) {
+if (0 === $PageID) {
     error(404);
 }
 

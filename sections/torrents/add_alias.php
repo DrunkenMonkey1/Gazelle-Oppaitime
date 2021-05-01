@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $UserID = $LoggedUser['ID'];
@@ -13,15 +15,14 @@ if (!is_number($GroupID) || !$GroupID) {
 $DB->query("
   SELECT Name
   FROM torrents_group
-  WHERE ID = $GroupID");
+  WHERE ID = {$GroupID}");
 if (!$DB->has_results()) {
     error(404);
 }
 [$GroupName] = $DB->next_record(MYSQLI_NUM, false);
 
-for ($i = 0; $i < count($ArtistNames); $i++) {
-    $ArtistName = Artists::normalise_artist_name($ArtistNames[$i]);
-
+foreach ($ArtistNames as $i => $ArtistName) {
+    $ArtistName = Artists::normalise_artist_name($ArtistName);
     if (strlen($ArtistName) > 0) {
         $DB->query("
       SELECT ArtistID
@@ -44,14 +45,14 @@ for ($i = 0; $i < count($ArtistNames); $i++) {
       INSERT IGNORE INTO torrents_artists
         (GroupID, ArtistID, UserID)
       VALUES
-        ('$GroupID', '$ArtistID', '$UserID')");
+        ('{$GroupID}', '{$ArtistID}', '{$UserID}')");
 
         if ($DB->affected_rows()) {
-            Misc::write_log("Artist $ArtistID ($ArtistName) was added to the group $GroupID ($GroupName) by user " . $LoggedUser['ID'] . ' (' . $LoggedUser['Username'] . ')');
-            Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "added artist $ArtistName", 0);
-            $Cache->delete_value("torrents_details_$GroupID");
-            $Cache->delete_value("groups_artists_$GroupID"); // Delete group artist cache
-      $Cache->delete_value("artist_groups_$ArtistID"); // Delete artist group cache
+            Misc::write_log(sprintf('Artist %s (%s) was added to the group %s (%s) by user ', $ArtistID, $ArtistName, $GroupID, $GroupName) . $LoggedUser['ID'] . ' (' . $LoggedUser['Username'] . ')');
+            Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], sprintf('added artist %s', $ArtistName), 0);
+            $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
+            $Cache->delete_value(sprintf('groups_artists_%s', $GroupID)); // Delete group artist cache
+      $Cache->delete_value(sprintf('artist_groups_%s', $ArtistID)); // Delete artist group cache
       Torrents::update_hash($GroupID);
         }
     }

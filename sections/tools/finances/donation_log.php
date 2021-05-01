@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!check_perms('admin_donor_log')) {
     error(403);
@@ -44,21 +44,21 @@ $SQL = "
 
 if (!empty($_GET['email'])) {
     $SQL .= "
-  $Operator d.Email LIKE '%" . db_string($_GET['email']) . "%' ";
+  {$Operator} d.Email LIKE '%" . db_string($_GET['email']) . "%' ";
     $Operator = "AND";
 }
 if (!empty($_GET['username'])) {
     $SQL .= "
-  $Operator m.Username LIKE '%" . db_string($_GET['username']) . "%' ";
+  {$Operator} m.Username LIKE '%" . db_string($_GET['username']) . "%' ";
     $Operator = "AND";
 }
 if ($DateSearch) {
-    $SQL .= "$Operator d.Time BETWEEN '$AfterDate' AND '$BeforeDate' ";
+    $SQL .= sprintf('%s d.Time BETWEEN \'%s\' AND \'%s\' ', $Operator, $AfterDate, $BeforeDate);
     $Operator = "AND";
 }
 $SQL .= "
   ORDER BY d.Time DESC
-  LIMIT $Limit";
+  LIMIT {$Limit}";
 $DB->query($SQL);
 $Donations = $DB->to_array();
 

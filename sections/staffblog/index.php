@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 
 if (!check_perms('users_mod')) {
@@ -41,7 +41,7 @@ if (check_perms('admin_manage_blog')) {
             $DB->query("
             SELECT Title, Body
             FROM staff_blog
-            WHERE ID = $BlogID");
+            WHERE ID = {$BlogID}");
             [$Title, $Body, $ThreadID] = $DB->next_record();
         }
         break;
@@ -107,7 +107,7 @@ if (check_perms('admin_manage_blog')) {
     } ?></textarea> <br />
           </div>
           <div class="submit_div center">
-            <input type="submit" value="<?=((!isset($_GET['action'])) ? 'Create blog post' : 'Edit blog post') ?>" />
+            <input type="submit" value="<?=((isset($_GET['action'])) ? 'Edit blog post' : 'Create blog post') ?>" />
           </div>
         </div>
       </form>
@@ -131,7 +131,7 @@ if (($Blog = $Cache->get_value('staff_blog')) === false) {
       LEFT JOIN users_main AS um ON b.UserID = um.ID
     ORDER BY Time DESC");
     $Blog = $DB->to_array(false, MYSQLI_NUM);
-    $Cache->cache_value('staff_blog', $Blog, 1209600);
+    $Cache->cache_value('staff_blog', $Blog, 1_209_600);
 }
 
 foreach ($Blog as $BlogItem) {

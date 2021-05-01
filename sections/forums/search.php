@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //TODO: Clean up this fucking mess
 /*
 Forums search result page
@@ -6,18 +6,9 @@ Forums search result page
 
 [$Page, $Limit] = Format::page_limit(POSTS_PER_PAGE);
 
-if (isset($_GET['type']) && 'body' === $_GET['type']) {
-    $Type = 'body';
-} else {
-    $Type = 'title';
-}
+$Type = isset($_GET['type']) && 'body' === $_GET['type'] ? 'body' : 'title';
 
-// What are we looking for? Let's make sure it isn't dangerous.
-if (isset($_GET['search'])) {
-    $Search = trim($_GET['search']);
-} else {
-    $Search = '';
-}
+$Search = isset($_GET['search']) ? trim($_GET['search']) : '';
 
 $ThreadAfterDate = db_string($_GET['thread_created_after']);
 $ThreadBeforeDate = db_string($_GET['thread_created_before']);
@@ -58,7 +49,7 @@ if (isset($_GET['forums']) && is_array($_GET['forums'])) {
             $ForumArray[] = $Forum;
         }
     }
-    if (count($ForumArray) > 0) {
+    if ([] !== $ForumArray) {
         $SearchForums = implode(', ', $ForumArray);
     }
 }
@@ -72,11 +63,11 @@ if (!empty($_GET['threadid']) && is_number($_GET['threadid'])) {
       Title
     FROM forums_topics AS t
       JOIN forums AS f ON f.ID = t.ForumID
-    WHERE t.ID = $ThreadID
+    WHERE t.ID = {$ThreadID}
       AND " . Forums::user_forums_sql();
     $DB->query($SQL);
     if ([$Title] = $DB->next_record()) {
-        $Title = " &gt; <a href=\"forums.php?action=viewthread&amp;threadid=$ThreadID\">$Title</a>";
+        $Title = sprintf(' &gt; <a href="forums.php?action=viewthread&amp;threadid=%s">%s</a>', $ThreadID, $Title);
     } else {
         error(404);
     }
@@ -159,12 +150,12 @@ if (empty($ThreadID)) {
             continue;
         }
 
-        $Columns++;
+        ++$Columns;
 
         if ($Forum['CategoryID'] != $LastCategoryID) {
             $LastCategoryID = $Forum['CategoryID'];
             if ($Open) {
-                if ($Columns % 5) { ?>
+                if (0 !== $Columns % 5) { ?>
         <td colspan="<?=(5 - ($Columns % 5))?>"></td>
 <?php
         } ?>
@@ -173,7 +164,7 @@ if (empty($ThreadID)) {
             }
             $Columns = 0;
             $Open = true;
-            $i++; ?>
+            ++$i; ?>
       <tr>
         <td colspan="5" class="forum_cat">
           <strong><?=$ForumCats[$Forum['CategoryID']]?></strong>
@@ -194,7 +185,7 @@ if (empty($ThreadID)) {
         </td>
 <?php
     }
-    if ($Columns % 5) { ?>
+    if (0 !== $Columns % 5) { ?>
         <td colspan="<?=(5 - ($Columns % 5))?>"></td>
 <?php  } ?>
       </tr>
@@ -223,7 +214,7 @@ if ('body' == $Type) {
     SELECT
       SQL_CALC_FOUND_ROWS
       t.ID,
-      " . (!empty($ThreadID) ? "SUBSTRING_INDEX(p.Body, ' ', 40)" : 't.Title') . ",
+      " . (empty($ThreadID) ? 't.Title' : "SUBSTRING_INDEX(p.Body, ' ', 40)") . ",
       t.ForumID,
       f.Name,
       p.AddedTime,
@@ -245,30 +236,30 @@ if ('body' == $Type) {
     //$SQL .= "', p.Body) ";
 
     if (isset($SearchForums)) {
-        $SQL .= " AND f.ID IN ($SearchForums)";
+        $SQL .= sprintf(' AND f.ID IN (%s)', $SearchForums);
     }
     if (isset($AuthorID)) {
-        $SQL .= " AND p.AuthorID = '$AuthorID' ";
+        $SQL .= sprintf(' AND p.AuthorID = \'%s\' ', $AuthorID);
     }
     if (!empty($ThreadID)) {
-        $SQL .= " AND t.ID = '$ThreadID' ";
+        $SQL .= sprintf(' AND t.ID = \'%s\' ', $ThreadID);
     }
     if (!empty($ThreadAfterDate)) {
-        $SQL .= " AND t.CreatedTime >= '$ThreadAfterDate'";
+        $SQL .= sprintf(' AND t.CreatedTime >= \'%s\'', $ThreadAfterDate);
     }
     if (!empty($ThreadBeforeDate)) {
-        $SQL .= " AND t.CreatedTime <= '$ThreadBeforeDate'";
+        $SQL .= sprintf(' AND t.CreatedTime <= \'%s\'', $ThreadBeforeDate);
     }
     if (!empty($PostAfterDate)) {
-        $SQL .= " AND p.AddedTime >= '$PostAfterDate'";
+        $SQL .= sprintf(' AND p.AddedTime >= \'%s\'', $PostAfterDate);
     }
     if (!empty($PostBeforeDate)) {
-        $SQL .= " AND p.AddedTime <= '$PostBeforeDate'";
+        $SQL .= sprintf(' AND p.AddedTime <= \'%s\'', $PostBeforeDate);
     }
 
     $SQL .= "
     ORDER BY p.AddedTime DESC
-    LIMIT $Limit";
+    LIMIT {$Limit}";
 } else {
     $SQL = "
     SELECT
@@ -288,20 +279,20 @@ if ('body' == $Type) {
     $SQL .= implode("%' AND t.Title LIKE '%", $Words);
     $SQL .= "%' ";
     if (isset($SearchForums)) {
-        $SQL .= " AND f.ID IN ($SearchForums)";
+        $SQL .= sprintf(' AND f.ID IN (%s)', $SearchForums);
     }
     if (isset($AuthorID)) {
-        $SQL .= " AND t.AuthorID = '$AuthorID' ";
+        $SQL .= sprintf(' AND t.AuthorID = \'%s\' ', $AuthorID);
     }
     if (!empty($ThreadAfterDate)) {
-        $SQL .= " AND t.CreatedTime >= '$ThreadAfterDate'";
+        $SQL .= sprintf(' AND t.CreatedTime >= \'%s\'', $ThreadAfterDate);
     }
     if (!empty($ThreadBeforeDate)) {
-        $SQL .= " AND t.CreatedTime <= '$ThreadBeforeDate'";
+        $SQL .= sprintf(' AND t.CreatedTime <= \'%s\'', $ThreadBeforeDate);
     }
     $SQL .= "
     ORDER BY t.LastPostTime DESC
-    LIMIT $Limit";
+    LIMIT {$Limit}";
 }
 
 // Perform the query
@@ -317,7 +308,7 @@ echo $Pages;
   <table cellpadding="6" cellspacing="1" border="0" class="forum_list border" width="100%">
   <tr class="colhead">
     <td>Forum</td>
-    <td><?=((!empty($ThreadID)) ? 'Post begins' : 'Topic')?></td>
+    <td><?=((empty($ThreadID)) ? 'Topic' : 'Post begins')?></td>
     <td>Topic creation time</td>
     <td>Last post time</td>
   </tr>
@@ -340,7 +331,7 @@ while ([$ID, $Title, $ForumID, $ForumName, $LastTime, $PostID, $Body, $ThreadCre
   }
     if ('body' == $Type) { ?>
         <a data-toggle-target="#post_<?=$PostID?>_text">(Show)</a> <span class="float_right tooltip last_read" title="Jump to post"><a href="forums.php?action=viewthread&amp;threadid=<?=$ID?><?php if (!empty($PostID)) {
-        echo "&amp;postid=$PostID#post$PostID";
+        echo sprintf('&amp;postid=%s#post%s', $PostID, $PostID);
     } ?>"></a></span>
 <?php  } ?>
       </td>

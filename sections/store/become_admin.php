@@ -1,20 +1,20 @@
-<?php
+<?php declare(strict_types=1);
 $Purchase = "Admin status";
 $UserID = $LoggedUser['ID'];
 
 $DB->query("
   SELECT BonusPoints
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 if ($DB->has_results()) {
     [$Points] = $DB->next_record();
 
-    if ($Points >= 4294967296) {
+    if ($Points >= 4_294_967_296) {
         $DB->query("
       UPDATE users_main
       SET BonusPoints  = BonusPoints - 4294967296,
           PermissionID = 15
-      WHERE ID = $UserID");
+      WHERE ID = {$UserID}");
         $Worked = true;
     } else {
         $Worked = false;

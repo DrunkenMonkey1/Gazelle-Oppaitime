@@ -53,19 +53,15 @@ if (($Blog = $Cache->get_value('staff_blog')) === false) {
       LEFT JOIN users_main AS um ON b.UserID = um.ID
     ORDER BY Time DESC");
         $Blog = $DB->to_array(false, MYSQLI_NUM);
-        $Cache->cache_value('staff_blog', $Blog, 1209600);
+        $Cache->cache_value('staff_blog', $Blog, 1_209_600);
     }
     if (($SBlogReadTime = $Cache->get_value('staff_blog_read_' . $LoggedUser['ID'])) === false) {
         $DB->query("
     SELECT Time
     FROM staff_blog_visits
     WHERE UserID = " . $LoggedUser['ID']);
-        if ([$SBlogReadTime] = $DB->next_record()) {
-            $SBlogReadTime = strtotime($SBlogReadTime);
-        } else {
-            $SBlogReadTime = 0;
-        }
-        $Cache->cache_value('staff_blog_read_' . $LoggedUser['ID'], $SBlogReadTime, 1209600);
+        $SBlogReadTime = ([$SBlogReadTime] = $DB->next_record()) ? strtotime($SBlogReadTime) : 0;
+        $Cache->cache_value('staff_blog_read_' . $LoggedUser['ID'], $SBlogReadTime, 1_209_600);
     } ?>
       <ul class="stats nobullet">
 <?php
@@ -102,16 +98,12 @@ if (($Blog = $Cache->get_value('blog')) === false) {
     ORDER BY Time DESC
     LIMIT 20");
         $Blog = $DB->to_array();
-        $Cache->cache_value('blog', $Blog, 1209600);
+        $Cache->cache_value('blog', $Blog, 1_209_600);
     }
 ?>
       <ul class="stats nobullet">
 <?php
-if (count($Blog) < 5) {
-    $Limit = count($Blog);
-} else {
-    $Limit = 5;
-}
+$Limit = count($Blog) < 5 ? count($Blog) : 5;
 for ($i = 0; $i < $Limit; $i++) {
     [$BlogID, $Author, $AuthorID, $Title, $Body, $BlogTime, $ThreadID] = $Blog[$i]; ?>
         <li>
@@ -128,7 +120,7 @@ if (($Freeleeches = $Cache->get_value('shop_freeleech_list')) === false) {
     SELECT
       TorrentID,
       UNIX_TIMESTAMP(ExpiryTime),
-      COALESCE(NULLIF(Name,''), NULLIF(NameRJ,''), NameJP) AS Name,
+      Name AS Name,
       WikiImage
     FROM shop_freeleeches AS sf
     LEFT JOIN torrents AS t on sf.TorrentID=t.ID
@@ -136,31 +128,36 @@ if (($Freeleeches = $Cache->get_value('shop_freeleech_list')) === false) {
     ORDER BY ExpiryTime ASC
     LIMIT 10");
     $Freeleeches = $DB->to_array();
-    $Cache->cache_value('shop_freeleech_list', $Freeleeches, 1209600);
+    $Cache->cache_value('shop_freeleech_list', $Freeleeches, 1_209_600);
 }
-if (count($Freeleeches)) {
+if (count($Freeleeches) > 0) {
     ?>
     <div class="box">
       <div class="head colhead_dark"><strong><a href="torrents.php?freetorrent=1&order_by=seeders&order_way=asc">Freeleeches</a></strong></div>
       <ul class="stats nobullet">
 <?php
-  for ($i = 0; $i < count($Freeleeches); $i++) {
-      [$ID, $ExpiryTime, $Name, $Image] = $Freeleeches[$i];
-      if ($ExpiryTime < time()) {
-          continue;
-      }
-      $DisplayTime = '(' . str_replace(['year', 'month', 'week', 'day', 'hour', 'min', 'Just now', 's', ' '], ['y', 'M', 'w', 'd', 'h', 'm', '0m'], time_diff($ExpiryTime, 1, false)) . ') ';
-      $DisplayName = '<a href="torrents.php?torrentid=' . $ID . '"';
-      if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
-          $DisplayName .= ' data-cover="' . ImageTools::process($Image, 'thumb') . '"';
-      }
-      $DisplayName .= '>' . $Name . '</a>'; ?>
+  foreach ($Freeleeches as $i => $Freeleech) {
+        [$ID, $ExpiryTime, $Name, $Image] = $Freeleech;
+        if ($ExpiryTime < time()) {
+            continue;
+        }
+        $DisplayTime = '(' . str_replace(['year', 'month', 'week', 'day', 'hour', 'min', 'Just now', 's', ' '], ['y', 'M', 'w', 'd', 'h', 'm', '0m'], time_diff($ExpiryTime, 1, false)) . ') ';
+        $DisplayName = '<a href="torrents.php?torrentid=' . $ID . '"';
+        if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
+            $DisplayName .= ' data-cover="' . ImageTools::process($Image, 'thumb') . '"';
+        }
+        $DisplayName .= '>' . $Name . '</a>';
+        ?>
         <li>
-          <strong class="fl_time"><?=$DisplayTime?></strong>
-          <?=$DisplayName?>
+          <strong class="fl_time">
+        <?=$DisplayTime?>
+        ?></strong>
+        <?=$DisplayName?>
+
+        ?>
         </li>
-<?php
-  } ?>
+<?php 
+    } ?>
       </ul>
     </div>
 <?php
@@ -253,9 +250,9 @@ if (($ArtistCount = $Cache->get_value('stats_artist_count')) === false) {
 }
 
 ?>
-        <li>Torrents: <?=number_format($TorrentCount)?></li>
-        <li>Torrent Groups: <?=number_format($GroupCount)?></li>
-        <li>Artists: <?=number_format($ArtistCount)?></li>
+        <li>Torrents: <?=number_format((int)$TorrentCount)?></li>
+        <li>Torrent Groups: <?=number_format((int)$GroupCount)?></li>
+        <li>Artists: <?=number_format((int)$ArtistCount)?></li>
 <?php
 //End Torrent Stats
 
@@ -274,15 +271,10 @@ if (($RequestStats = $Cache->get_value('stats_requests')) === false) {
     [$RequestCount, $FilledCount] = $RequestStats;
 }
 
-// do not divide by zero
-if ($RequestCount > 0) {
-    $RequestsFilledPercent = $FilledCount / $RequestCount * 100;
-} else {
-    $RequestsFilledPercent = 0;
-}
+$RequestsFilledPercent = $RequestCount > 0 ? $FilledCount / $RequestCount * 100 : 0;
 
 ?>
-        <li>Requests: <?=number_format($RequestCount)?> (<?=number_format($RequestsFilledPercent, 2)?>% filled)</li>
+        <li>Requests: <?=number_format((int)$RequestCount)?> (<?=number_format((int)$RequestsFilledPercent, 2)?>% filled)</li>
 <?php
 
 if ($SnatchStats = $Cache->get_value('stats_snatches')) {
@@ -391,7 +383,7 @@ if ($TopicID) {
         <p><strong><?=display_str($Question)?></strong></p>
 <?php  if (null !== $UserResponse || $Closed) { ?>
         <ul class="poll nobullet">
-<?php    foreach ($Answers as $i => $Answer) {
+<?php    foreach (array_keys($Answers) as $i) {
         if ($TotalVotes > 0) {
             $Ratio = $Votes[$i] / $MaxVotes;
             $Percent = $Votes[$i] / $TotalVotes;
@@ -413,7 +405,7 @@ if ($TopicID) {
           <input type="hidden" name="action" value="poll" />
           <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
           <input type="hidden" name="topicid" value="<?=$TopicID?>" />
-<?php    foreach ($Answers as $i => $Answer) { ?>
+<?php    foreach (array_keys($Answers) as $i) { ?>
           <input type="radio" name="vote" id="answer_<?=$i?>" value="<?=$i?>" />
           <label for="answer_<?=$i?>"><?=display_str($Answers[$i])?></label><br />
 <?php    } ?>
@@ -450,10 +442,10 @@ if (!is_array($Recommend) || !is_array($Recommend_artists)) {
     ORDER BY tr.Time DESC
     LIMIT 10");
     $Recommend = $DB->to_array();
-    $Cache->cache_value('recommend', $Recommend, 1209600);
+    $Cache->cache_value('recommend', $Recommend, 1_209_600);
 
     $Recommend_artists = Artists::get_artists($DB->collect('GroupID'));
-    $Cache->cache_value('recommend_artists', $Recommend_artists, 1209600);
+    $Cache->cache_value('recommend_artists', $Recommend_artists, 1_209_600);
 }
 
 if (count($Recommend) >= 4) {

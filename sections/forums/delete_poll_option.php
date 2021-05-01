@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!check_perms('site_moderate_forums')) {
     error(404);
@@ -12,7 +14,7 @@ if (is_number($ThreadID) && is_number($PollOption)) {
     $DB->query("
     SELECT ForumID
     FROM forums_topics
-    WHERE ID = $ThreadID");
+    WHERE ID = {$ThreadID}");
     [$ForumID] = $DB->next_record();
     if (!in_array($ForumID, FORUMS_TO_REVEAL_VOTERS, true)) {
         error(403);
@@ -21,7 +23,7 @@ if (is_number($ThreadID) && is_number($PollOption)) {
     $DB->query("
     SELECT Answers
     FROM forums_polls
-    WHERE TopicID = $ThreadID");
+    WHERE TopicID = {$ThreadID}");
     if (!$DB->has_results()) {
         error(404);
     }
@@ -34,14 +36,14 @@ if (is_number($ThreadID) && is_number($PollOption)) {
     $DB->query("
     UPDATE forums_polls
     SET Answers = '" . db_string($Answers) . "'
-    WHERE TopicID = $ThreadID");
+    WHERE TopicID = {$ThreadID}");
     $DB->query("
     DELETE FROM forums_polls_votes
-    WHERE Vote = $PollOption
-      AND TopicID = $ThreadID");
+    WHERE Vote = {$PollOption}
+      AND TopicID = {$ThreadID}");
 
-    $Cache->delete_value("polls_$ThreadID");
-    header("Location: forums.php?action=viewthread&threadid=$ThreadID");
+    $Cache->delete_value(sprintf('polls_%s', $ThreadID));
+    header(sprintf('Location: forums.php?action=viewthread&threadid=%s', $ThreadID));
 } else {
     error(404);
 }

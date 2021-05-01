@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // ugly UserID code that should be turned into a function . . .
 if (!empty($_GET['userid'])) {
     if (!check_perms('users_override_paranoia')) {
@@ -12,7 +14,7 @@ if (!empty($_GET['userid'])) {
     $DB->query("
     SELECT Username
     FROM users_main
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
     [$Username] = $DB->next_record();
 } else {
     $UserID = $LoggedUser['ID'];

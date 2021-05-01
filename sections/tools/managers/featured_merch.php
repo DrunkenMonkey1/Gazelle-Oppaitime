@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 if (!check_perms('users_mod')) {
     error(403);
@@ -27,7 +27,7 @@ if (!empty($_POST)) {
     WHERE Ended = 0");
     $DB->query("
     INSERT INTO featured_merch (ProductID, Title, Image, ArtistID, Started)
-    VALUES ($ProductID, '$Title', '$Image', '$ArtistID', NOW())");
+    VALUES ({$ProductID}, '{$Title}', '{$Image}', '{$ArtistID}', NOW())");
     $Cache->delete_value('featured_merch');
     header('Location: index.php');
     die();

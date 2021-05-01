@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(403);
 }
@@ -29,7 +29,7 @@ foreach ($AllDonations as $Address => $Amount) {
         if ($Amount == $OldDonations[$Address]) { // Direct comparison should be fine as everything comes from bitcoind
             continue;
         }
-        $Debug->log_var(['old' => $OldDonations[$Address], 'new' => $Amount], "New donations from $Address");
+        $Debug->log_var(['old' => $OldDonations[$Address], 'new' => $Amount], sprintf('New donations from %s', $Address));
         // PHP doesn't do fixed-point math, and json_decode has already botched the precision
         // so let's just round this off to satoshis and pray that we're on a 64 bit system
         $Amount = round($Amount - $OldDonations[$Address], 8);
@@ -54,7 +54,7 @@ if (!empty($NewDonations)) {
     <tr>
       <td><?=$Address?></td>
       <td><?=Users::format_username($UserID, true, false, false)?></td>
-      <td><?=$NewDonations[$Address]?> (<?="$DonationEUR EUR"?>)</td>
+      <td><?=$NewDonations[$Address]?> (<?=sprintf('%s EUR', $DonationEUR)?>)</td>
       <td><?=$AllDonations[$Address]?></td>
       <td><?=(int)Donations::get_rank($UserID)?></td>
       <td><?=(int)Donations::get_special_rank($UserID)?></td>

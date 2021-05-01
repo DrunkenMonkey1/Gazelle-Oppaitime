@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!check_perms('admin_manage_ipbans')) {
     error(403);
 }
@@ -16,7 +18,7 @@ if (isset($_GET['perform'])) {
         $IP = Tools::ip_to_unsigned($_GET['ip']); //Sanitized by Validation regex
         $DB->query("
       INSERT INTO ip_bans (FromIP, ToIP, Reason)
-      VALUES ('$IP','$IP', '$Notes')");
+      VALUES ('{$IP}','{$IP}', '{$Notes}')");
         $Cache->delete_value('ip_bans_' . $IPA);
     }
 }

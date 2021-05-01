@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 define('DEFAULT_LIMIT', 10);
 
 $Limit = DEFAULT_LIMIT;

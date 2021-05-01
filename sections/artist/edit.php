@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| Edit artist wiki page ||------------------------------||
 
@@ -34,10 +34,10 @@ $DB->query("
     Body
   FROM artists_group AS a
     LEFT JOIN wiki_artists ON wiki_artists.RevisionID = a.RevisionID
-  WHERE a.ArtistID = '$ArtistID'");
+  WHERE a.ArtistID = '{$ArtistID}'");
 
 if (!$DB->has_results()) {
-    error("Cannot find an artist with the ID {$ArtistID}: See the <a href=\"log.php?search=Artist+$ArtistID\">site log</a>.");
+    error(sprintf('Cannot find an artist with the ID %s: See the <a href="log.php?search=Artist+%s">site log</a>.', $ArtistID, $ArtistID));
 }
 
 [$Name, $Image, $Body] = $DB->next_record(MYSQLI_NUM, true);

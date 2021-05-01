@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!check_perms('admin_reports') && !check_perms('site_moderate_forums')) {
     error(403);
@@ -37,11 +37,7 @@ if (check_perms('admin_reports')) {
 <?php
   foreach ($Results as $Result) {
       [$Username, $Reports] = $Result;
-      if ($Username == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><?=$Username?></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -69,11 +65,7 @@ $DB->query("
 <?php
   foreach ($Results as $Result) {
       [$Username, $Reports] = $Result;
-      if ($Username == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><?=$Username?></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -101,11 +93,7 @@ $DB->query("
 <?php
   foreach ($Results as $Result) {
       [$Username, $Reports] = $Result;
-      if ($Username == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><?=$Username?></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -131,11 +119,7 @@ $DB->query("
 <?php
   foreach ($Results as $Result) {
       [$Username, $Reports] = $Result;
-      if ($Username == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td><?=$Username?></td>
         <td class="number_column"><?=number_format($Reports)?></td>
@@ -156,7 +140,7 @@ $DB->query("
       COUNT(f.LastPostAuthorID) as Trashed
     FROM forums_topics AS f
       LEFT JOIN users_main AS u ON u.ID = f.LastPostAuthorID
-    WHERE f.ForumID IN ($TrashForumIDs)
+    WHERE f.ForumID IN ({$TrashForumIDs})
     GROUP BY f.LastPostAuthorID
     ORDER BY Trashed DESC
     LIMIT 30");
@@ -173,18 +157,14 @@ $DB->query("
   $i = 1;
   foreach ($Results as $Result) {
       [$Username, $Trashed] = $Result;
-      if ($Username == $LoggedUser['Username']) {
-          $RowClass = ' class="highlight"';
-      } else {
-          $RowClass = '';
-      } ?>
+      $RowClass = $Username == $LoggedUser['Username'] ? ' class="highlight"' : ''; ?>
       <tr<?=$RowClass?>>
         <td class="number_column"><?=$i?></td>
         <td><?=$Username?></td>
         <td class="number_column"><?=number_format($Trashed)?></td>
       </tr>
 <?php
-    $i++;
+    ++$i;
   }
 ?>
     </table>

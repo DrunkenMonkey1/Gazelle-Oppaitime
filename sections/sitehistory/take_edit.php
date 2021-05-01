@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!check_perms('users_mod')) {
     error(403);

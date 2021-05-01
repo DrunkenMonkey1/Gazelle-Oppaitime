@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 Text::$TOC = true;
 
 G::$DB->query("

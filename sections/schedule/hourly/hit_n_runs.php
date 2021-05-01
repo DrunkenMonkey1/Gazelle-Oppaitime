@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Update Hit 'n Runs --------------------------------------//
 
 // This will never work until we start keeping track of upload/download stats

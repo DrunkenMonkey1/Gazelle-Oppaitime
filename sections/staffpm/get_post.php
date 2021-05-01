@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //TODO: make this use the cache version of the thread, save the db query
 /*********************************************************************\
 //--------------Get Post--------------------------------------------//
@@ -26,7 +28,7 @@ $DB->query("
   SELECT m.Message, c.Level, c.UserID
   FROM staff_pm_messages AS m
     JOIN staff_pm_conversations AS c ON m.ConvID = c.ID
-  WHERE m.ID = '$PostID'");
+  WHERE m.ID = '{$PostID}'");
 [$Message, $Level, $UserID] = $DB->next_record(MYSQLI_NUM);
 
 if (($LoggedUser['ID'] == $UserID) || ($IsFLS && $LoggedUser['Class'] >= $Level)) {

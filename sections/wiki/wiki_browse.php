@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $Title = 'Browse wiki articles';
 if (!empty($_GET['letter'])) {
     $Letter = strtoupper(substr($_GET['letter'], 0, 1));

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //calculate ratio
 //returns 0 for DNE and -1 for infinity, because we don't want strings being returned for a numeric value in our java
 $Ratio = 0;
@@ -8,7 +10,8 @@ if (0 == $LoggedUser['BytesUploaded'] && 0 == $LoggedUser['BytesDownloaded']) {
 } elseif (0 == $LoggedUser['BytesDownloaded']) {
     $Ratio = -1;
 } else {
-    $Ratio = number_format(max($LoggedUser['BytesUploaded'] / $LoggedUser['BytesDownloaded'] - 0.005, 0), 2); //Subtract .005 to floor to 2 decimals
+    $Ratio = number_format(max($LoggedUser['BytesUploaded'] / $LoggedUser['BytesDownloaded'] - 0.005, 0),
+        2); //Subtract .005 to floor to 2 decimals
 }
 
 $MyNews = $LoggedUser['LastReadNews'];
@@ -96,21 +99,21 @@ $NewSubscriptions = Subscriptions::has_new_subscriptions();
 
 json_die("success", [
     'username' => $LoggedUser['Username'],
-    'id' => (int)$LoggedUser['ID'],
+    'id' => (int) $LoggedUser['ID'],
     'authkey' => $LoggedUser['AuthKey'],
     'passkey' => $LoggedUser['torrent_pass'],
     'notifications' => [
-        'messages' => (int)$NewMessages,
-        'notifications' => (int)$NewNotifications,
+        'messages' => (int) $NewMessages,
+        'notifications' => (int) $NewNotifications,
         'newAnnouncement' => $MyNews < $CurrentNews,
         'newBlog' => $MyBlog < $CurrentBlog,
         'newSubscriptions' => 1 == $NewSubscriptions
     ],
     'userstats' => [
-        'uploaded' => (int)$LoggedUser['BytesUploaded'],
-        'downloaded' => (int)$LoggedUser['BytesDownloaded'],
-        'ratio' => (float)$Ratio,
-        'requiredratio' => (float)$LoggedUser['RequiredRatio'],
+        'uploaded' => (int) $LoggedUser['BytesUploaded'],
+        'downloaded' => (int) $LoggedUser['BytesDownloaded'],
+        'ratio' => (float) $Ratio,
+        'requiredratio' => (float) $LoggedUser['RequiredRatio'],
         'class' => $ClassLevels[$LoggedUser['Class']]['Name']
     ]
 ]);

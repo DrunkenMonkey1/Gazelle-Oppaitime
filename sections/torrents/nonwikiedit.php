@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 //Set by system
@@ -13,8 +15,9 @@ if (!check_perms('torrents_edit')) {
     $DB->query("
     SELECT UserID
     FROM torrents
-    WHERE GroupID = $GroupID");
-    if (!in_array($LoggedUser['ID'], $DB->collect('UserID'), true)) {
+    WHERE GroupID = {$GroupID}");
+    $DBCollect = $DB->collect('UserID');
+    if (!in_array($LoggedUser['ID'], $DBCollect, true)) {
         error(403);
     }
 }
@@ -52,7 +55,7 @@ $Pages = db_string($_POST['pages']);
 $DB->query("
   SELECT Year
   FROM torrents_group
-  WHERE ID = $GroupID");
+  WHERE ID = {$GroupID}");
 [$OldYear] = $DB->next_record();
 
 
@@ -60,18 +63,18 @@ $DB->query("
 $DB->query("
   UPDATE torrents_group
   SET
-    Year = '$Year',
+    Year = '{$Year}',
     CatalogueNumber = '" . $CatalogueNumber . "',
     Pages = '" . $Pages . "',
-    Studio = '$Studio',
-    Series = '$Series',
-    DLsiteID = '$DLsiteID'
-  WHERE ID = $GroupID");
+    Studio = '{$Studio}',
+    Series = '{$Series}',
+    DLsiteID = '{$DLsiteID}'
+  WHERE ID = {$GroupID}");
 
 if ($OldYear != $Year) {
     $DB->query("
     INSERT INTO group_log (GroupID, UserID, Time, Info)
-    VALUES ('$GroupID', " . $LoggedUser['ID'] . ", NOW(), '" . db_string("Year changed from $OldYear to $Year") . "')");
+    VALUES ('{$GroupID}', " . $LoggedUser['ID'] . ", NOW(), '" . db_string(sprintf('Year changed from %s to %s', $OldYear, $Year)) . "')");
 }
 
 $DB->query("
@@ -148,11 +151,11 @@ foreach ($CurrArtists as $CurrArtist) {
 $DB->query("
   SELECT ID
   FROM torrents
-  WHERE GroupID = '$GroupID'");
+  WHERE GroupID = '{$GroupID}'");
 while ([$TorrentID] = $DB->next_record()) {
-    $Cache->delete_value("torrent_download_$TorrentID");
+    $Cache->delete_value(sprintf('torrent_download_%s', $TorrentID));
 }
 Torrents::update_hash($GroupID);
-$Cache->delete_value("torrents_details_$GroupID");
+$Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
 
-header("Location: torrents.php?id=$GroupID");
+header(sprintf('Location: torrents.php?id=%s', $GroupID));

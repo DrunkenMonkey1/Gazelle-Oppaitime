@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Cycle auth keys -----------------------------------------//
 
 $DB->query(

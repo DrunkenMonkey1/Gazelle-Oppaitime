@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (![$Countries, $Rank, $CountryUsers, $CountryMax, $CountryMin, $LogIncrements] = $Cache->get_value('geodistribution')) {
     $DB->query('
     SELECT Code, Users
@@ -25,7 +25,7 @@ if (![$Countries, $Rank, $CountryUsers, $CountryMax, $CountryMin, $LogIncrements
     }
     reset($Rank);
 
-    for ($i = $CountryMin; $i <= $CountryMax; $i++) {
+    for ($i = $CountryMin; $i <= $CountryMax; ++$i) {
         $LogIncrements[] = Format::human_format(pow(2, $i));
     }
     $Cache->cache_value('geodistribution', [$Countries, $Rank, $CountryUsers, $CountryMax, $CountryMin, $LogIncrements], 0);
@@ -141,19 +141,19 @@ View::show_header('Detailed User Statistics', 'chart');
     $Colors = [];
     $Palette = ["blue"=>['#46B', '#34A', '#239', '#128', '#117', '#006'], "red"=>['#B45', '#A34', '#923'], "green"=>['#3B3', '#2A2', '#191', '#080'], "purple"=>['#B3B', '#A2A', '#919', '#808', '#707', '#606', '#505', '#404']];
     $Counts = [0, 0, 0, 0];
-    for ($i = 0; $i < count($SlicedPlatforms); $i++) {
-        if (preg_match('/Windows/i', $SlicedPlatforms[$i])) {
+    foreach ($SlicedPlatforms as $i => $SlicedPlatform) {
+        if (preg_match('#Windows#i', $SlicedPlatform)) {
             $Colors[] = $Palette["blue"][$Counts[0]];
-            $Counts[0]++;
-        } elseif (preg_match('/Mac|OS ?X/i', $SlicedPlatforms[$i])) {
+            ++$Counts[0];
+        } elseif (preg_match('#Mac|OS ?X#i', $SlicedPlatform)) {
             $Colors[] = $Palette["red"][$Counts[1]];
-            $Counts[1]++;
-        } elseif (preg_match('/Linux|Ubuntu|Fedora/i', $SlicedPlatforms[$i])) {
+            ++$Counts[1];
+        } elseif (preg_match('#Linux|Ubuntu|Fedora#i', $SlicedPlatform)) {
             $Colors[] = $Palette["green"][$Counts[2]];
-            $Counts[2]++;
+            ++$Counts[2];
         } else {
             $Colors[] = $Palette["purple"][$Counts[3]];
-            $Counts[3]++;
+            ++$Counts[3];
         }
     }
   ?>
@@ -179,19 +179,19 @@ View::show_header('Detailed User Statistics', 'chart');
     $Colors = [];
     $Palette = ["blue"=>['#46B', '#34A'], "orange"=>['#F53', '#E42'], "green"=>['#3B3', '#2A2'], "purple"=>['#B3B', '#A2A', '#919', '#808', '#707', '#606', '#505', '#404']];
     $Counts = [0, 0, 0, 0];
-    for ($i = 0; $i < count($SlicedBrowsers); $i++) {
-        if (preg_match('/Chrome/i', $SlicedBrowsers[$i])) {
+    foreach ($SlicedBrowsers as $i => $SlicedBrowser) {
+        if (preg_match('#Chrome#i', $SlicedBrowser)) {
             $Colors[] = $Palette["green"][$Counts[0]];
-            $Counts[0]++;
-        } elseif (preg_match('/Firefox/i', $SlicedBrowsers[$i])) {
+            ++$Counts[0];
+        } elseif (preg_match('#Firefox#i', $SlicedBrowser)) {
             $Colors[] = $Palette["orange"][$Counts[1]];
-            $Counts[1]++;
-        } elseif (preg_match('/Safari/i', $SlicedBrowsers[$i])) {
+            ++$Counts[1];
+        } elseif (preg_match('#Safari#i', $SlicedBrowser)) {
             $Colors[] = $Palette["blue"][$Counts[2]];
-            $Counts[2]++;
+            ++$Counts[2];
         } else {
             $Colors[] = $Palette["purple"][$Counts[3]];
-            $Counts[3]++;
+            ++$Counts[3];
         }
     }
   ?>

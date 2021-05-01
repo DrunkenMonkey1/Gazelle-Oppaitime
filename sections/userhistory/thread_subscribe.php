@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // perform the back end of subscribing to topics
 authorize();
 
@@ -17,7 +19,7 @@ $DB->query("
   SELECT f.ID
   FROM forums_topics AS t
     JOIN forums AS f ON f.ID = t.ForumID
-  WHERE t.ID = $TopicID");
+  WHERE t.ID = {$TopicID}");
 [$ForumID] = $DB->next_record();
 if (!Forums::check_forumperm($ForumID)) {
     die();

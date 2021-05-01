@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| User IP history page ||---------------------------||
 
@@ -23,7 +23,7 @@ $DB->query("
     p.Level AS Class
   FROM users_main AS um
     LEFT JOIN permissions AS p ON p.ID = um.PermissionID
-  WHERE um.ID = $UserID");
+  WHERE um.ID = {$UserID}");
 [$Username, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_ips', $Class)) {
@@ -34,12 +34,12 @@ $UsersOnly = isset($_GET['usersonly']) ? $_GET['usersonly'] : 0;
 
 if (isset($_POST['ip'])) {
     $SearchIP = db_string(str_replace("*", "%", trim($_POST['ip'])));
-    $SearchIPQuery = " AND h1.IP LIKE '$SearchIP' ";
+    $SearchIPQuery = sprintf(' AND h1.IP LIKE \'%s\' ', $SearchIP);
 } else {
     $SearchIPQuery = "";
 }
 
-View::show_header("IP address history for $Username");
+View::show_header(sprintf('IP address history for %s', $Username));
 ?>
 <script type="text/javascript">//<![CDATA[
 function ShowIPs(rowname) {
@@ -103,14 +103,14 @@ if (1 == $UsersOnly) {
       GROUP_CONCAT(ui2.Donor SEPARATOR '|'),
       GROUP_CONCAT(ui2.Warned SEPARATOR '|')
     FROM users_history_ips AS h1
-      LEFT JOIN users_history_ips AS h2 ON h2.IP = h1.IP AND h2.UserID != $UserID
+      LEFT JOIN users_history_ips AS h2 ON h2.IP = h1.IP AND h2.UserID != {$UserID}
       LEFT JOIN users_main AS um2 ON um2.ID = h2.UserID
       LEFT JOIN users_info AS ui2 ON ui2.UserID = h2.UserID
-    WHERE h1.UserID = '$UserID'
-      AND h2.UserID > 0 $SearchIPQuery
+    WHERE h1.UserID = '{$UserID}'
+      AND h2.UserID > 0 {$SearchIPQuery}
     GROUP BY h1.IP, h1.StartTime
     ORDER BY h1.StartTime DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
 } else {
     $RS = $DB->query("
     SELECT
@@ -126,13 +126,13 @@ if (1 == $UsersOnly) {
       GROUP_CONCAT(ui2.Donor SEPARATOR '|'),
       GROUP_CONCAT(ui2.Warned SEPARATOR '|')
     FROM users_history_ips AS h1
-      LEFT JOIN users_history_ips AS h2 ON h2.IP = h1.IP AND h2.UserID != $UserID
+      LEFT JOIN users_history_ips AS h2 ON h2.IP = h1.IP AND h2.UserID != {$UserID}
       LEFT JOIN users_main AS um2 ON um2.ID = h2.UserID
       LEFT JOIN users_info AS ui2 ON ui2.UserID = h2.UserID
-    WHERE h1.UserID = '$UserID' $SearchIPQuery
+    WHERE h1.UserID = '{$UserID}' {$SearchIPQuery}
     GROUP BY h1.IP, h1.StartTime
     ORDER BY h1.StartTime DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
 }
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();
@@ -206,26 +206,23 @@ foreach ($Results as $Index => $Result) {
     <tr class="row">
       <td>
         <?=$IP?> (<?=Tools::get_country_code_by_ajax($IP)?>)<?php
-  if ($CanManageIPBans) {
-      if (!isset($IPs[$IP])) {
-          $sql = "
+  if ($CanManageIPBans && !isset($IPs[$IP])) {
+      $sql = "
         SELECT ID, FromIP, ToIP
         FROM ip_bans
         WHERE '" . Tools::ip_to_unsigned($IP) . "' BETWEEN FromIP AND ToIP
         LIMIT 1";
-          $DB->query($sql);
-
-          if ($DB->has_results()) {
-              $IPs[$IP] = true; ?>
+      $DB->query($sql);
+      if ($DB->has_results()) {
+          $IPs[$IP] = true; ?>
         <strong>[Banned]</strong>
 <?php
-          } else {
-              $IPs[$IP] = false; ?>
+      } else {
+          $IPs[$IP] = false; ?>
         <a id="<?=$counter?>" href="#" onclick="Ban('<?=$IP?>', '', '<?=$counter?>'); this.onclick = null; return false;" class="brackets">Ban</a>
 <?php
-          }
-          $counter++;
       }
+      ++$counter;
   } ?>
         <br />
         <?=Tools::get_host_by_ajax($IP)?>

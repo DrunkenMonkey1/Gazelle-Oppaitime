@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $LoggedUser['ID'];
 $GiB = 1024*1024*1024;
 
@@ -62,30 +62,19 @@ $DB->query("
   FROM users_main
     JOIN users_info ON users_main.ID = users_info.UserID
     JOIN torrents ON torrents.UserID = users_main.ID
-  WHERE users_main.ID = $UserID");
+  WHERE users_main.ID = {$UserID}");
 
 if ($DB->has_results()) {
     [$PermID, $BP, $Warned, $Upload, $Download, $Ratio, $Enabled, $Uploads, $Groups] = $DB->next_record();
 
-    switch ($PermID) {
-    case USER:
-      $To = MEMBER;
-      break;
-    case MEMBER:
-      $To = POWER;
-      break;
-    case POWER:
-      $To = ELITE;
-      break;
-    case ELITE:
-      $To = TORRENT_MASTER;
-      break;
-    case TORRENT_MASTER:
-      $To = POWER_TM;
-      break;
-    default:
-      $To = -1;
-  }
+    $To = match ($PermID) {
+        USER => MEMBER,
+        MEMBER => POWER,
+        POWER => ELITE,
+        ELITE => TORRENT_MASTER,
+        TORRENT_MASTER => POWER_TM,
+        default => -1,
+    };
 
     if (-1 == $To) {
         $Err[] = "Your user class is not eligible for promotions";
@@ -100,7 +89,7 @@ if ($DB->has_results()) {
           JOIN torrents_group ON torrents.GroupID = torrents_group.ID
         WHERE (torrents_group.CategoryID != 3
           OR (torrents_group.CategoryID = 3 AND torrents_group.Pages >= 50))
-          AND torrents.UserID = $UserID");
+          AND torrents.UserID = {$UserID}");
 
             if ($DB->has_results()) {
                 [$NonSmall] = $DB->next_record();
@@ -157,14 +146,14 @@ if ($DB->has_results()) {
         UPDATE users_main
         SET
           BonusPoints = BonusPoints - " . $Classes[$To]['Price'] . ",
-          PermissionID = $To
-        WHERE ID = $UserID");
+          PermissionID = {$To}
+        WHERE ID = {$UserID}");
             $DB->query("
         UPDATE users_info
         SET AdminComment = CONCAT('" . sqltime() . " - Class changed to " . Users::make_class_string($To) . " via store purchase\n\n', AdminComment)
-        WHERE UserID = $UserID");
-            $Cache->delete_value("user_info_$UserID");
-            $Cache->delete_value("user_info_heavy_$UserID");
+        WHERE UserID = {$UserID}");
+            $Cache->delete_value(sprintf('user_info_%s', $UserID));
+            $Cache->delete_value(sprintf('user_info_heavy_%s', $UserID));
         }
     }
 }

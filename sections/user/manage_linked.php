@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 include SERVER_ROOT . '/sections/user/linkedfunctions.php';
 
@@ -24,14 +26,14 @@ switch ($_REQUEST['dupeaction']) {
         if ([$TargetID] = $DB->next_record()) {
             link_users($UserID, $TargetID);
         } else {
-            error("User '$Target' not found.");
+            error(sprintf('User \'%s\' not found.', $Target));
         }
     }
 
     $DB->query("
       SELECT GroupID
       FROM users_dupes
-      WHERE UserID = '$UserID'");
+      WHERE UserID = '{$UserID}'");
     [$GroupID] = $DB->next_record();
 
     if ($_REQUEST['dupecomments'] && $GroupID) {
@@ -43,4 +45,4 @@ switch ($_REQUEST['dupeaction']) {
     error(403);
 }
 echo '\o/';
-header("Location: user.php?id=$UserID");
+header(sprintf('Location: user.php?id=%s', $UserID));

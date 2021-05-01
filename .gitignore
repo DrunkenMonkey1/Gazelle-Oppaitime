@@ -1,5 +1,5 @@
 classes/config.php
 .DS_Store
-vendor
+library/vendor
 .idea
 .php_cs.cache

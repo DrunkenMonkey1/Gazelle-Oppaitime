@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * Yeah, that's right, edit and new are the same place again.
@@ -22,40 +22,29 @@ if ($NewRequest && ($LoggedUser['BytesUploaded'] < 250 * 1024 * 1024 || !check_p
     error('You do not have enough uploaded to make a request.');
 }
 
-if (!$NewRequest) {
-    if (empty($ReturnEdit)) {
-        $Request = Requests::get_request($RequestID);
-        if (false === $Request) {
-            error(404);
-        }
-
-        // Define these variables to simplify _GET['groupid'] requests later on
-        $CategoryID = $Request['CategoryID'];
-        $Title = $Request['Title'];
-        $TitleRJ = $Request['TitleRJ'];
-        $TitleJP = $Request['TitleJP'];
-        $CatalogueNumber = $Request['CatalogueNumber'];
-        $DLsiteID = $Request['DLsiteID'];
-        $Image = $Request['Image'];
-        $GroupID = $Request['GroupID'];
-
-        $VoteArray = Requests::get_votes_array($RequestID);
-        $VoteCount = count($VoteArray['Voters']);
-
-        $IsFilled = !empty($Request['TorrentID']);
-        $CategoryName = $Categories[$CategoryID - 1];
-
-        $ProjectCanEdit = (check_perms('project_team') && !$IsFilled && '0' === $CategoryID);
-        $CanEdit = ((!$IsFilled && $LoggedUser['ID'] === $Request['UserID'] && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
-
-        if (!$CanEdit) {
-            error(403);
-        }
-
-        $ArtistForm = Requests::get_artists($RequestID);
-
-        $Tags = implode(', ', $Request['Tags']);
+if (!$NewRequest && empty($ReturnEdit)) {
+    $Request = Requests::get_request($RequestID);
+    if (false === $Request) {
+        error(404);
     }
+    // Define these variables to simplify _GET['groupid'] requests later on
+    $CategoryID = $Request['CategoryID'];
+    $Title = $Request['Title'];
+    $CatalogueNumber = $Request['CatalogueNumber'];
+    $DLsiteID = $Request['DLsiteID'];
+    $Image = $Request['Image'];
+    $GroupID = $Request['GroupID'];
+    $VoteArray = Requests::get_votes_array($RequestID);
+    $VoteCount = count($VoteArray['Voters']);
+    $IsFilled = !empty($Request['TorrentID']);
+    $CategoryName = $Categories[$CategoryID - 1];
+    $ProjectCanEdit = (check_perms('project_team') && !$IsFilled && '0' === $CategoryID);
+    $CanEdit = ((!$IsFilled && $LoggedUser['ID'] === $Request['UserID'] && $VoteCount < 2) || $ProjectCanEdit || check_perms('site_moderate_requests'));
+    if (!$CanEdit) {
+        error(403);
+    }
+    $ArtistForm = Requests::get_artists($RequestID);
+    $Tags = implode(', ', $Request['Tags']);
 }
 
 if ($NewRequest && !empty($_GET['artistid']) && is_number($_GET['artistid'])) {
@@ -73,8 +62,6 @@ if ($NewRequest && !empty($_GET['artistid']) && is_number($_GET['artistid'])) {
     $DB->query("
     SELECT
       tg.Name,
-      tg.NameRJ,
-      tg.NameJP,
       tg.Year,
       tg.Studio,
       tg.Series,
@@ -87,7 +74,7 @@ if ($NewRequest && !empty($_GET['artistid']) && is_number($_GET['artistid'])) {
       JOIN torrents_tags AS tt ON tt.GroupID = tg.ID
       JOIN tags AS t ON t.ID = tt.TagID
     WHERE tg.ID = " . $_GET['groupid']);
-    if ([$Title, $TitleRJ, $TitleJP, $Year, $Studio, $Series, $CatalogueNumber, $DLsiteID, $Image, $Tags, $CategoryID] = $DB->next_record()) {
+    if ([$Title, $Year, $Studio, $Series, $CatalogueNumber, $DLsiteID, $Image, $Tags, $CategoryID] = $DB->next_record()) {
         $GroupID = trim($_REQUEST['groupid']);
         $CategoryName = $Categories[$CategoryID - 1];
         $Disabled = 'readonly="readonly"';
@@ -172,19 +159,7 @@ View::show_header(($NewRequest ? 'Create a request' : 'Edit a request'), 'bbcode
         <tr>
           <td class="label">Title</td>
           <td>
-            <input type="text" id="title" name="title" size="45" value="<?=(!empty($Title) ? $Title : '')?>" <?=$Disabled?>/>
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Romaji Title</td>
-          <td>
-            <input type="text" id="title_rj" name="title_rj" size="45" value="<?=(!empty($TitleRJ) ? $TitleRJ : '')?>" <?=$Disabled?>/>
-          </td>
-        </tr>
-        <tr>
-          <td class="label">Japanese Title</td>
-          <td>
-            <input type="text" id="title_jp" name="title_jp" size="45" value="<?=!empty($TitleJP)?$TitleJP:''?>" <?=$Disabled?>/>
+            <input type="text" id="title" name="title" size="45" value="<?=(empty($Title) ? '' : $Title)?>" <?=$Disabled?>/>
           </td>
         </tr>
         <tr id="dlsiteid_tr">
@@ -198,7 +173,7 @@ View::show_header(($NewRequest ? 'Create a request' : 'Edit a request'), 'bbcode
         <tr id="image_tr">
           <td class="label">Image</td>
           <td>
-            <input type="text" id="image" name="image" size="45" value="<?=(!empty($Image) ? $Image : '')?>" <?=$Disabled?>/>
+            <input type="text" id="image" name="image" size="45" value="<?=(empty($Image) ? '' : $Image)?>" <?=$Disabled?>/>
           </td>
         </tr>
 <?php  } ?>
@@ -229,7 +204,7 @@ View::show_header(($NewRequest ? 'Create a request' : 'Edit a request'), 'bbcode
               <option value="<?=$Genre?>"><?=$Genre?></option>
 <?php  } ?>
             </select>
-            <input type="text" id="tags" name="tags" size="45" value="<?=(!empty($Tags) ? display_str($Tags) : '')?>"<?php Users::has_autocomplete_enabled('other'); ?> <?=$Disabled?>/>
+            <input type="text" id="tags" name="tags" size="45" value="<?=(empty($Tags) ? '' : display_str($Tags))?>"<?php Users::has_autocomplete_enabled('other'); ?> <?=$Disabled?>/>
             <br />
             Tags should be comma-separated, and you should use a period (".") to separate words inside a tag&#8202;&mdash;&#8202;e.g. "<strong class="important_text_alt">big.breasts</strong>".
             <br /><br />
@@ -269,7 +244,7 @@ View::show_header(($NewRequest ? 'Create a request' : 'Edit a request'), 'bbcode
         <tr id="voting">
           <td class="label">Bounty (MB)</td>
           <td>
-            <input type="text" id="amount_box" size="8" value="<?=(!empty($Bounty) ? $Bounty : '100')?>" onchange="Calculate();" />
+            <input type="text" id="amount_box" size="8" value="<?=(empty($Bounty) ? '100' : $Bounty)?>" onchange="Calculate();" />
             <select id="unit" name="unit" onchange="Calculate();">
               <option value="mb"<?=(!empty($_POST['unit']) && 'mb' === $_POST['unit'] ? ' selected="selected"' : '') ?>>MB</option>
               <option value="gb"<?=(!empty($_POST['unit']) && 'gb' === $_POST['unit'] ? ' selected="selected"' : '') ?>>GB</option>
@@ -281,7 +256,7 @@ View::show_header(($NewRequest ? 'Create a request' : 'Edit a request'), 'bbcode
         <tr>
           <td class="label">Post request information</td>
           <td>
-            <input type="hidden" id="amount" name="amount" value="<?=(!empty($Bounty) ? $Bounty : '100')?>" />
+            <input type="hidden" id="amount" name="amount" value="<?=(empty($Bounty) ? '100' : $Bounty)?>" />
             <input type="hidden" id="current_uploaded" value="<?=$LoggedUser['BytesUploaded']?>" />
             <input type="hidden" id="current_downloaded" value="<?=$LoggedUser['BytesDownloaded']?>" />
             Bounty after tax: <strong><span id="bounty_after_tax">90.00 MB</span></strong><br />

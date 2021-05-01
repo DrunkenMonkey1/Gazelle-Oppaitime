@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $CollageID = $_GET['collageid'];
 if (!is_number($CollageID)) {
     error(0);
@@ -7,7 +7,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT Name, UserID, CategoryID
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$Name, $UserID, $CategoryID] = $DB->next_record();
 if ('0' === $CategoryID && $UserID !== $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
     error(403);
@@ -26,13 +26,13 @@ $DB->query("
   FROM collages_artists AS ca
     JOIN artists_group AS ag ON ag.ArtistID = ca.ArtistID
     LEFT JOIN users_main AS um ON um.ID = ca.UserID
-  WHERE ca.CollageID = '$CollageID'
+  WHERE ca.CollageID = '{$CollageID}'
   ORDER BY ca.Sort");
 
 $Artists = $DB->to_array('ArtistID', MYSQLI_ASSOC);
 
 
-View::show_header("Manage collage $Name", 'jquery-ui,jquery.tablesorter,sort');
+View::show_header(sprintf('Manage collage %s', $Name), 'jquery-ui,jquery.tablesorter,sort');
 
 ?>
 
@@ -72,7 +72,7 @@ View::show_header("Manage collage $Name", 'jquery-ui,jquery.tablesorter,sort');
 <?php
   $Number = 0;
   foreach ($Artists as $Artist) {
-      $Number++; ?>
+      ++$Number; ?>
     <tr class="drag row" id="li_<?=$Artist['ArtistID']?>">
       <form class="manage_form" name="collage" action="collages.php" method="post">
         <td>

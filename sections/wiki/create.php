@@ -17,8 +17,7 @@ View::show_header('Create an article', 'bbcode');
         <input type="text" name="alias" size="50" maxlength="50" />
 <? } */?>
         <h3>Body </h3>
-<?php
-  $ReplyText = new TEXTAREA_PREVIEW('body', 'body', '', 91, 22, true, false);
+
 
   if (check_perms('admin_manage_wiki')) { ?>
         <h3>Access</h3>
@@ -27,7 +26,8 @@ View::show_header('Create an article', 'bbcode');
         <strong>Restrict edit:</strong> <select name="minclassedit"><?=class_list()?></select>
 <?php  } ?>
         <div style="text-align: center;">
-          <input type="button" value="Preview" class="hidden button_preview_<?=$ReplyText->getID()?>" tabindex="1" />
+          <input type="button" value="Preview" class="hidden button_preview_
+  $ReplyText = new TEXTAREA_PREVIEW('body', 'body', '', 91, 22, true, false);<?=$ReplyText->getID()?>" tabindex="1" />
           <input type="submit" value="Submit" />
         </div>
       </div>

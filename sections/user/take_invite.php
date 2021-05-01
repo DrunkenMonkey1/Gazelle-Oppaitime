@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!$UserCount = $Cache->get_value('stats_user_count')) {
     $DB->query("
     SELECT COUNT(ID)
@@ -23,7 +25,7 @@ authorize();
 $DB->query("
   SELECT can_leech
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 [$CanLeech] = $DB->next_record();
 
 if ($LoggedUser['RatioWatch']
@@ -48,7 +50,7 @@ $InviteExpires = time_plus(60 * 60 * 24 * 3); // 3 days
 $InviteReason = check_perms('users_invite_notes') ? db_string($_POST['reason']) : '';
 
 //MultiInvite
-if (false !== strpos($Email, '|') && check_perms('site_send_unlimited_invites')) {
+if (str_contains($Email, '|') && check_perms('site_send_unlimited_invites')) {
     $Emails = explode('|', $Email);
 } else {
     $Emails = [$Email];
@@ -83,27 +85,27 @@ foreach ($Emails as $CurEmail) {
     $IRCServer = BOT_SERVER;
 
     $Message = <<<EOT
-The user $Username has invited you to join $SiteName and has specified this address ($CurEmail) as your email address. If you do not know this person, please ignore this email, and do not reply.
+The user {$Username} has invited you to join {$SiteName} and has specified this address ({$CurEmail}) as your email address. If you do not know this person, please ignore this email, and do not reply.
 
 Please note that selling invites, trading invites, and giving invites away publicly (e.g. on a forum) is strictly forbidden. If you have received your invite as a result of any of these things, do not bother signing up - you will be banned and lose your chances of ever signing up legitimately.
 
-If you have previously had an account at $SiteName, do not use this invite. Instead, please join $DisabledChan on $IRCServer and ask for your account to be reactivated.
+If you have previously had an account at {$SiteName}, do not use this invite. Instead, please join {$DisabledChan} on {$IRCServer} and ask for your account to be reactivated.
 
 To confirm your invite, click on the following link:
 
-{$SiteURL}register.php?invite=$InviteKey
+{$SiteURL}register.php?invite={$InviteKey}
 
 After you register, you will be able to use your account. Please take note that if you do not use this invite in the next 3 days, it will expire. We urge you to read the RULES and the wiki immediately after you join.
 
 Thank you,
-$SiteName Staff
+{$SiteName} Staff
 EOT;
 
     $DB->query("
     INSERT INTO invites
       (InviterID, InviteKey, Email, Expires, Reason)
     VALUES
-      ('$LoggedUser[ID]', '$InviteKey', '" . Crypto::encrypt($CurEmail) . "', '$InviteExpires', '$InviteReason')");
+      ('$LoggedUser[ID]', '{$InviteKey}', '" . Crypto::encrypt($CurEmail) . sprintf('\', \'%s\', \'%s\')', $InviteExpires, $InviteReason));
 
     if (!check_perms('site_send_unlimited_invites')) {
         $DB->query("

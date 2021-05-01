@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 if (!check_perms('site_torrents_notify')) {
     error(403);
 }
@@ -26,7 +28,7 @@ if ($_POST['artists' . $FormID]) {
             $ParsedArtists[] = db_string(trim($Artist));
         }
     }
-    if (count($ParsedArtists) > 0) {
+    if ([] !== $ParsedArtists) {
         $ArtistList = '|' . implode('|', $ParsedArtists) . '|';
         $HasFilter = true;
     }
@@ -123,14 +125,14 @@ if ($_POST['id' . $FormID] && is_number($_POST['id' . $FormID])) {
     $DB->query("
     UPDATE users_notify_filters
     SET
-      Artists='$ArtistList',
-      ExcludeVA='$ExcludeVA',
-      NewGroupsOnly='$NewGroupsOnly',
-      Tags='$TagList',
-      NotTags='$NotTagList',
-      Categories='$CategoryList',
-      Media='$MediaList',
-      Users ='$Users'
+      Artists='{$ArtistList}',
+      ExcludeVA='{$ExcludeVA}',
+      NewGroupsOnly='{$NewGroupsOnly}',
+      Tags='{$TagList}',
+      NotTags='{$NotTagList}',
+      Categories='{$CategoryList}',
+      Media='{$MediaList}',
+      Users ='{$Users}'
     WHERE ID='" . $_POST['id' . $FormID] . "'
       AND UserID='$LoggedUser[ID]'");
 } else {
@@ -138,7 +140,7 @@ if ($_POST['id' . $FormID] && is_number($_POST['id' . $FormID])) {
     INSERT INTO users_notify_filters
       (UserID, Label, Artists, ExcludeVA, NewGroupsOnly, Tags, NotTags, Categories, Media, Users)
     VALUES
-      ('$LoggedUser[ID]','" . db_string($_POST['label' . $FormID]) . "','$ArtistList','$ExcludeVA','$NewGroupsOnly','$TagList','$NotTagList','$CategoryList','$MediaList','$Users')");
+      ('$LoggedUser[ID]','" . db_string($_POST['label' . $FormID]) . sprintf('\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\',\'%s\')', $ArtistList, $ExcludeVA, $NewGroupsOnly, $TagList, $NotTagList, $CategoryList, $MediaList, $Users));
 }
 
 $Cache->delete_value('notify_filters_' . $LoggedUser['ID']);

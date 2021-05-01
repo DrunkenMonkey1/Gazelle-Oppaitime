@@ -1,12 +1,14 @@
 <?php
 
-$FriendID = (int)$_POST['friend'];
+declare(strict_types=1);
+
+$FriendID = (int) $_POST['friend'];
 $Type = $_POST['type'];
-$ID = (int)$_POST['id'];
+$ID = (int) $_POST['id'];
 $Note = $_POST['note'];
 
 if (empty($FriendID) || empty($Type) || empty($ID)) {
-    echo json_encode(['status' => 'error', 'response' => 'Error.']);
+    echo json_encode(['status' => 'error', 'response' => 'Error.'], JSON_THROW_ON_ERROR);
     die();
 }
 // Make sure the recipient is on your friends list and not some random dude.
@@ -18,10 +20,10 @@ $DB->query("
     RIGHT JOIN users_main AS u
       ON u.ID = f.FriendID
   WHERE f.UserID = '$LoggedUser[ID]'
-    AND f.FriendID = '$FriendID'");
+    AND f.FriendID = '{$FriendID}'");
 
 if (!$DB->has_results()) {
-    echo json_encode(['status' => 'error', 'response' => 'Not on friend list.']);
+    echo json_encode(['status' => 'error', 'response' => 'Not on friend list.'], JSON_THROW_ON_ERROR);
     die();
 }
 
@@ -31,34 +33,35 @@ $Link = '';
 // https://en.wikipedia.org/wiki/English_articles#Distinction_between_a_and_an
 $Article = 'a';
 switch ($Type) {
-  case 'torrent':
-    $Link = "torrents.php?id=$ID";
-    $DB->query("
+    case 'torrent':
+        $Link = sprintf('torrents.php?id=%s', $ID);
+        $DB->query("
       SELECT Name
       FROM torrents_group
-      WHERE ID = '$ID'");
-    break;
-  case 'artist':
-    $Article = 'an';
-    $Link = "artist.php?id=$ID";
-    $DB->query("
+      WHERE ID = '{$ID}'");
+        break;
+    case 'artist':
+        $Article = 'an';
+        $Link = sprintf('artist.php?id=%s', $ID);
+        $DB->query("
       SELECT Name
       FROM artists_group
-      WHERE ArtistID = '$ID'");
-    break;
-  case 'collage':
-    $Link = "collages.php?id=$ID";
-    $DB->query("
+      WHERE ArtistID = '{$ID}'");
+        break;
+    case 'collage':
+        $Link = sprintf('collages.php?id=%s', $ID);
+        $DB->query("
       SELECT Name
       FROM collages
-      WHERE ID = '$ID'");
-    break;
+      WHERE ID = '{$ID}'");
+        break;
 }
 [$Name] = $DB->next_record();
-$Subject = $LoggedUser['Username'] . " recommended you $Article $Type!";
-$Body = $LoggedUser['Username'] . " recommended you the $Type [url=" . site_url() . "$Link]$Name" . '[/url].';
+$Subject = $LoggedUser['Username'] . sprintf(' recommended you %s %s!', $Article, $Type);
+$Body = $LoggedUser['Username'] . sprintf(' recommended you the %s [url=', $Type) . site_url() . sprintf('%s]%s', $Link,
+        $Name) . '[/url].';
 if (!empty($Note)) {
-    $Body = "$Body\n\n$Note";
+    $Body = "{$Body}\n\n{$Note}";
 }
 
 Misc::send_pm($FriendID, $LoggedUser['ID'], $Subject, $Body);

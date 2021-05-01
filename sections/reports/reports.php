@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
  ************************************************************************/
 if (!check_perms('admin_reports') && !check_perms('project_team') && !check_perms('site_moderate_forums')) {
@@ -23,14 +23,11 @@ if (isset($_GET['id']) && $_GET['id'] && is_number($_GET['id'])) {
     $Where = "Status = 'New'";
 } else {
     $View = $_GET['view'];
-    switch ($_GET['view']) {
-    case 'old':
-      $Where = "Status = 'Resolved'";
-      break;
-    default:
-      error(404);
-      break;
-  }
+    if ('old' == $_GET['view']) {
+        $Where = "Status = 'Resolved'";
+    } else {
+        error(404);
+    }
 }
 
 if (!check_perms('admin_reports')) {
@@ -58,9 +55,9 @@ $Reports = $DB->query("
     r.ResolverID
   FROM reports AS r
     JOIN users_main AS um ON r.UserID = um.ID
-  WHERE $Where
+  WHERE {$Where}
   ORDER BY ReportedTime DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 
 // Number of results (for pagination)
 $DB->query('SELECT FOUND_ROWS()');
@@ -90,7 +87,7 @@ $DB->set_query_id($Reports);
 <?php
   while ([$ReportID, $SnitchID, $SnitchName, $ThingID, $Short, $ReportedTime, $Reason, $Status, $ClaimerID, $Notes, $ResolverID] = $DB->next_record()) {
       $Type = $Types[$Short];
-      $Reference = "reports.php?id=$ReportID#report$ReportID"; ?>
+      $Reference = sprintf('reports.php?id=%s#report%s', $ReportID, $ReportID); ?>
     <div id="report_<?=$ReportID?>" style="margin-bottom: 1em;" class="pending_report_v1 box pad">
       <table cellpadding="5" id="report_<?=$ReportID?>">
         <tr>
@@ -108,12 +105,12 @@ $DB->set_query_id($Reports);
                   $DB->query("
                     SELECT Username
                     FROM users_main
-                    WHERE ID = $ThingID");
+                    WHERE ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No user with the reported ID found';
                   } else {
                       [$Username] = $DB->next_record();
-                      echo "<a href=\"user.php?id=$ThingID\">" . display_str($Username) . '</a>';
+                      echo sprintf('<a href="user.php?id=%s">', $ThingID) . display_str($Username) . '</a>';
                   }
                   break;
                 case 'request':
@@ -121,44 +118,40 @@ $DB->set_query_id($Reports);
                   $DB->query("
                     SELECT Title
                     FROM requests
-                    WHERE ID = $ThingID");
+                    WHERE ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No request with the reported ID found';
                   } else {
                       [$Name] = $DB->next_record();
-                      echo "<a href=\"requests.php?action=view&amp;id=$ThingID\">" . display_str($Name) . '</a>';
+                      echo sprintf('<a href="requests.php?action=view&amp;id=%s">', $ThingID) . display_str($Name) . '</a>';
                   }
                   break;
                 case 'collage':
                   $DB->query("
                     SELECT Name
                     FROM collages
-                    WHERE ID = $ThingID");
+                    WHERE ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No collage with the reported ID found';
                   } else {
                       [$Name] = $DB->next_record();
-                      echo "<a href=\"collages.php?id=$ThingID\">" . display_str($Name) . '</a>';
+                      echo sprintf('<a href="collages.php?id=%s">', $ThingID) . display_str($Name) . '</a>';
                   }
                   break;
                 case 'thread':
                   $DB->query("
                     SELECT Title
                     FROM forums_topics
-                    WHERE ID = $ThingID");
+                    WHERE ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No forum thread with the reported ID found';
                   } else {
                       [$Title] = $DB->next_record();
-                      echo "<a href=\"forums.php?action=viewthread&amp;threadid=$ThingID\">" . display_str($Title) . '</a>';
+                      echo sprintf('<a href="forums.php?action=viewthread&amp;threadid=%s">', $ThingID) . display_str($Title) . '</a>';
                   }
                   break;
                 case 'post':
-                  if (isset($LoggedUser['PostsPerPage'])) {
-                      $PerPage = $LoggedUser['PostsPerPage'];
-                  } else {
-                      $PerPage = POSTS_PER_PAGE;
-                  }
+                  $PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
                   $DB->query("
                     SELECT
                       p.ID,
@@ -171,23 +164,23 @@ $DB->set_query_id($Reports);
                           AND p2.ID <= p.ID
                       ) AS PostNum
                     FROM forums_posts AS p
-                    WHERE p.ID = $ThingID");
+                    WHERE p.ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No forum post with the reported ID found';
                   } else {
                       [$PostID, $Body, $TopicID, $PostNum] = $DB->next_record();
-                      echo "<a href=\"forums.php?action=viewthread&amp;threadid=$TopicID&amp;post=$PostNum#post$PostID\">FORUM POST ID #$PostID</a>";
+                      echo sprintf('<a href="forums.php?action=viewthread&amp;threadid=%s&amp;post=%s#post%s">FORUM POST ID #%s</a>', $TopicID, $PostNum, $PostID, $PostID);
                   }
                   break;
                 case 'comment':
                   $DB->query("
                     SELECT 1
                     FROM comments
-                    WHERE ID = $ThingID");
+                    WHERE ID = {$ThingID}");
                   if (!$DB->has_results()) {
                       echo 'No comment with the reported ID found';
                   } else {
-                      echo "<a href=\"comments.php?action=jump&amp;postid=$ThingID\">COMMENT</a>";
+                      echo sprintf('<a href="comments.php?action=jump&amp;postid=%s">COMMENT</a>', $ThingID);
                   }
                   break;
               } ?>

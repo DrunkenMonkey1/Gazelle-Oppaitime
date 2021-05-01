@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_admin_forums')) {
     error(403);
 }
@@ -25,7 +25,7 @@ if (!is_array($Edits)) {
     $DB->query("
     SELECT EditUser, EditTime, Body
     FROM comments_edits
-    WHERE Page = '$Type' AND PostID = $PostID
+    WHERE Page = '{$Type}' AND PostID = {$PostID}
     ORDER BY EditTime DESC");
     $Edits = $DB->to_array();
     $Cache->cache_value($Type . '_edits_' . $PostID, $Edits, 0);
@@ -42,7 +42,7 @@ if (0 != $Depth) {
       $DB->query("
         SELECT Body
         FROM forums_posts
-        WHERE ID = $PostID");
+        WHERE ID = {$PostID}");
       [$Body] = $DB->next_record();
       break;
     case 'collages':
@@ -52,7 +52,7 @@ if (0 != $Depth) {
       $DB->query("
         SELECT Body
         FROM comments
-        WHERE Page = '$Type' AND ID = $PostID");
+        WHERE Page = '{$Type}' AND ID = {$PostID}");
       [$Body] = $DB->next_record();
       break;
   }

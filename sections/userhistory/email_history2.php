@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /************************************************************************
 ||------------|| User email history page ||---------------------------||
 
@@ -22,7 +22,7 @@ $DB->query("
   FROM users_main AS um
     JOIN users_info AS ui ON um.ID = ui.UserID
     JOIN permissions AS p ON p.ID = um.PermissionID
-  WHERE um.ID = $UserID");
+  WHERE um.ID = {$UserID}");
 [$Joined, $Class] = $DB->next_record();
 
 if (!check_perms('users_view_email', $Class)) {
@@ -35,9 +35,9 @@ $UsersOnly = $_GET['usersonly'] ?? false;
 $DB->query("
   SELECT Username
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 [$Username] = $DB->next_record();
-View::show_header("Email history for $Username");
+View::show_header(sprintf('Email history for %s', $Username));
 
 // Get current email (and matches)
 $DB->query(
@@ -58,7 +58,7 @@ $DB->query(
         AND h.UserID != m.ID
     LEFT JOIN users_main AS m2 ON m2.ID = h.UserID
     LEFT JOIN users_info AS i ON i.UserID = h.UserID
-  WHERE m.ID = '$UserID'"
+  WHERE m.ID = '{$UserID}'"
 );
 //$CurrentEmail = array_shift($DB->to_array());
 $CurrentEmail = ($DB->to_array())[0]; // Only variables should be passed by reference
@@ -82,7 +82,7 @@ $DB->query(
         AND h3.UserID != h2.UserID
     LEFT JOIN users_main AS m3 ON m3.ID = h3.UserID
     LEFT JOIN users_info AS i2 ON i2.UserID = h3.UserID
-  WHERE h2.UserID = '$UserID'
+  WHERE h2.UserID = '{$UserID}'
   ORDER BY Time DESC"
 );
 $History = $DB->to_array();
@@ -131,7 +131,7 @@ if (1 === count($History)) {
             // Old email
             $i = 1;
             while ($Val['Email'] == $History[$Key + $i]['Email']) {
-                $i++;
+                ++$i;
             }
             $Old[$Key]['StartTime'] = (isset($History[$Key + $i]) && $History[$Key + $i]['Time']) ? $History[$Key + $i]['Time'] : $Joined;
             $Old[$Key]['EndTime'] = $Val['Time'];
@@ -269,7 +269,7 @@ if ($Old ?? false) {
           <?=Tools::get_host_by_ajax($Match['IP'])?>
         </td>
       </tr>
-  <?php
+<?php
                 }
             }
         }
@@ -296,12 +296,10 @@ if ($Old ?? false) {
       </td>
     </tr>
 <?php
-    if ($MatchCount > 0) {
-        if (isset($Matches)) {
-            echo $Matches;
-            unset($Matches);
-            unset($MatchCount);
-        }
+    if ($MatchCount > 0 && isset($Matches)) {
+        echo $Matches;
+        unset($Matches);
+        unset($MatchCount);
     }
     }
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_view_flow')) {
     error(403);
 }
@@ -26,7 +26,7 @@ $RS = $DB->query("
   WHERE i.RatioWatchEnds IS NOT NULL
     AND m.Enabled = '1'
   ORDER BY i.RatioWatchEnds ASC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 $DB->query('SELECT FOUND_ROWS()');
 [$Results] = $DB->next_record();
 $DB->query("

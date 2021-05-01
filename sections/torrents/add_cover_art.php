@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('site_edit_wiki')) {
@@ -16,19 +18,17 @@ if (!is_number($GroupID) || !$GroupID) {
     error(0);
 }
 
-if (count($Images) != count($Summaries)) {
+if (count($Images) !== count($Summaries)) {
     error('Missing an image or a summary');
 }
 
 $Changed = false;
-for ($i = 0; $i < count($Images); $i++) {
-    $Image = $Images[$i];
+foreach ($Images as $i => $Image) {
+    $Image = $Image;
     $Summary = $Summaries[$i];
-
     if (ImageTools::blacklisted($Image) || !preg_match("/^" . IMAGE_REGEX . "$/i", $Image)) {
         continue;
     }
-
     // sanitize inputs
     $Image = db_string($Image);
     $Summary = db_string($Summary);
@@ -36,15 +36,14 @@ for ($i = 0; $i < count($Images); $i++) {
     INSERT IGNORE INTO cover_art
       (GroupID, Image, Summary, UserID, Time)
     VALUES
-      ('$GroupID', '$Image', '$Summary', '$UserID', '$Time')");
-
+      ('{$GroupID}', '{$Image}', '{$Summary}', '{$UserID}', '{$Time}')");
     if ($DB->affected_rows()) {
         $Changed = true;
     }
 }
 
 if ($Changed) {
-    $Cache->delete_value("torrents_cover_art_$GroupID");
+    $Cache->delete_value(sprintf('torrents_cover_art_%s', $GroupID));
 }
 
 header('Location: ' . $_SERVER['HTTP_REFERER']);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (($Results = $Cache->get_value('better_single_groupids')) === false) {
     $DB->query("
     SELECT
@@ -45,9 +45,9 @@ foreach ($Results as $GroupID => $FlacID) {
         $DisplayName = '';
     }
 
-    $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$FlacID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
+    $DisplayName .= sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s" class="tooltip" title="View torrent" dir="ltr">%s</a>', $GroupID, $FlacID, $GroupName);
     if ($GroupYear > 0) {
-        $DisplayName .= " [$GroupYear]";
+        $DisplayName .= sprintf(' [%s]', $GroupYear);
     }
     if ($ReleaseType > 0) {
         $DisplayName .= " [" . $ReleaseTypes[$ReleaseType] . "]";

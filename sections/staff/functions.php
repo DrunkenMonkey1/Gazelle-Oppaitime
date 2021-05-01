@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /**
  * Generate a table row for a staff member on staff.php
  *
@@ -23,11 +23,11 @@ function make_staff_row($ID, $Paranoia, $Class, $LastAccess, $Remark = '', $Hidd
     if (check_paranoia('lastseen', $Paranoia, $Class)) {
         echo time_diff($LastAccess);
     } else {
-        echo "$HiddenBy";
+        echo sprintf('%s', $HiddenBy);
     }
     echo "\n\t\t\t\t</td>
         <td class=\"nobr\">"
-          . Text::full_format($Remark) .
+          . Text::full_format($Remark ?? '') .
         "</td>
       </tr>\n"; // the "\n" is needed for pretty HTML
   // the foreach loop that calls this function needs to know the new value of $Row
@@ -82,7 +82,7 @@ function generate_staff_query($StaffLevel)
     SELECT
       m.ID,
       p.Level,
-      $PName
+      {$PName}
       m.Username,
       m.Paranoia,
       m.LastAccess,
@@ -91,7 +91,7 @@ function generate_staff_query($StaffLevel)
       JOIN users_info AS i ON m.ID = i.UserID
       JOIN permissions AS p ON p.ID = m.PermissionID
     WHERE p.DisplayStaff = '1'
-      AND $PLevel
+      AND {$PLevel}
     ORDER BY p.Level";
     if (check_perms('users_mod')) {
         $SQL .= ', m.LastAccess ASC';
@@ -116,12 +116,10 @@ function get_forum_staff()
             $ForumStaff = $DB->to_array(false, MYSQLI_BOTH, [3, 'Paranoia']);
             $Cache->cache_value('forum_staff', $ForumStaff, 180);
         }
-    } else {
-        if (($ForumStaff = $Cache->get_value('forum_staff_mod_view')) === false) {
-            $DB->query(generate_staff_query('forum_staff'));
-            $ForumStaff = $DB->to_array(false, MYSQLI_BOTH, [3, 'Paranoia']);
-            $Cache->cache_value('forum_staff_mod_view', $ForumStaff, 180);
-        }
+    } elseif (($ForumStaff = $Cache->get_value('forum_staff_mod_view')) === false) {
+        $DB->query(generate_staff_query('forum_staff'));
+        $ForumStaff = $DB->to_array(false, MYSQLI_BOTH, [3, 'Paranoia']);
+        $Cache->cache_value('forum_staff_mod_view', $ForumStaff, 180);
     }
     return $ForumStaff;
 }
@@ -141,12 +139,10 @@ function get_staff()
             $Staff = $DB->to_array(false, MYSQLI_BOTH, [4, 'Paranoia']);
             $Cache->cache_value('staff', $Staff, 180);
         }
-    } else {
-        if (($Staff = $Cache->get_value('staff_mod_view')) === false) {
-            $DB->query(generate_staff_query('staff'));
-            $Staff = $DB->to_array(false, MYSQLI_BOTH, [4, 'Paranoia']);
-            $Cache->cache_value('staff_mod_view', $Staff, 180);
-        }
+    } elseif (($Staff = $Cache->get_value('staff_mod_view')) === false) {
+        $DB->query(generate_staff_query('staff'));
+        $Staff = $DB->to_array(false, MYSQLI_BOTH, [4, 'Paranoia']);
+        $Cache->cache_value('staff_mod_view', $Staff, 180);
     }
     return $Staff;
 }
@@ -163,7 +159,7 @@ function get_support()
     ];
 }
 
-function printSectionDiv($ClassName)
+function printSectionDiv($ClassName): void
 {
     ?>
     </div><br />

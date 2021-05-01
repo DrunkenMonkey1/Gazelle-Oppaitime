@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Abstract class
  * Mass User-Torrents Editor
@@ -17,50 +19,49 @@ abstract class MASS_USER_TORRENTS_EDITOR
 {
     /**
      * The affected DB table
-     * @var string $Table
      */
-    protected $Table;
-
+    protected string $Table;
+    
     /**
      * Set the Table
-     * @param string $Table
      */
-    final public function set_table($Table)
+    final public function set_table(string $Table): void
     {
         $this->Table = db_string($Table);
     }
-
+    
     /**
      * Get the Table
+     *
      * @return string $Table
      */
-    final public function get_table()
+    final public function get_table(): string
     {
         return $this->Table;
     }
-
+    
     /**
      * The extending class must provide a method to send a query and clear the cache
      */
-    abstract protected function query_and_clear_cache($sql);
-
+    abstract protected function query_and_clear_cache($sql): void;
+    
     /**
      * A method to insert many rows into a single table
      * Not required in subsequent classes
      */
-    public function mass_add()
+    public function mass_add(): void
     {
     }
-
+    
     /**
      * A method to remove many rows from a table
      * The extending class must have a mass_remove method
      */
-    abstract public function mass_remove();
-
+    abstract public function mass_remove(): void;
+    
     /**
      * A method to update many rows in a table
      * The extending class must have a mass_update method
      */
-    abstract public function mass_update();
+    abstract public function mass_update(): void;
 }

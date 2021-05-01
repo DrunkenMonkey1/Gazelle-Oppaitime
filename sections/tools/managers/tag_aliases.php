@@ -1,5 +1,5 @@
-<?php
-if (!(check_perms('users_mod') || check_perms('site_tag_aliases_read'))) {
+<?php declare(strict_types=1);
+if (!check_perms('users_mod') && !check_perms('site_tag_aliases_read')) {
     error(403);
 }
 
@@ -14,7 +14,7 @@ if (check_perms('users_mod')) {
 
         $DB->query("
       INSERT INTO tag_aliases (BadTag, AliasTag)
-      VALUES ('$badtag', '$aliastag')");
+      VALUES ('{$badtag}', '{$aliastag}')");
     }
 
     if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
@@ -25,13 +25,13 @@ if (check_perms('users_mod')) {
         if ($_POST['save']) {
             $DB->query("
         UPDATE tag_aliases
-        SET BadTag = '$badtag', AliasTag = '$aliastag'
-        WHERE ID = '$aliasid' ");
+        SET BadTag = '{$badtag}', AliasTag = '{$aliastag}'
+        WHERE ID = '{$aliasid}' ");
         }
         if ($_POST['delete']) {
             $DB->query("
         DELETE FROM tag_aliases
-        WHERE ID = '$aliasid'");
+        WHERE ID = '{$aliasid}'");
         }
         $Cache->delete_value('tag_aliases_search');
     }
@@ -73,7 +73,7 @@ if (check_perms('users_mod')) {
 $DB->query("
   SELECT ID, BadTag, AliasTag
   FROM tag_aliases
-  ORDER BY $orderby");
+  ORDER BY {$orderby}");
 while ([$ID, $BadTag, $AliasTag] = $DB->next_record()) {
     ?>
   <tr>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('forums_polls_moderate')) {
@@ -21,7 +23,7 @@ if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value('poll
     $DB->query("
     SELECT Vote, COUNT(UserID)
     FROM forums_polls_votes
-    WHERE TopicID = '$TopicID'
+    WHERE TopicID = '{$TopicID}'
       AND Vote != '0'
     GROUP BY Vote");
     $VoteArray = $DB->to_array(false, MYSQLI_NUM);
@@ -39,15 +41,13 @@ if (![$Question, $Answers, $Votes, $Featured, $Closed] = $Cache->get_value('poll
     }
 }
 
-if (isset($_POST['feature'])) {
-    if (!$Featured) {
-        $Featured = sqltime();
-        $Cache->cache_value('polls_featured', $TopicID, 0);
-        $DB->query('
+if (isset($_POST['feature']) && !$Featured) {
+    $Featured = sqltime();
+    $Cache->cache_value('polls_featured', $TopicID, 0);
+    $DB->query('
       UPDATE forums_polls
       SET Featured=\'' . sqltime() . '\'
-      WHERE TopicID=\'' . $TopicID . '\'');
-    }
+      WHERE TopicID=\'' . $TopicID . "'");
 }
 
 if (isset($_POST['close'])) {
@@ -55,7 +55,7 @@ if (isset($_POST['close'])) {
     $DB->query('
     UPDATE forums_polls
     SET Closed=\'' . $Closed . '\'
-    WHERE TopicID=\'' . $TopicID . '\'');
+    WHERE TopicID=\'' . $TopicID . "'");
 }
 
 $Cache->cache_value('polls_' . $TopicID, [$Question, $Answers, $Votes, $Featured, $Closed], 0);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //Include the header
 View::show_header('Rule Index');
 ?>
@@ -11,7 +11,7 @@ View::show_header('Rule Index');
 <?php Rules::display_golden_rules(); ?>
   </div>
   <!-- END General Rules -->
-<?php include 'jump.php'; ?>
+<?php include __DIR__ . '/jump.php'; ?>
 </div>
 <?php
 View::show_footer();

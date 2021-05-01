@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $UserID = $_GET['userid'];
 if (!is_number($UserID)) {
     error(404);
@@ -17,7 +17,7 @@ if (!apcu_exists('DBKEY')) {
 $DB->query("
   SELECT IP
   FROM users_history_ips
-  WHERE UserID = '$UserID'");
+  WHERE UserID = '{$UserID}'");
 
 $EncIPs = $DB->collect("IP");
 $IPs = [];
@@ -32,16 +32,16 @@ foreach ($EncIPs as $Enc) {
 $DB->query("
   SELECT IP
   FROM users_main
-  WHERE ID = '$UserID'");
+  WHERE ID = '{$UserID}'");
 
 [$Curr] = $DB->next_record();
 $Curr = Crypto::decrypt($Curr);
 
 if (!$Self) {
-    $DB->query("SELECT Username FROM users_main WHERE ID = '$UserID'");
+    $DB->query(sprintf('SELECT Username FROM users_main WHERE ID = \'%s\'', $UserID));
     [$Username] = $DB->next_record();
 
-    View::show_header("IP history for $Username");
+    View::show_header(sprintf('IP history for %s', $Username));
 } else {
     View::show_header("Your IP history");
 }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 authorize();
 
 if (!check_perms('torrents_edit')) {
@@ -22,7 +22,7 @@ if (empty($NewArtistName) && (!$NewArtistID || !is_number($NewArtistID))) {
 $DB->query("
   SELECT Name
   FROM artists_group
-  WHERE ArtistID = $ArtistID
+  WHERE ArtistID = {$ArtistID}
   LIMIT 1");
 if (!([$ArtistName] = $DB->next_record(MYSQLI_NUM, false))) {
     error('An error has occurred.');
@@ -33,7 +33,7 @@ if ($NewArtistID > 0) {
     $DB->query("
     SELECT Name
     FROM artists_group
-    WHERE ArtistID = $NewArtistID
+    WHERE ArtistID = {$NewArtistID}
     LIMIT 1");
     if (!([$NewArtistName] = $DB->next_record())) {
         error('Please enter a valid artist ID number.');
@@ -58,30 +58,30 @@ if (isset($_POST['confirm'])) {
     $DB->query("
     SELECT DISTINCT GroupID
     FROM torrents_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     $Groups = $DB->collect('GroupID');
     $DB->query("
     SELECT DISTINCT RequestID
     FROM requests_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     $Requests = $DB->collect('RequestID');
     $DB->query("
     SELECT DISTINCT UserID
     FROM bookmarks_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     $BookmarkUsers = $DB->collect('UserID');
     $DB->query("
     SELECT DISTINCT ct.CollageID
     FROM collages_torrents AS ct
       JOIN torrents_artists AS ta ON ta.GroupID = ct.GroupID
-    WHERE ta.ArtistID = $ArtistID");
+    WHERE ta.ArtistID = {$ArtistID}");
     $Collages = $DB->collect('CollageID');
 
     // And the info to avoid double-listing an artist if it and the target are on the same group
     $DB->query("
     SELECT DISTINCT GroupID
     FROM torrents_artists
-    WHERE ArtistID = $NewArtistID");
+    WHERE ArtistID = {$NewArtistID}");
     $NewArtistGroups = $DB->collect('GroupID');
     $NewArtistGroups[] = '0';
     $NewArtistGroups = implode(',', $NewArtistGroups);
@@ -89,7 +89,7 @@ if (isset($_POST['confirm'])) {
     $DB->query("
     SELECT DISTINCT RequestID
     FROM requests_artists
-    WHERE ArtistID = $NewArtistID");
+    WHERE ArtistID = {$NewArtistID}");
     $NewArtistRequests = $DB->collect('RequestID');
     $NewArtistRequests[] = '0';
     $NewArtistRequests = implode(',', $NewArtistRequests);
@@ -97,7 +97,7 @@ if (isset($_POST['confirm'])) {
     $DB->query("
     SELECT DISTINCT UserID
     FROM bookmarks_artists
-    WHERE ArtistID = $NewArtistID");
+    WHERE ArtistID = {$NewArtistID}");
     $NewArtistBookmarks = $DB->collect('UserID');
     $NewArtistBookmarks[] = '0';
     $NewArtistBookmarks = implode(',', $NewArtistBookmarks);
@@ -105,72 +105,72 @@ if (isset($_POST['confirm'])) {
     // Merge all of this artist's aliases onto the new artist
     $DB->query("
     UPDATE artists_alias
-    SET ArtistID = $NewArtistID
-    WHERE ArtistID = $ArtistID");
+    SET ArtistID = {$NewArtistID}
+    WHERE ArtistID = {$ArtistID}");
 
     // Update the torrent groups, requests, and bookmarks
     $DB->query("
     UPDATE IGNORE torrents_artists
-    SET ArtistID = $NewArtistID
-    WHERE ArtistID = $ArtistID
-      AND GroupID NOT IN ($NewArtistGroups)");
+    SET ArtistID = {$NewArtistID}
+    WHERE ArtistID = {$ArtistID}
+      AND GroupID NOT IN ({$NewArtistGroups})");
     $DB->query("
     DELETE FROM torrents_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     $DB->query("
     UPDATE IGNORE requests_artists
-    SET ArtistID = $NewArtistID
-    WHERE ArtistID = $ArtistID
-      AND RequestID NOT IN ($NewArtistRequests)");
+    SET ArtistID = {$NewArtistID}
+    WHERE ArtistID = {$ArtistID}
+      AND RequestID NOT IN ({$NewArtistRequests})");
     $DB->query("
     DELETE FROM requests_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
     $DB->query("
     UPDATE IGNORE bookmarks_artists
-    SET ArtistID = $NewArtistID
-    WHERE ArtistID = $ArtistID
-      AND UserID NOT IN ($NewArtistBookmarks)");
+    SET ArtistID = {$NewArtistID}
+    WHERE ArtistID = {$ArtistID}
+      AND UserID NOT IN ({$NewArtistBookmarks})");
     $DB->query("
     DELETE FROM bookmarks_artists
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
 
     // Cache clearing
     if (!empty($Groups)) {
         foreach ($Groups as $GroupID) {
-            $Cache->delete_value("groups_artists_$GroupID");
+            $Cache->delete_value(sprintf('groups_artists_%s', $GroupID));
             Torrents::update_hash($GroupID);
         }
     }
     if (!empty($Requests)) {
         foreach ($Requests as $RequestID) {
-            $Cache->delete_value("request_artists_$RequestID");
+            $Cache->delete_value(sprintf('request_artists_%s', $RequestID));
             Requests::update_sphinx_requests($RequestID);
         }
     }
     if (!empty($BookmarkUsers)) {
         foreach ($BookmarkUsers as $UserID) {
-            $Cache->delete_value("notify_artists_$UserID");
+            $Cache->delete_value(sprintf('notify_artists_%s', $UserID));
         }
     }
     if (!empty($Collages)) {
         foreach ($Collages as $CollageID) {
-            $Cache->delete_value("collage_$CollageID");
+            $Cache->delete_value(sprintf('collage_%s', $CollageID));
         }
     }
 
-    $Cache->delete_value("artist_$ArtistID");
-    $Cache->delete_value("artist_$NewArtistID");
-    $Cache->delete_value("artist_groups_$ArtistID");
-    $Cache->delete_value("artist_groups_$NewArtistID");
+    $Cache->delete_value(sprintf('artist_%s', $ArtistID));
+    $Cache->delete_value(sprintf('artist_%s', $NewArtistID));
+    $Cache->delete_value(sprintf('artist_groups_%s', $ArtistID));
+    $Cache->delete_value(sprintf('artist_groups_%s', $NewArtistID));
 
     // Delete the old artist
     $DB->query("
     DELETE FROM artists_group
-    WHERE ArtistID = $ArtistID");
+    WHERE ArtistID = {$ArtistID}");
 
-    Misc::write_log("The artist $ArtistID ($ArtistName) was made into a non-redirecting alias of artist $NewArtistID ($NewArtistName) by user " . $LoggedUser['ID'] . " (" . $LoggedUser['Username'] . ')');
+    Misc::write_log(sprintf('The artist %s (%s) was made into a non-redirecting alias of artist %s (%s) by user ', $ArtistID, $ArtistName, $NewArtistID, $NewArtistName) . $LoggedUser['ID'] . " (" . $LoggedUser['Username'] . ')');
 
-    header("Location: artist.php?action=edit&artistid=$NewArtistID");
+    header(sprintf('Location: artist.php?action=edit&artistid=%s', $NewArtistID));
 } else {
     View::show_header('Merging Artists'); ?>
   <div class="header">

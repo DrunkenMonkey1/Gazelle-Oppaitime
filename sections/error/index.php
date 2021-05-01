@@ -1,9 +1,9 @@
-<?php
+<?php declare(strict_types=1);
 
-function notify($Channel, $Message)
+function notify($Channel, $Message): void
 {
     global $LoggedUser;
-    send_irc("PRIVMSG " . $Channel . " :" . $Message . " error by " . (!empty($LoggedUser['ID']) ? site_url() . "user.php?id=" . $LoggedUser['ID'] . " (" . $LoggedUser['Username'] . ")" : $_SERVER['REMOTE_ADDR'] . " (" . Tools::geoip($_SERVER['REMOTE_ADDR']) . ")") . " accessing https://" . SITE_DOMAIN . "" . $_SERVER['REQUEST_URI'] . (!empty($_SERVER['HTTP_REFERER'])? " from " . $_SERVER['HTTP_REFERER'] : ''));
+    send_irc("PRIVMSG " . $Channel . " :" . $Message . " error by " . (empty($LoggedUser['ID']) ? $_SERVER['REMOTE_ADDR'] . " (" . Tools::geoip($_SERVER['REMOTE_ADDR']) . ")" : site_url() . "user.php?id=" . $LoggedUser['ID'] . " (" . $LoggedUser['Username'] . ")") . " accessing https://" . SITE_DOMAIN . "" . $_SERVER['REQUEST_URI'] . (empty($_SERVER['HTTP_REFERER'])? '' : " from " . $_SERVER['HTTP_REFERER']));
 }
 
 $Errors = ['403', '404', '413', '504'];

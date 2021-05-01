@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(403);
 }
@@ -18,7 +18,7 @@ if (isset($_POST['doit'])) {
         $DB->query("
       UPDATE tags
       SET TagType = 'other'
-      WHERE ID IN ($OldTagIDs)");
+      WHERE ID IN ({$OldTagIDs})");
     }
 
     if ($_POST['newtag']) {
@@ -27,20 +27,20 @@ if (isset($_POST['doit'])) {
         $DB->query("
       SELECT ID
       FROM tags
-      WHERE Name LIKE '$TagName'");
+      WHERE Name LIKE '{$TagName}'");
         [$TagID] = $DB->next_record();
 
         if ($TagID) {
             $DB->query("
         UPDATE tags
         SET TagType = 'genre'
-        WHERE ID = $TagID");
+        WHERE ID = {$TagID}");
         } else { // Tag doesn't exist yet - create tag
             $DB->query("
         INSERT INTO tags
           (Name, UserID, TagType, Uses)
         VALUES
-          ('$TagName', " . $LoggedUser['ID'] . ", 'genre', 0)");
+          ('{$TagName}', " . $LoggedUser['ID'] . ", 'genre', 0)");
             $TagID = $DB->inserted_id();
         }
     }
@@ -82,7 +82,7 @@ $DB->query("
   ORDER BY Name ASC");
 $TagCount = $DB->record_count();
 $Tags = $DB->to_array();
-for ($i = 0; $i < $TagCount / 3; $i++) {
+for ($i = 0; $i < $TagCount / 3; ++$i) {
     [$TagID1, $TagName1, $TagUses1] = $Tags[$i];
     if (isset($Tags[ceil($TagCount / 3) + $i])) {
         [$TagID2, $TagName2, $TagUses2] = $Tags[ceil($TagCount / 3) + $i];

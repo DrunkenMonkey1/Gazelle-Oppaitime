@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //**********************************************************************//
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Edit form ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
 // This page relies on the TorrentForm class. All it does is call      //
@@ -34,7 +34,6 @@ $DB->query("
     t.MediaInfo,
     tg.CategoryID,
     tg.Name AS Title,
-    tg.NameJP AS TitleJP,
     tg.Year,
     tg.Studio,
     tg.Series,
@@ -52,7 +51,7 @@ $DB->query("
     LEFT JOIN torrents_bad_tags AS bt ON bt.TorrentID = t.ID
     LEFT JOIN torrents_bad_folders AS bf ON bf.TorrentID = t.ID
     LEFT JOIN torrents_bad_files AS bfi ON bfi.TorrentID = t.ID
-  WHERE t.ID = '$TorrentID'");
+  WHERE t.ID = '{$TorrentID}'");
 
 [$Properties] = $DB->to_array(false, MYSQLI_BOTH);
 if (!$Properties) {

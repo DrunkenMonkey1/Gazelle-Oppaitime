@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!check_perms('site_torrents_notify')) {
     error(403);
@@ -27,22 +29,22 @@ if (($Notify = $Cache->get_value('notify_artists_' . $LoggedUser['ID'])) === fal
 $DB->query("
   SELECT Name
   FROM artists_alias
-  WHERE ArtistID = '$ArtistID'
+  WHERE ArtistID = '{$ArtistID}'
     AND Redirect = 0");
 while ([$Alias] = $DB->next_record(MYSQLI_NUM, false)) {
-    while (false !== stripos($Artists, "|$Alias|")) {
-        $Artists = str_ireplace("|$Alias|", '|', $Artists);
+    while (false !== stripos($Artists, sprintf('|%s|', $Alias))) {
+        $Artists = str_ireplace(sprintf('|%s|', $Alias), '|', $Artists);
     }
 }
 if ('|' == $Artists) {
     $DB->query("
     DELETE FROM users_notify_filters
-    WHERE ID = $ID");
+    WHERE ID = {$ID}");
 } else {
     $DB->query("
     UPDATE users_notify_filters
     SET Artists = '" . db_string($Artists) . "'
-    WHERE ID = '$ID'");
+    WHERE ID = '{$ID}'");
 }
 $Cache->delete_value('notify_filters_' . $LoggedUser['ID']);
 $Cache->delete_value('notify_artists_' . $LoggedUser['ID']);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $Search = db_string($_GET['email']);
 $JSON = [];
 if (!check_perms('users_view_email') || empty($Search)) {
@@ -18,7 +20,7 @@ $DB->query("
     Email,
     Comment
   FROM email_blacklist
-  WHERE Email LIKE '%$Search%'");
+  WHERE Email LIKE '%{$Search}%'");
 
 $EmailResults = $DB->to_array(false, MYSQLI_ASSOC, false);
 

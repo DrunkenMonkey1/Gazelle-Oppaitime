@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if (!check_perms('site_moderate_forums')) {
@@ -14,5 +16,5 @@ $TopicID = (int)$_POST['topicid'];
 
 Forums::add_topic_note($TopicID, $_POST['body']);
 
-header("Location: forums.php?action=viewthread&threadid=$TopicID#thread_notes");
+header(sprintf('Location: forums.php?action=viewthread&threadid=%s#thread_notes', $TopicID));
 die();

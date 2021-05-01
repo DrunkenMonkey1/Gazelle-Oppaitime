@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!isset($_POST['emails']) || !is_array($_POST['emails'])) {
     error("No email requested");

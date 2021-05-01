@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //NumTorrents is actually the number of things in the collage, the name just isn't generic.
 
 authorize();
@@ -7,44 +9,44 @@ authorize();
 include SERVER_ROOT . '/classes/validate.class.php';
 $Val = new VALIDATE();
 
-function add_artist($CollageID, $ArtistID)
+function add_artist($CollageID, $ArtistID): void
 {
     global $Cache, $LoggedUser, $DB;
 
     $DB->query("
     SELECT MAX(Sort)
     FROM collages_artists
-    WHERE CollageID = '$CollageID'");
+    WHERE CollageID = '{$CollageID}'");
     [$Sort] = $DB->next_record();
     $Sort += 10;
 
     $DB->query("
     SELECT ArtistID
     FROM collages_artists
-    WHERE CollageID = '$CollageID'
-      AND ArtistID = '$ArtistID'");
+    WHERE CollageID = '{$CollageID}'
+      AND ArtistID = '{$ArtistID}'");
     if (!$DB->has_results()) {
         $DB->query("
       INSERT IGNORE INTO collages_artists
         (CollageID, ArtistID, UserID, Sort, AddedOn)
       VALUES
-        ('$CollageID', '$ArtistID', '$LoggedUser[ID]', '$Sort', '" . sqltime() . "')");
+        ('{$CollageID}', '{$ArtistID}', '$LoggedUser[ID]', '{$Sort}', '" . sqltime() . "')");
 
         $DB->query("
       UPDATE collages
       SET NumTorrents = NumTorrents + 1, Updated = '" . sqltime() . "'
-      WHERE ID = '$CollageID'");
+      WHERE ID = '{$CollageID}'");
 
-        $Cache->delete_value("collage_$CollageID");
-        $Cache->delete_value("artists_collages_$ArtistID");
-        $Cache->delete_value("artists_collages_personal_$ArtistID");
+        $Cache->delete_value(sprintf('collage_%s', $CollageID));
+        $Cache->delete_value(sprintf('artists_collages_%s', $ArtistID));
+        $Cache->delete_value(sprintf('artists_collages_personal_%s', $ArtistID));
 
         $DB->query("
       SELECT UserID
       FROM users_collage_subs
-      WHERE CollageID = $CollageID");
+      WHERE CollageID = {$CollageID}");
         while ([$CacheUserID] = $DB->next_record()) {
-            $Cache->delete_value("collage_subs_user_new_$CacheUserID");
+            $Cache->delete_value(sprintf('collage_subs_user_new_%s', $CacheUserID));
         }
     }
 }
@@ -56,7 +58,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT UserID, CategoryID, Locked, NumTorrents, MaxGroups, MaxGroupsPerUser
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$UserID, $CategoryID, $Locked, $NumTorrents, $MaxGroups, $MaxGroupsPerUser] = $DB->next_record();
 
 if (!check_perms('site_collages_delete')) {
@@ -64,7 +66,7 @@ if (!check_perms('site_collages_delete')) {
         $Err = 'This collage is locked';
     }
     if (0 == $CategoryID && $UserID != $LoggedUser['ID']) {
-        $Err = 'You cannot edit someone else\'s personal collage.';
+        $Err = "You cannot edit someone else's personal collage.";
     }
     if ($MaxGroups > 0 && $NumTorrents >= $MaxGroups) {
         $Err = 'This collage already holds its maximum allowed number of artists.';
@@ -79,7 +81,7 @@ if ($MaxGroupsPerUser > 0) {
     $DB->query("
     SELECT COUNT(*)
     FROM collages_artists
-    WHERE CollageID = '$CollageID'
+    WHERE CollageID = '{$CollageID}'
       AND UserID = '$LoggedUser[ID]'");
     [$GroupsForUser] = $DB->next_record();
     if (!check_perms('site_collages_delete') && $GroupsForUser >= $MaxGroupsPerUser) {
@@ -107,7 +109,7 @@ if ('add_artist' == $_REQUEST['action']) {
     $DB->query("
     SELECT ArtistID
     FROM artists_group
-    WHERE ArtistID = '$ArtistID'");
+    WHERE ArtistID = '{$ArtistID}'");
     [$ArtistID] = $DB->next_record();
     if (!$ArtistID) {
         error('The artist was not found in the database.');
@@ -128,10 +130,10 @@ if ('add_artist' == $_REQUEST['action']) {
 
     if (!check_perms('site_collages_delete')) {
         if ($MaxGroups > 0 && ($NumTorrents + count($URLs) > $MaxGroups)) {
-            $Err = "This collage can only hold $MaxGroups artists.";
+            $Err = sprintf('This collage can only hold %s artists.', $MaxGroups);
         }
         if ($MaxGroupsPerUser > 0 && ($GroupsForUser + count($URLs) > $MaxGroupsPerUser)) {
-            $Err = "You may only have $MaxGroupsPerUser artists in this collage.";
+            $Err = sprintf('You may only have %s artists in this collage.', $MaxGroupsPerUser);
         }
     }
 
@@ -141,21 +143,21 @@ if ('add_artist' == $_REQUEST['action']) {
             $ArtistIDs[] = $Matches[4];
             $ArtistID = $Matches[4];
         } else {
-            $Err = "One of the entered URLs ($URL) does not correspond to an artist on the site.";
+            $Err = sprintf('One of the entered URLs (%s) does not correspond to an artist on the site.', $URL);
             break;
         }
 
         $DB->query("
       SELECT ArtistID
       FROM artists_group
-      WHERE ArtistID = '$ArtistID'");
+      WHERE ArtistID = '{$ArtistID}'");
         if (!$DB->has_results()) {
-            $Err = "One of the entered URLs ($URL) does not correspond to an artist on the site.";
+            $Err = sprintf('One of the entered URLs (%s) does not correspond to an artist on the site.', $URL);
             break;
         }
     }
 
-    if ($Err) {
+    if ('' !== $Err) {
         error($Err);
     }
 
@@ -163,4 +165,4 @@ if ('add_artist' == $_REQUEST['action']) {
         add_artist($CollageID, $ArtistID);
     }
 }
-header("Location: collages.php?id=$CollageID");
+header(sprintf('Location: collages.php?id=%s', $CollageID));

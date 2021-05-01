@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $PerPage = POSTS_PER_PAGE;
 [$Page, $Limit] = Format::page_limit($PerPage);
 
@@ -15,7 +15,7 @@ if ($CanEdit && isset($_POST['perform'])) {
         }
         $DB->query("
       INSERT INTO changelog (Message, Author, Time)
-      VALUES ('$Message', '$Author', '$Date')");
+      VALUES ('{$Message}', '{$Author}', '{$Date}')");
         $ID = $DB->inserted_id();
         //  SiteHistory::add_event(sqltime(), "Change log $ID", "tools.php?action=change_log", 1, 3, "", $Message, $LoggedUser['ID']);
     }
@@ -23,7 +23,7 @@ if ($CanEdit && isset($_POST['perform'])) {
         $ID = (int)$_POST['change_id'];
         $DB->query("
       DELETE FROM changelog
-      WHERE ID = '$ID'");
+      WHERE ID = '{$ID}'");
     }
 }
 
@@ -36,7 +36,7 @@ $DB->query("
     Date(Time) as Time2
   FROM changelog
   ORDER BY Time DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 $ChangeLog = $DB->to_array();
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();
@@ -48,7 +48,7 @@ View::show_header('Gazelle Change Log');
   <div class="linkbox">
 <?php
   $Pages = Format::get_pages($Page, $NumResults, $PerPage, 11);
-  echo "\t\t$Pages\n";
+  echo sprintf('		%s%s', $Pages, PHP_EOL);
 ?>
   </div>
 <?php  if ($CanEdit) { ?>

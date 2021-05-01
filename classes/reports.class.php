@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class Reports
 {
     /**
@@ -9,9 +11,14 @@ class Reports
      * @param bool   $Remastered    - whether the torrent contains remaster information
      * @param string $RemasterTitle - the title of the remaster information
      * @param string $RemasterYear  - the year of the remaster information
+     *
+     * @return string
      */
-    public static function format_reports_remaster_info($Remastered, $RemasterTitle, $RemasterYear)
-    {
+    public static function format_reports_remaster_info(
+        bool $Remastered,
+        string $RemasterTitle,
+        string $RemasterYear
+    ): string {
         if ($Remastered) {
             $RemasterDisplayString = ' &lt;';
             if ('' != $RemasterTitle && '' != $RemasterYear) {
@@ -25,6 +32,7 @@ class Reports
         } else {
             $RemasterDisplayString = '';
         }
+        
         return $RemasterDisplayString;
     }
 }

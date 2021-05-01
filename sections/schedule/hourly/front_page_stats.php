@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Front page stats ----------------------------------------//
 
 //Love or hate, this makes things a hell of a lot faster

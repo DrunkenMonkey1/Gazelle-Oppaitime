@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 //TODO: restrict to viewing below class, username in h2
 if (isset($_GET['userid']) && check_perms('users_view_ips') && check_perms('users_logout')) {
@@ -15,9 +15,9 @@ if (isset($_POST['all'])) {
 
     $DB->query("
     DELETE FROM users_sessions
-    WHERE UserID = '$UserID'
-      AND SessionID != '$SessionID'");
-    $Cache->delete_value("users_sessions_$UserID");
+    WHERE UserID = '{$UserID}'
+      AND SessionID != '{$SessionID}'");
+    $Cache->delete_value(sprintf('users_sessions_%s', $UserID));
 }
 
 if (isset($_POST['session'])) {
@@ -25,9 +25,9 @@ if (isset($_POST['session'])) {
 
     $DB->query("
     DELETE FROM users_sessions
-    WHERE UserID = '$UserID'
+    WHERE UserID = '{$UserID}'
       AND SessionID = '" . db_string($_POST['session']) . "'");
-    $Cache->delete_value("users_sessions_$UserID");
+    $Cache->delete_value(sprintf('users_sessions_%s', $UserID));
 }
 
 $UserSessions = $Cache->get_value('users_sessions_' . $UserID);
@@ -40,10 +40,10 @@ if (!is_array($UserSessions)) {
       IP,
       LastUpdate
     FROM users_sessions
-    WHERE UserID = '$UserID'
+    WHERE UserID = '{$UserID}'
     ORDER BY LastUpdate DESC");
     $UserSessions = $DB->to_array('SessionID', MYSQLI_ASSOC);
-    $Cache->cache_value("users_sessions_$UserID", $UserSessions, 0);
+    $Cache->cache_value(sprintf('users_sessions_%s', $UserID), $UserSessions, 0);
 }
 
 [$UserID, $Username] = array_values(Users::user_info($UserID));

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header('Client Rules');
 
 if (!$WhitelistedClients = $Cache->get_value('whitelisted_clients')) {
@@ -44,6 +44,6 @@ if (!$WhitelistedClients = $Cache->get_value('whitelisted_clients')) {
       The testing of unstable clients by developers must first be approved by staff.
     </p>
   </div>
-<?php include 'jump.php'; ?>
+<?php include __DIR__ . '/jump.php'; ?>
 </div>
 <?php View::show_footer(); ?>

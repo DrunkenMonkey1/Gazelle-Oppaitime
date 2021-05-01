@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $ConvID = $_GET['id'];
 if (!$ConvID || !is_number($ConvID)) {
     error(404);
@@ -9,8 +9,8 @@ $UserID = $LoggedUser['ID'];
 $DB->query("
   SELECT InInbox, InSentbox
   FROM pm_conversations_users
-  WHERE UserID = '$UserID'
-    AND ConvID = '$ConvID'");
+  WHERE UserID = '{$UserID}'
+    AND ConvID = '{$ConvID}'");
 if (!$DB->has_results()) {
     error(403);
 }
@@ -31,8 +31,8 @@ $DB->query("
     cu.ForwardedTo
   FROM pm_conversations AS c
     JOIN pm_conversations_users AS cu ON c.ID = cu.ConvID
-  WHERE c.ID = '$ConvID'
-    AND UserID = '$UserID'");
+  WHERE c.ID = '{$ConvID}'
+    AND UserID = '{$UserID}'");
 [$Subject, $Sticky, $UnRead, $ForwardedID] = $DB->next_record();
 
 
@@ -40,7 +40,7 @@ $DB->query("
   SELECT um.ID, Username
   FROM pm_messages AS pm
     JOIN users_main AS um ON um.ID = pm.SenderID
-  WHERE pm.ConvID = '$ConvID'");
+  WHERE pm.ConvID = '{$ConvID}'");
 
 $ConverstionParticipants = $DB->to_array();
 
@@ -58,23 +58,23 @@ if ('1' == $UnRead) {
     $DB->query("
     UPDATE pm_conversations_users
     SET UnRead = '0'
-    WHERE ConvID = '$ConvID'
-      AND UserID = '$UserID'");
+    WHERE ConvID = '{$ConvID}'
+      AND UserID = '{$UserID}'");
     // Clear the caches of the inbox and sentbox
-    $Cache->decrement("inbox_new_$UserID");
+    $Cache->decrement(sprintf('inbox_new_%s', $UserID));
 }
 
-View::show_header("View conversation $Subject", 'comments,inbox,bbcode,jquery.validate,form_validate');
+View::show_header(sprintf('View conversation %s', $Subject), 'comments,inbox,bbcode,jquery.validate,form_validate');
 
 // Get messages
 $DB->query("
   SELECT SentDate, SenderID, Body, ID
   FROM pm_messages
-  WHERE ConvID = '$ConvID'
+  WHERE ConvID = '{$ConvID}'
   ORDER BY ID");
 ?>
 <div class="thin">
-  <h2><?=$Subject . ($ForwardedID > 0 ? " (Forwarded to $ForwardedName)" : '')?></h2>
+  <h2><?=$Subject . ($ForwardedID > 0 ? sprintf(' (Forwarded to %s)', $ForwardedName) : '')?></h2>
   <div class="linkbox">
     <a href="<?=Inbox::get_inbox_link(); ?>" class="brackets">Back to inbox</a>
   </div>
@@ -99,7 +99,7 @@ $DB->query("
   SELECT UserID
   FROM pm_conversations_users
   WHERE UserID != '$LoggedUser[ID]'
-    AND ConvID = '$ConvID'
+    AND ConvID = '{$ConvID}'
     AND (ForwardedTo = 0 OR ForwardedTo = UserID)");
 $ReceiverIDs = $DB->collect('UserID');
 

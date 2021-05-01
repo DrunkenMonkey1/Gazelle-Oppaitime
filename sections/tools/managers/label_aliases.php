@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
 if (!check_perms('torrents_edit') || $LoggedUser['DisableWiki']) {
   error(403);
@@ -34,7 +34,7 @@ if (isset($_POST['newalias'])) {
 
     $DB->query("
     INSERT INTO label_aliases (BadLabel, AliasLabel)
-    VALUES ('$BadLabel', '$AliasLabel')");
+    VALUES ('{$BadLabel}', '{$AliasLabel}')");
 }
 
 if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
@@ -45,18 +45,18 @@ if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
     if ($_POST['save']) {
         $DB->query("
       UPDATE label_aliases
-      SET BadLabel = '$BadLabel', AliasLabel = '$AliasLabel'
-      WHERE ID = '$AliasID' ");
+      SET BadLabel = '{$BadLabel}', AliasLabel = '{$AliasLabel}'
+      WHERE ID = '{$AliasID}' ");
     }
     if ($_POST['delete']) {
         $DB->query("
       DELETE FROM label_aliases
-      WHERE ID = '$AliasID'");
+      WHERE ID = '{$AliasID}'");
     }
 }
 ?>
 <div class="header">
-  <h2>Label Aliases<?=($LabelName ? " for <a href=\"labels.php?id=$LabelID\">$LabelName</a>" : '')?></h2>
+  <h2>Label Aliases<?=($LabelName ? sprintf(' for <a href="labels.php?id=%s">%s</a>', $LabelID, $LabelName) : '')?></h2>
   <div class="linkbox">
     <a href="tools.php?action=label_aliases&amp;order=GoodLabels" class="brackets">Sort by good labels</a>
     <a href="tools.php?action=label_aliases&amp;order=BadLabels" class="brackets">Sort by bad labels</a>
@@ -87,8 +87,8 @@ if (isset($_POST['changealias']) && is_number($_POST['aliasid'])) {
 $DB->query("
   SELECT ID, BadLabel, AliasLabel
   FROM label_aliases
-  $LabelNameSQL
-  ORDER BY $OrderBy");
+  {$LabelNameSQL}
+  ORDER BY {$OrderBy}");
 while ([$ID, $BadLabel, $AliasLabel] = $DB->next_record()) {
     ?>
   <tr>

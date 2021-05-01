@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 if ($UserID != $LoggedUser['ID'] || !Bookmarks::can_bookmark('torrent')) {

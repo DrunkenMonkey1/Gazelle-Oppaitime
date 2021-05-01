@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * This super class is used to manage the ammount of textareas there are and to
  * generate the required JavaScript that enables the previews to work.
@@ -9,20 +12,20 @@ class TEXTAREA_PREVIEW_SUPER
      * @static
      * @var int $Textareas Total number of textareas created
      */
-    protected static $Textareas = 0;
-
+    protected static int $Textareas = 0;
+    
     /**
      * @static
      * @var array $_ID Array of textarea IDs
      */
-    protected static $_ID = [];
-
+    protected static array $_ID = [];
+    
     /**
      * @static
      * @var bool For use in JavaScript method
      */
-    private static $Exectuted = false;
-
+    private static bool $Exectuted = false;
+    
     /**
      * This method should only run once with $all as true and should be placed
      * in the header or footer.
@@ -32,44 +35,41 @@ class TEXTAREA_PREVIEW_SUPER
      * jQuery is required for this to work, include it in the headers.
      *
      * @static
+     *
      * @param bool $all Output all required scripts, otherwise just do iterator()
+     *
      * @example <pre><?php TEXT_PREVIEW::JavaScript(); ?></pre>
-     * @return void
      */
-    public static function JavaScript($all = true)
+    public static function JavaScript(bool $all = true): void
     {
         if (0 === self::$Textareas) {
             return;
         }
-        if (false === self::$Exectuted && $all) {
+        if (!self::$Exectuted && $all) {
             View::parse('generic/textarea/script.phtml');
         }
-
+        
         self::$Exectuted = true;
         self::iterator();
     }
-
+    
     /**
      * This iterator generates JavaScript to initialize each JavaScript
      * TextareaPreview object.
      *
      * It will generate a numeric or custom ID related to the textarea.
+     *
      * @static
-     * @return void
      */
-    private static function iterator()
+    private static function iterator(): void
     {
         $script = [];
         for ($i = 0; $i < self::$Textareas; $i++) {
-            if (isset(self::$_ID[$i]) && is_string(self::$_ID[$i])) {
-                $a = sprintf('%d, "%s"', $i, self::$_ID[$i]);
-            } else {
-                $a = $i;
-            }
+            $a = isset(self::$_ID[$i]) && is_string(self::$_ID[$i]) ? sprintf('%d, "%s"', $i, self::$_ID[$i]) : $i;
             $script[] = sprintf('[%s]', $a);
         }
         if (!empty($script)) {
-            View::parse('generic/textarea/script_factory.phtml', ['script' => join(', ', $script)]);
+            View::parse('generic/textarea/script_factory.phtml', ['script' => implode(', ', $script)]);
         }
     }
 }
@@ -118,20 +118,20 @@ class TEXTAREA_PREVIEW extends TEXTAREA_PREVIEW_SUPER
     /**
      * @var int Unique ID
      */
-    private $id;
-
+    private int $id;
+    
     /**
      * Flag for preview output
-     * @var bool $preview
      */
-    private $preview = false;
-
+    private bool $preview = false;
+    
     /**
      * String table
+     *
      * @var string Buffer
      */
     private $buffer = null;
-
+    
     /**
      * This method creates a textarea
      *
@@ -164,22 +164,18 @@ class TEXTAREA_PREVIEW extends TEXTAREA_PREVIEW_SUPER
     ) {
         $this->id = parent::$Textareas;
         parent::$Textareas += 1;
-        array_push(parent::$_ID, $ID);
-
+        parent::$_ID[] = $ID;
+        
         if (empty($ID)) {
             $ID = 'quickpost_' . $this->id;
         }
-
-        if (!empty($ExtraAttributes)) {
-            $Attributes = ' ' . implode(' ', $ExtraAttributes);
-        } else {
-            $Attributes = '';
-        }
-
-        if (true === $Preview) {
+        
+        $Attributes = empty($ExtraAttributes) ? '' : ' ' . implode(' ', $ExtraAttributes);
+        
+        if ($Preview) {
             $this->preview();
         }
-
+        
         $this->buffer = View::parse('generic/textarea/textarea.phtml', [
             'ID' => $ID,
             'NID' => $this->id,
@@ -189,46 +185,45 @@ class TEXTAREA_PREVIEW extends TEXTAREA_PREVIEW_SUPER
             'Rows' => &$Rows,
             'Attributes' => &$Attributes
         ], $Buffer);
-
-        if (true === $Buttons) {
+        
+        if ($Buttons) {
             $this->buttons();
         }
     }
-
+    
     /**
      * Outputs the divs required for previewing the AJAX content
      * Will only output once
      */
-    public function preview()
+    public function preview(): void
     {
         if (!$this->preview) {
             View::parse('generic/textarea/preview.phtml', ['ID' => $this->id]);
         }
         $this->preview = true;
     }
-
+    
     /**
      * Outputs the preview and edit buttons
      * Can be called many times to place buttons in different areas
      */
-    public function buttons()
+    public function buttons(): void
     {
         View::parse('generic/textarea/buttons.phtml', ['ID' => $this->id]);
     }
-
+    
     /**
      * Returns the textarea's numeric ID.
      */
-    public function getID()
+    public function getID(): int
     {
         return $this->id;
     }
-
+    
     /**
      * Returns textarea string when buffer is enabled in the constructor
-     * @return string
      */
-    public function getBuffer()
+    public function getBuffer(): string
     {
         return $this->buffer;
     }

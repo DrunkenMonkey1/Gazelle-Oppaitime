@@ -1,22 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 class FEED
 {
-    public function open_feed()
+    public function open_feed(): void
     {
         header("Content-type: application/xml; charset=UTF-8");
-        echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n","<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" version=\"2.0\">\n\t<channel>\n";
+        echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n", "<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" version=\"2.0\">\n\t<channel>\n";
     }
-
-    public function close_feed()
+    
+    public function close_feed(): void
     {
         echo "\t</channel>\n</rss>";
     }
-
-    public function channel($Title, $Description, $Section = '')
+    
+    public function channel($Title, $Description, $Section = ''): void
     {
-        $Site = site_url();
         echo "\t\t<title>$Title :: " . SITE_NAME . "</title>\n";
+        $Site = site_url();
         echo "\t\t<link>$Site$Section</link>\n";
         echo "\t\t<description>$Description</description>\n";
         echo "\t\t<language>en-us</language>\n";
@@ -24,14 +26,10 @@ class FEED
         echo "\t\t<docs>http://blogs.law.harvard.edu/tech/rss</docs>\n";
         echo "\t\t<generator>Gazelle Feed Class</generator>\n\n";
     }
-
-    public function item($Title, $Description, $Page, $Creator, $Comments = '', $Category = '', $Date = '')
-    { //Escape with CDATA, otherwise the feed breaks.
-        if ('' == $Date) {
-            $Date = date('r');
-        } else {
-            $Date = date('r', strtotime($Date));
-        }
+    
+    public function item($Title, $Description, $Page, $Creator, $Comments = '', $Category = '', $Date = ''): string
+    {
+        $Date = '' == $Date ? date('r') : date('r', strtotime($Date));
         $Site = site_url();
         $Item = "\t\t<item>\n";
         $Item .= "\t\t\t<title><![CDATA[$Title]]></title>\n";
@@ -45,11 +43,11 @@ class FEED
         if ('' != $Category) {
             $Item .= "\t\t\t<category><![CDATA[$Category]]></category>\n";
         }
-        $Item .= "\t\t\t<dc:creator>$Creator</dc:creator>\n\t\t</item>\n";
-        return $Item;
+        
+        return $Item . "\t\t\t<dc:creator>$Creator</dc:creator>\n\t\t</item>\n";
     }
-
-    public function retrieve($CacheKey, $AuthKey, $PassKey)
+    
+    public function retrieve($CacheKey, $AuthKey, $PassKey): void
     {
         global $Cache;
         $Entries = $Cache->get_value($CacheKey);
@@ -61,17 +59,15 @@ class FEED
             }
         }
     }
-
-    public function populate($CacheKey, $Item)
+    
+    public function populate($CacheKey, $Item): void
     {
         global $Cache;
         $Entries = $Cache->get_value($CacheKey, true);
         if (!$Entries) {
             $Entries = [];
-        } else {
-            if (count($Entries) >= 50) {
-                array_pop($Entries);
-            }
+        } elseif (count($Entries) >= 50) {
+            array_pop($Entries);
         }
         array_unshift($Entries, $Item);
         $Cache->cache_value($CacheKey, $Entries, 0); //inf cache

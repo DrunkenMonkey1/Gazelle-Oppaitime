@@ -1,22 +1,39 @@
 <?php
 
+declare(strict_types=1);
+
 class Wiki
 {
     /**
-     * Normalize an alias
-     * @param  string $str
-     * @return string
+     * Flush the alias cache. Call this whenever you touch the wiki_aliases table.
      */
-    public static function normalize_alias($str)
+    public static function flush_aliases(): void
     {
-        return trim(substr(preg_replace('/[^a-z0-9]/', '', strtolower(htmlentities($str))), 0, 50));
+        G::$Cache->delete_value('wiki_aliases');
     }
-
+    
+    /**
+     * Get the ArticleID corresponding to an alias
+     *
+     * @return bool|int|void
+     */
+    public static function alias_to_id(string $Alias)
+    {
+        $Aliases = self::get_aliases();
+        $Alias = self::normalize_alias($Alias);
+        if (!isset($Aliases[$Alias])) {
+            return false;
+        }
+        
+        return (int) $Aliases[$Alias];
+    }
+    
     /**
      * Get all aliases in an associative array of Alias => ArticleID
-     * @return array
+     *
+     * @return mixed[]
      */
-    public static function get_aliases()
+    public static function get_aliases(): array
     {
         $Aliases = G::$Cache->get_value('wiki_aliases');
         if (!$Aliases) {
@@ -28,40 +45,26 @@ class Wiki
             G::$DB->set_query_id($QueryID);
             G::$Cache->cache_value('wiki_aliases', $Aliases, 3600 * 24 * 14); // 2 weeks
         }
+        
         return $Aliases;
     }
-
+    
     /**
-     * Flush the alias cache. Call this whenever you touch the wiki_aliases table.
+     * Normalize an alias
+     *
+     * @param string $str
+     *
+     * @return string
      */
-    public static function flush_aliases()
+    public static function normalize_alias(string $str): string
     {
-        G::$Cache->delete_value('wiki_aliases');
+        return trim(substr(preg_replace('/[^a-z0-9]/', '', strtolower(htmlentities($str))), 0, 50));
     }
-
-    /**
-     * Get the ArticleID corresponding to an alias
-     * @param  string $Alias
-     * @return int
-     */
-    public static function alias_to_id($Alias)
-    {
-        $Aliases = self::get_aliases();
-        $Alias = self::normalize_alias($Alias);
-        if (!isset($Aliases[$Alias])) {
-            return false;
-        } else {
-            return (int)$Aliases[$Alias];
-        }
-    }
-
+    
     /**
      * Get an article; returns false on error if $Error = false
-     * @param  int        $ArticleID
-     * @param  bool       $Error
-     * @return array|bool
      */
-    public static function get_article($ArticleID, $Error = true)
+    public static function get_article(int $ArticleID, bool $Error = true): array|bool
     {
         $Contents = G::$Cache->get_value('wiki_article_' . $ArticleID);
         if (!$Contents) {
@@ -94,14 +97,14 @@ class Wiki
             G::$DB->set_query_id($QueryID);
             G::$Cache->cache_value('wiki_article_' . $ArticleID, $Contents, 3600 * 24 * 14); // 2 weeks
         }
+        
         return $Contents;
     }
-
+    
     /**
      * Flush an article's cache. Call this whenever you edited a wiki article or its aliases.
-     * @param int $ArticleID
      */
-    public static function flush_article($ArticleID)
+    public static function flush_article(int $ArticleID): void
     {
         G::$Cache->delete_value('wiki_article_' . $ArticleID);
     }

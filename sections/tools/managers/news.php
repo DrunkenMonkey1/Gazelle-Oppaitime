@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 if (!check_perms('admin_manage_news')) {
     error(403);
@@ -6,8 +6,7 @@ if (!check_perms('admin_manage_news')) {
 
 View::show_header('Manage news', 'bbcode');
 
-switch ($_GET['action']) {
-  case 'takeeditnews':
+if ('takeeditnews' == $_GET['action']) {
     if (!check_perms('admin_manage_news')) {
         error(403);
     }
@@ -22,14 +21,13 @@ switch ($_GET['action']) {
         $Cache->delete_value('feed_news');
     }
     header('Location: index.php');
-    break;
-  case 'editnews':
+} elseif ('editnews' == $_GET['action']) {
     if (is_number($_GET['id'])) {
         $NewsID = $_GET['id'];
         $DB->query("
         SELECT Title, Body
         FROM news
-        WHERE ID = $NewsID");
+        WHERE ID = {$NewsID}");
         [$Title, $Body] = $DB->next_record();
     }
 }
@@ -52,7 +50,7 @@ switch ($_GET['action']) {
 <!-- Why did someone add this?  <input type="datetime" name="datetime" value="<?=sqltime()?>" /> -->
       <br>
       <h3>Body</h3>
-<?php    $Textarea = new TEXTAREA_PREVIEW('body', '', display_str($Body), 95, 15, true, false); ?>
+<?php    $Textarea = new TEXTAREA_PREVIEW('body', '', display_str($Body ?? ''), 95, 15, true, false); ?>
       <div class="center">
         <input type="button" value="Preview" class="hidden button_preview_<?=$Textarea->getID()?>">
         <input type="submit" value="<?= ('news' == $_GET['action']) ? 'Create news post' : 'Edit news post';?>">

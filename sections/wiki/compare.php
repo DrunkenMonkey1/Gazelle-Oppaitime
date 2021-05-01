@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //Diff function by Leto of StC.
 function diff($OldText, $NewText)
 {
@@ -15,9 +15,9 @@ function diff($OldText, $NewText)
         $Found = -1;
 
         while ($Key < count($LineArrayNew)) {
-            if ($OldString != $LineArrayNew[$Key]) {
-                $Key++;
-            } elseif ($OldString == $LineArrayNew[$Key]) {
+            if ($OldString !== $LineArrayNew[$Key]) {
+                ++$Key;
+            } elseif ($OldString === $LineArrayNew[$Key]) {
                 $Found = $Key;
                 break;
             }
@@ -25,7 +25,7 @@ function diff($OldText, $NewText)
 
         if ('-1' == $Found) { //we never found the old line in the new array
             $Result[] = '<span class="line_deleted">&larr; ' . $OldString . '</span><br />';
-            $LineOffset = $LineOffset - 1;
+            --$LineOffset;
         } elseif ($Found == $OldLine + $LineOffset) {
             $Result[] = '<span class="line_unchanged">&#8597; ' . $OldString . '</span><br />';
         } elseif ($Found != $OldLine + $LineOffset) {
@@ -36,7 +36,7 @@ function diff($OldText, $NewText)
                 $Key = $OldLine + $LineOffset;
                 while ($Key < $Found) {
                     $Result[] = '<span class="line_new">&rarr; ' . $LineArrayNew[$Key] . '</span><br />';
-                    $Key++;
+                    ++$Key;
                 }
                 $Result[] = '<span class="line_moved">&rarr; ' . $OldString . '</span><br />';
             }
@@ -47,7 +47,7 @@ function diff($OldText, $NewText)
         $Key = count($LineArrayOld) + $LineOffset;
         while ($Key < count($LineArrayNew)) {
             $Result[] = '<span class="line_new">&rarr; ' . $LineArrayNew[$Key] . '</span><br />';
-            $Key++;
+            ++$Key;
         }
     }
     return $Result;
@@ -62,8 +62,8 @@ function get_body($ID, $Rev)
         $DB->query("
       SELECT Body
       FROM wiki_revisions
-      WHERE ID = '$ID'
-        AND Revision = '$Rev'");
+      WHERE ID = '{$ID}'
+        AND Revision = '{$Rev}'");
         if (!$DB->has_results()) {
             error(404);
         }

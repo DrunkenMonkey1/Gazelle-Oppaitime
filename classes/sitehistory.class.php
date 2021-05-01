@@ -1,10 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 class SiteHistory
 {
-    private static $Categories = [1 => "Code", "Event", "Milestone", "Policy", "Release", "Staff Change"];
-    private static $SubCategories = [1 => "Announcement", "Blog Post", "Change Log", "Forum Post", "Wiki", "Other", "External Source"];
-    private static $Tags = [
+    /**
+     * @var mixed[]
+     */
+    private static array $Categories = [1 => "Code", "Event", "Milestone", "Policy", "Release", "Staff Change"];
+    /**
+     * @var mixed[]
+     */
+    private static array $SubCategories = [
+        1 => "Announcement",
+        "Blog Post",
+        "Change Log",
+        "Forum Post",
+        "Wiki",
+        "Other",
+        "External Source"
+    ];
+    /**
+     * @var mixed[]
+     */
+    private static array $Tags = [
         "api",
         "celebration",
         "class.primary",
@@ -63,8 +82,9 @@ class SiteHistory
         "vanity.house",
         "voting",
         "whitelist",
-        "wiki"];
-
+        "wiki"
+    ];
+    
     public static function get_months()
     {
         $Results = G::$Cache->get_value("site_history_months");
@@ -79,9 +99,13 @@ class SiteHistory
             G::$DB->set_query_id($QueryID);
             G::$Cache->cache_value("site_history_months", $Results, 0);
         }
+        
         return $Results;
     }
-
+    
+    /**
+     * @return mixed|void
+     */
     public static function get_event($ID)
     {
         if (!empty($ID)) {
@@ -94,24 +118,25 @@ class SiteHistory
           ORDER BY Date DESC");
             $Event = G::$DB->next_record();
             G::$DB->set_query_id($QueryID);
+            
             return $Event;
         }
     }
-
-    public static function get_latest_events($Limit)
+    
+    public static function get_latest_events($Limit): void
     {
         self::get_events(null, null, null, null, null, null, $Limit);
     }
-
+    
     public static function get_events($Month, $Year, $Title, $Category, $SubCategory, $Tags, $Limit)
     {
-        $Month = (int)$Month;
-        $Year = (int)$Year;
+        $Month = (int) $Month;
+        $Year = (int) $Year;
         $Title = db_string($Title);
-        $Category = (int)$Category;
-        $SubCategory = (int)$SubCategory;
+        $Category = (int) $Category;
+        $SubCategory = (int) $SubCategory;
         $Tags = db_string($Tags);
-        $Limit = (int)$Limit;
+        $Limit = (int) $Limit;
         $Where = [];
         if (!empty($Month)) {
             $Where[] = " MONTH(Date) = '$Month' ";
@@ -141,17 +166,9 @@ class SiteHistory
                 $Where[] = $Or;
             }
         }
-        if (!empty($Limit)) {
-            $Limit = " LIMIT $Limit";
-        } else {
-            $Limit = '';
-        }
-        if (count($Where) > 0) {
-            $Query = ' WHERE ' . implode('AND', $Where);
-        } else {
-            $Query = '';
-        }
-
+        $Limit = empty($Limit) ? '' : " LIMIT $Limit";
+        $Query = count($Where) > 0 ? ' WHERE ' . implode('AND', $Where) : '';
+        
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
         SELECT
@@ -162,10 +179,11 @@ class SiteHistory
         $Limit");
         $Events = G::$DB->to_array();
         G::$DB->set_query_id($QueryID);
+        
         return $Events;
     }
-
-    public static function add_event($Date, $Title, $Link, $Category, $SubCategory, $Tags, $Body, $UserID)
+    
+    public static function add_event($Date, $Title, $Link, $Category, $SubCategory, $Tags, $Body, $UserID): void
     {
         if (empty($Date)) {
             $Date = sqltime();
@@ -177,8 +195,8 @@ class SiteHistory
         }
         $Title = db_string($Title);
         $Link = db_string($Link);
-        $Category = (int)$Category;
-        $SubCategory = (int)$SubCategory;
+        $Category = (int) $Category;
+        $SubCategory = (int) $SubCategory;
         $Tags = db_string(strtolower((preg_replace('/\s+/', '', $Tags))));
         $ExplodedTags = explode(',', $Tags);
         foreach ($ExplodedTags as $Tag) {
@@ -187,12 +205,12 @@ class SiteHistory
             }
         }
         $Body = db_string($Body);
-        $UserID = (int)$UserID;
-
+        $UserID = (int) $UserID;
+        
         if (empty($Title) || empty($Category) || empty($SubCategory)) {
             error("Error");
         }
-
+        
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
         INSERT INTO site_history
@@ -202,8 +220,16 @@ class SiteHistory
         G::$DB->set_query_id($QueryID);
         G::$Cache->delete_value("site_history_months");
     }
-
-    public static function update_event($ID, $Date, $Title, $Link, $Category, $SubCategory, $Tags, $Body, $UserID)
+    
+    /**
+     * @return mixed[]
+     */
+    public static function get_tags(): array
+    {
+        return self::$Tags;
+    }
+    
+    public static function update_event($ID, $Date, $Title, $Link, $Category, $SubCategory, $Tags, $Body, $UserID): void
     {
         if (empty($Date)) {
             $Date = sqltime();
@@ -214,11 +240,11 @@ class SiteHistory
                 error("Error");
             }
         }
-        $ID = (int)$ID;
+        $ID = (int) $ID;
         $Title = db_string($Title);
         $Link = db_string($Link);
-        $Category = (int)$Category;
-        $SubCategory = (int)$SubCategory;
+        $Category = (int) $Category;
+        $SubCategory = (int) $SubCategory;
         $Tags = db_string(strtolower((preg_replace('/\s+/', '', $Tags))));
         $ExplodedTags = explode(",", $Tags);
         foreach ($ExplodedTags as $Tag) {
@@ -227,12 +253,12 @@ class SiteHistory
             }
         }
         $Body = db_string($Body);
-        $UserID = (int)$UserID;
-
+        $UserID = (int) $UserID;
+        
         if (empty($ID) || empty($Title) || empty($Category) || empty($SubCategory)) {
             error("Error");
         }
-
+        
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
         UPDATE site_history
@@ -249,8 +275,8 @@ class SiteHistory
         G::$DB->set_query_id($QueryID);
         G::$Cache->delete_value("site_history_months");
     }
-
-    public static function delete_event($ID)
+    
+    public static function delete_event($ID): void
     {
         if (!is_numeric($ID)) {
             error(404);
@@ -262,19 +288,20 @@ class SiteHistory
         G::$DB->set_query_id($QueryID);
         G::$Cache->delete_value("site_history_months");
     }
-
-    public static function get_categories()
+    
+    /**
+     * @return mixed[]
+     */
+    public static function get_categories(): array
     {
         return self::$Categories;
     }
-
-    public static function get_sub_categories()
+    
+    /**
+     * @return mixed[]
+     */
+    public static function get_sub_categories(): array
     {
         return self::$SubCategories;
-    }
-
-    public static function get_tags()
-    {
-        return self::$Tags;
     }
 }

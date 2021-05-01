@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $CollageID = $_POST['collageid'];
@@ -10,7 +12,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT UserID, CategoryID
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$UserID, $CategoryID] = $DB->next_record();
 if ('0' === $CategoryID && $UserID !== $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
     error(403);
@@ -25,16 +27,16 @@ if (!is_number($GroupID)) {
 if ('Remove' === $_POST['submit']) {
     $DB->query("
     DELETE FROM collages_torrents
-    WHERE CollageID = '$CollageID'
-      AND GroupID = '$GroupID'");
+    WHERE CollageID = '{$CollageID}'
+      AND GroupID = '{$GroupID}'");
     $Rows = $DB->affected_rows();
     $DB->query("
     UPDATE collages
-    SET NumTorrents = NumTorrents - $Rows
-    WHERE ID = '$CollageID'");
-    $Cache->delete_value("torrents_details_$GroupID");
-    $Cache->delete_value("torrent_collages_$GroupID");
-    $Cache->delete_value("torrent_collages_personal_$GroupID");
+    SET NumTorrents = NumTorrents - {$Rows}
+    WHERE ID = '{$CollageID}'");
+    $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
+    $Cache->delete_value(sprintf('torrent_collages_%s', $GroupID));
+    $Cache->delete_value(sprintf('torrent_collages_personal_%s', $GroupID));
 } elseif (isset($_POST['drag_drop_collage_sort_order'])) {
     @parse_str($_POST['drag_drop_collage_sort_order'], $Series);
     $Series = @array_shift($Series);
@@ -64,10 +66,10 @@ if ('Remove' === $_POST['submit']) {
     }
     $DB->query("
     UPDATE collages_torrents
-    SET Sort = '$Sort'
-    WHERE CollageID = '$CollageID'
-      AND GroupID = '$GroupID'");
+    SET Sort = '{$Sort}'
+    WHERE CollageID = '{$CollageID}'
+      AND GroupID = '{$GroupID}'");
 }
 
-$Cache->delete_value("collage_$CollageID");
-header("Location: collages.php?action=manage&collageid=$CollageID");
+$Cache->delete_value(sprintf('collage_%s', $CollageID));
+header(sprintf('Location: collages.php?action=manage&collageid=%s', $CollageID));

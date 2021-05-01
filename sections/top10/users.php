@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
     if (in_array($_GET['details'], ['ul', 'dl', 'numul', 'uls', 'dls'], true)) {
@@ -21,7 +21,7 @@ View::show_header('Top 10 Users');
 <?php
 
 // defaults to 10 (duh)
-$Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+$Limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 10;
 $Limit = in_array($Limit, [10, 100, 250], true) ? $Limit : 10;
 
 $BaseQuery = "
@@ -45,7 +45,7 @@ $BaseQuery = "
 
   if ('all' == $Details || 'ul' == $Details) {
       if (!$TopUserUploads = $Cache->get_value('topuser_ul_' . $Limit)) {
-          $DB->query("$BaseQuery ORDER BY u.Uploaded DESC LIMIT $Limit;");
+          $DB->query(sprintf('%s ORDER BY u.Uploaded DESC LIMIT %s;', $BaseQuery, $Limit));
           $TopUserUploads = $DB->to_array();
           $Cache->cache_value('topuser_ul_' . $Limit, $TopUserUploads, 3600 * 12);
       }
@@ -54,7 +54,7 @@ $BaseQuery = "
 
   if ('all' == $Details || 'dl' == $Details) {
       if (!$TopUserDownloads = $Cache->get_value('topuser_dl_' . $Limit)) {
-          $DB->query("$BaseQuery ORDER BY u.Downloaded DESC LIMIT $Limit;");
+          $DB->query(sprintf('%s ORDER BY u.Downloaded DESC LIMIT %s;', $BaseQuery, $Limit));
           $TopUserDownloads = $DB->to_array();
           $Cache->cache_value('topuser_dl_' . $Limit, $TopUserDownloads, 3600 * 12);
       }
@@ -63,7 +63,7 @@ $BaseQuery = "
 
   if ('all' == $Details || 'numul' == $Details) {
       if (!$TopUserNumUploads = $Cache->get_value('topuser_numul_' . $Limit)) {
-          $DB->query("$BaseQuery ORDER BY NumUploads DESC LIMIT $Limit;");
+          $DB->query(sprintf('%s ORDER BY NumUploads DESC LIMIT %s;', $BaseQuery, $Limit));
           $TopUserNumUploads = $DB->to_array();
           $Cache->cache_value('topuser_numul_' . $Limit, $TopUserNumUploads, 3600 * 12);
       }
@@ -72,7 +72,7 @@ $BaseQuery = "
 
   if ('all' == $Details || 'uls' == $Details) {
       if (!$TopUserUploadSpeed = $Cache->get_value('topuser_ulspeed_' . $Limit)) {
-          $DB->query("$BaseQuery ORDER BY UpSpeed DESC LIMIT $Limit;");
+          $DB->query(sprintf('%s ORDER BY UpSpeed DESC LIMIT %s;', $BaseQuery, $Limit));
           $TopUserUploadSpeed = $DB->to_array();
           $Cache->cache_value('topuser_ulspeed_' . $Limit, $TopUserUploadSpeed, 3600 * 12);
       }
@@ -81,7 +81,7 @@ $BaseQuery = "
 
   if ('all' == $Details || 'dls' == $Details) {
       if (!$TopUserDownloadSpeed = $Cache->get_value('topuser_dlspeed_' . $Limit)) {
-          $DB->query("$BaseQuery ORDER BY DownSpeed DESC LIMIT $Limit;");
+          $DB->query(sprintf('%s ORDER BY DownSpeed DESC LIMIT %s;', $BaseQuery, $Limit));
           $TopUserDownloadSpeed = $DB->to_array();
           $Cache->cache_value('topuser_dlspeed_' . $Limit, $TopUserDownloadSpeed, 3600 * 12);
       }
@@ -95,7 +95,7 @@ View::show_footer();
 exit;
 
 // generate a table based on data from most recent query to $DB
-function generate_user_table($Caption, $Tag, $Details, $Limit)
+function generate_user_table($Caption, $Tag, $Details, $Limit): void
 {
     global $Time; ?>
   <h3>Top <?=$Limit . ' ' . $Caption; ?>
@@ -145,7 +145,7 @@ function generate_user_table($Caption, $Tag, $Details, $Limit)
   }
     $Rank = 0;
     foreach ($Details as $Detail) {
-        $Rank++; ?>
+        ++$Rank; ?>
   <tr class="row">
     <td class="center"><?=$Rank?></td>
     <td><?=Users::format_username($Detail['ID'], false, false, false)?></td>

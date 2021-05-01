@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($_GET['collageid']) && is_number($_GET['collageid'])) {
     $CollageID = $_GET['collageid'];
 }
@@ -9,7 +9,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT Name, Description, TagList, UserID, CategoryID, Locked, MaxGroups, MaxGroupsPerUser, Featured
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$Name, $Description, $TagList, $UserID, $CategoryID, $Locked, $MaxGroups, $MaxGroupsPerUser, $Featured] = $DB->next_record();
 $TagList = implode(', ', explode(' ', $TagList));
 

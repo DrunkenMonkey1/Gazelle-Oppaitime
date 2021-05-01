@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /***************************************************************
 * This page handles the backend of the "new group" function
 * which splits a torrent off into a new group.
@@ -49,11 +49,11 @@ if (empty($_POST['confirm'])) {
     $DB->query("
     SELECT ArtistID,  Name
     FROM artists_group
-    WHERE Name = '$ArtistName'");
+    WHERE Name = '{$ArtistName}'");
     if (!$DB->has_results()) {
         $DB->query("
       INSERT INTO artists_group (Name)
-      VALUES ('$ArtistName')");
+      VALUES ('{$ArtistName}')");
         $ArtistID = $DB->inserted_id();
     } else {
         [$ArtistID, $ArtistName] = $DB->next_record();
@@ -62,7 +62,7 @@ if (empty($_POST['confirm'])) {
     $DB->query("
     SELECT CategoryID
     FROM torrents_group
-    WHERE ID = $OldGroupID");
+    WHERE ID = {$OldGroupID}");
 
     [$CategoryID] = $DB->next_record();
 
@@ -70,25 +70,25 @@ if (empty($_POST['confirm'])) {
     INSERT INTO torrents_group
       (CategoryID, Name, Year, Time, WikiBody, WikiImage)
     VALUES
-      ('$CategoryID', '$Title', '$Year', NOW(), '', '')");
+      ('{$CategoryID}', '{$Title}', '{$Year}', NOW(), '', '')");
     $GroupID = $DB->inserted_id();
 
     $DB->query("
     INSERT INTO torrents_artists
       (GroupID, ArtistID, UserID)
     VALUES
-      ('$GroupID', '$ArtistID', '$LoggedUser[ID]')");
+      ('{$GroupID}', '{$ArtistID}', '$LoggedUser[ID]')");
 
     $DB->query("
     UPDATE torrents
-    SET GroupID = '$GroupID'
-    WHERE ID = '$TorrentID'");
+    SET GroupID = '{$GroupID}'
+    WHERE ID = '{$TorrentID}'");
 
     // Delete old group if needed
     $DB->query("
     SELECT ID
     FROM torrents
-    WHERE GroupID = '$OldGroupID'");
+    WHERE GroupID = '{$OldGroupID}'");
     if (!$DB->has_results()) {
         Torrents::delete_group($OldGroupID);
     } else {
@@ -97,10 +97,10 @@ if (empty($_POST['confirm'])) {
 
     Torrents::update_hash($GroupID);
 
-    $Cache->delete_value("torrent_download_$TorrentID");
+    $Cache->delete_value(sprintf('torrent_download_%s', $TorrentID));
 
-    Misc::write_log("Torrent $TorrentID was edited by " . $LoggedUser['Username']);
+    Misc::write_log(sprintf('Torrent %s was edited by ', $TorrentID) . $LoggedUser['Username']);
 
-    header("Location: torrents.php?id=$GroupID");
+    header(sprintf('Location: torrents.php?id=%s', $GroupID));
 }
 ?>

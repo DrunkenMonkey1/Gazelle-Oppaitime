@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header("Ask the Staff");
 ?>
 <div class="thin">

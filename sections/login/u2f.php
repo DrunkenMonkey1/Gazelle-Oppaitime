@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($LoggedUser['ID'])) {
     header('Location: login.php');
     die();

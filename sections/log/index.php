@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 if (!defined('LOG_ENTRIES_PER_PAGE')) {
     define('LOG_ENTRIES_PER_PAGE', 100);
@@ -17,7 +17,7 @@ include SERVER_ROOT . '/sections/log/sphinx.php';
         <tr>
           <td class="label"><strong>Search for:</strong></td>
           <td>
-            <input type="search" name="search" size="60"<?=(!empty($_GET['search']) ? ' value="' . display_str($_GET['search']) . '"' : '')?> />
+            <input type="search" name="search" size="60"<?=(empty($_GET['search']) ? '' : ' value="' . display_str($_GET['search']) . '"')?> />
             &nbsp;
             <input type="submit" value="Search log" />
           </td>
@@ -49,9 +49,10 @@ $Usernames = [];
 while ([$ID, $Message, $LogTime] = $DB->next_record()) {
     $MessageParts = explode(' ', $Message);
     $Message = '';
-    $Color = $Colon = false;
-    for ($i = 0, $PartCount = sizeof($MessageParts); $i < $PartCount; $i++) {
-        if (0 === strpos($MessageParts[$i], 'https://' . SITE_DOMAIN)) {
+    $Color = false;
+    $Colon = false;
+    for ($i = 0, $PartCount = count($MessageParts); $i < $PartCount; ++$i) {
+        if (str_starts_with($MessageParts[$i], 'https://' . SITE_DOMAIN)) {
             $Offset = strlen('https://' . SITE_DOMAIN . '/');
             $MessageParts[$i] = '<a href="' . substr($MessageParts[$i], $Offset) . '">' . substr($MessageParts[$i], $Offset) . '</a>';
         }
@@ -60,8 +61,8 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
       case 'torrent':
         $TorrentID = $MessageParts[$i + 1];
         if (is_numeric($TorrentID)) {
-            $Message = $Message . ' ' . $MessageParts[$i] . " <a href=\"torrents.php?torrentid=$TorrentID\">$TorrentID</a>";
-            $i++;
+            $Message = $Message . ' ' . $MessageParts[$i] . sprintf(' <a href="torrents.php?torrentid=%s">%s</a>', $TorrentID, $TorrentID);
+            ++$i;
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
         }
@@ -69,8 +70,8 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
       case 'Request':
         $RequestID = $MessageParts[$i + 1];
         if (is_numeric($RequestID)) {
-            $Message = $Message . ' ' . $MessageParts[$i] . " <a href=\"requests.php?action=view&amp;id=$RequestID\">$RequestID</a>";
-            $i++;
+            $Message = $Message . ' ' . $MessageParts[$i] . sprintf(' <a href="requests.php?action=view&amp;id=%s">%s</a>', $RequestID, $RequestID);
+            ++$i;
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
         }
@@ -79,8 +80,8 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
       case 'artist':
         $ArtistID = $MessageParts[$i + 1];
         if (is_numeric($ArtistID)) {
-            $Message = $Message . ' ' . $MessageParts[$i] . " <a href=\"artist.php?id=$ArtistID\">$ArtistID</a>";
-            $i++;
+            $Message = $Message . ' ' . $MessageParts[$i] . sprintf(' <a href="artist.php?id=%s">%s</a>', $ArtistID, $ArtistID);
+            ++$i;
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
         }
@@ -89,22 +90,22 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
       case 'Group':
         $GroupID = $MessageParts[$i + 1];
         if (is_numeric($GroupID)) {
-            $Message = $Message . ' ' . $MessageParts[$i] . " <a href=\"torrents.php?id=$GroupID\">$GroupID</a>";
+            $Message = $Message . ' ' . $MessageParts[$i] . sprintf(' <a href="torrents.php?id=%s">%s</a>', $GroupID, $GroupID);
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
         }
-        $i++;
+        ++$i;
         break;
       case 'by':
         $UserID = 0;
         $User = '';
         $URL = '';
         if ('user' == $MessageParts[$i + 1]) {
-            $i++;
+            ++$i;
             if (is_numeric($MessageParts[$i + 1])) {
                 $UserID = $MessageParts[++$i];
             }
-            $URL = "user $UserID (<a href=\"user.php?id=$UserID\">" . substr($MessageParts[++$i], 1, -1) . '</a>)';
+            $URL = sprintf('user %s (<a href="user.php?id=%s">', $UserID, $UserID) . substr($MessageParts[++$i], 1, -1) . '</a>)';
         } elseif (in_array($MessageParts[$i - 1], ['deleted', 'uploaded', 'edited', 'created', 'recovered'], true)) {
             $User = $MessageParts[++$i];
             if (':' == substr($User, -1)) {
@@ -121,7 +122,7 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
             } else {
                 $UserID = $Usernames[$User];
             }
-            $URL = $Usernames[$User] ? "<a href=\"user.php?id=$UserID\">$User</a>" . ($Colon ? ':' : '') : $User;
+            $URL = $Usernames[$User] ? sprintf('<a href="user.php?id=%s">%s</a>', $UserID, $User) . ($Colon ? ':' : '') : $User;
             if (in_array($MessageParts[$i - 2], ['uploaded', 'edited'], true)) {
                 $DB->query("SELECT UserID, Anonymous FROM torrents WHERE ID = ?", $MessageParts[1]);
                 if ($DB->has_results()) {
@@ -133,7 +134,7 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
             }
             $DB->set_query_id($Log);
         }
-        $Message = "$Message by $URL";
+        $Message = sprintf('%s by %s', $Message, $URL);
         break;
       case 'uploaded':
         if (false === $Color) {
@@ -174,7 +175,7 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
             } else {
                 $UserID = $Usernames[$User];
             }
-            $URL = $Usernames[$User] ? "<a href=\"user.php?id=$UserID\">$User</a>" : $User;
+            $URL = $Usernames[$User] ? sprintf('<a href="user.php?id=%s">%s</a>', $UserID, $User) : $User;
             $Message = $URL . " " . $MessageParts[$i];
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
@@ -183,8 +184,8 @@ while ([$ID, $Message, $LogTime] = $DB->next_record()) {
       case 'Collage':
         $CollageID = $MessageParts[$i + 1];
         if (is_numeric($CollageID)) {
-            $Message = $Message . ' ' . $MessageParts[$i] . " <a href=\"collages.php?id=$CollageID\">$CollageID</a>";
-            $i++;
+            $Message = $Message . ' ' . $MessageParts[$i] . sprintf(' <a href="collages.php?id=%s">%s</a>', $CollageID, $CollageID);
+            ++$i;
         } else {
             $Message = $Message . ' ' . $MessageParts[$i];
         }

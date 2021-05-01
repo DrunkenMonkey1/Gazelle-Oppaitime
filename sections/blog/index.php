@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 enforce_login();
 
 // Why
@@ -43,7 +43,7 @@ if (check_perms('admin_manage_blog')) {
             $DB->query("
             SELECT Title, Body, ThreadID
             FROM blog
-            WHERE ID = $BlogID");
+            WHERE ID = {$BlogID}");
             [$Title, $Body, $ThreadID] = $DB->next_record();
         }
         break;
@@ -69,7 +69,7 @@ if (check_perms('admin_manage_blog')) {
             $DB->query("
             SELECT ForumID
             FROM forums_topics
-            WHERE ID = $ThreadID");
+            WHERE ID = {$ThreadID}");
             if (!$DB->has_results()) {
                 error('No such thread exists!');
                 header('Location: blog.php');
@@ -89,7 +89,7 @@ if (check_perms('admin_manage_blog')) {
             '" . db_string($_POST['title']) . "',
             '" . db_string($_POST['body']) . "',
             NOW(),
-            $ThreadID,
+            {$ThreadID},
             '" . ((isset($_POST['important']) && '1' == $_POST['important']) ? '1' : '0') . "')");
         $Cache->delete_value('blog');
         if ('1' == $_POST['important']) {
@@ -98,7 +98,7 @@ if (check_perms('admin_manage_blog')) {
         if (isset($_POST['subscribe'])) {
             $DB->query("
             INSERT IGNORE INTO users_subscriptions
-            VALUES ('$LoggedUser[ID]', $ThreadID)");
+            VALUES ('$LoggedUser[ID]', {$ThreadID})");
             $Cache->delete_value('subscriptions_user_' . $LoggedUser['ID']);
         }
 
@@ -118,19 +118,19 @@ if (check_perms('admin_manage_blog')) {
           <input type="hidden" name="blogid" value="<?=$BlogID; ?>" />
 <?php  } ?>
           <h3>Title</h3>
-          <input type="text" name="title" size="95"<?=!empty($Title) ? ' value="' . display_str($Title) . '"' : ''; ?> /><br />
+          <input type="text" name="title" size="95"<?=empty($Title) ? '' : ' value="' . display_str($Title) . '"'; ?> /><br />
           <h3>Body</h3>
-          <textarea name="body" cols="95" rows="15"><?=!empty($Body) ? display_str($Body) : ''; ?></textarea> <br />
+          <textarea name="body" cols="95" rows="15"><?=empty($Body) ? '' : display_str($Body); ?></textarea> <br />
           <input type="checkbox" value="1" name="important" id="important" checked="checked" /><label for="important">Important</label><br />
           <h3>Thread ID</h3>
-          <input type="text" name="thread" size="8"<?=!empty($ThreadID) ? ' value="' . display_str($ThreadID) . '"' : ''; ?> />
+          <input type="text" name="thread" size="8"<?=empty($ThreadID) ? '' : ' value="' . display_str($ThreadID) . '"'; ?> />
           (Leave blank to create thread automatically)
           <br /><br />
-          <input id="subscribebox" type="checkbox" name="subscribe"<?=!empty($HeavyInfo['AutoSubscribe']) ? ' checked="checked"' : ''; ?> tabindex="2" />
+          <input id="subscribebox" type="checkbox" name="subscribe"<?=empty($HeavyInfo['AutoSubscribe']) ? '' : ' checked="checked"'; ?> tabindex="2" />
           <label for="subscribebox">Subscribe</label>
 
           <div class="center">
-            <input type="submit" value="<?=!isset($_GET['action']) ? 'Create blog post' : 'Edit blog post'; ?>" />
+            <input type="submit" value="<?=isset($_GET['action']) ? 'Edit blog post' : 'Create blog post'; ?>" />
           </div>
         </div>
       </form>
@@ -156,7 +156,7 @@ if (!$Blog = $Cache->get_value('blog')) {
     ORDER BY Time DESC
     LIMIT 20");
     $Blog = $DB->to_array();
-    $Cache->cache_value('blog', $Blog, 1209600);
+    $Cache->cache_value('blog', $Blog, 1_209_600);
 }
 
 if ($LoggedUser['LastReadBlog'] < $Blog[0][0]) {

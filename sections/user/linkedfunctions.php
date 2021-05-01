@@ -1,5 +1,5 @@
-<?php
-function link_users($UserID, $TargetID)
+<?php declare(strict_types=1);
+function link_users($UserID, $TargetID): void
 {
     global $DB, $LoggedUser;
 
@@ -18,7 +18,7 @@ function link_users($UserID, $TargetID)
     $DB->query("
     SELECT 1
     FROM users_main
-    WHERE ID IN ($UserID, $TargetID)");
+    WHERE ID IN ({$UserID}, {$TargetID})");
     if (2 !== $DB->record_count()) {
         error(403);
     }
@@ -26,13 +26,13 @@ function link_users($UserID, $TargetID)
     $DB->query("
     SELECT GroupID
     FROM users_dupes
-    WHERE UserID = $TargetID");
+    WHERE UserID = {$TargetID}");
     [$TargetGroupID] = $DB->next_record();
     $DB->query("
     SELECT u.GroupID, d.Comments
     FROM users_dupes AS u
       JOIN dupe_groups AS d ON d.ID = u.GroupID
-    WHERE UserID = $UserID");
+    WHERE UserID = {$UserID}");
     [$UserGroupID, $Comments] = $DB->next_record();
 
     $UserInfo = Users::user_info($UserID);
@@ -48,26 +48,26 @@ function link_users($UserID, $TargetID)
         if ($UserGroupID) {
             $DB->query("
         UPDATE users_dupes
-        SET GroupID = $TargetGroupID
-        WHERE GroupID = $UserGroupID");
+        SET GroupID = {$TargetGroupID}
+        WHERE GroupID = {$UserGroupID}");
             $DB->query("
         UPDATE dupe_groups
         SET Comments = CONCAT('" . db_string($Comments) . "\n\n',Comments)
-        WHERE ID = $TargetGroupID");
-            $DB->query("DELETE FROM dupe_groups WHERE ID = $UserGroupID");
+        WHERE ID = {$TargetGroupID}");
+            $DB->query(sprintf('DELETE FROM dupe_groups WHERE ID = %s', $UserGroupID));
             $GroupID = $UserGroupID;
         } else {
-            $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($UserID, $TargetGroupID)");
+            $DB->query(sprintf('INSERT INTO users_dupes (UserID, GroupID) VALUES (%s, %s)', $UserID, $TargetGroupID));
             $GroupID = $TargetGroupID;
         }
     } elseif ($UserGroupID) {
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($TargetID, $UserGroupID)");
+        $DB->query(sprintf('INSERT INTO users_dupes (UserID, GroupID) VALUES (%s, %s)', $TargetID, $UserGroupID));
         $GroupID = $UserGroupID;
     } else {
         $DB->query("INSERT INTO dupe_groups () VALUES ()");
         $GroupID = $DB->inserted_id();
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($TargetID, $GroupID)");
-        $DB->query("INSERT INTO users_dupes (UserID, GroupID) VALUES ($UserID, $GroupID)");
+        $DB->query(sprintf('INSERT INTO users_dupes (UserID, GroupID) VALUES (%s, %s)', $TargetID, $GroupID));
+        $DB->query(sprintf('INSERT INTO users_dupes (UserID, GroupID) VALUES (%s, %s)', $UserID, $GroupID));
     }
 
     $AdminComment = sqltime() . " - Linked accounts updated: [user]" . $UserInfo['Username'] . "[/user] and [user]" . $TargetInfo['Username'] . "[/user] linked by " . $LoggedUser['Username'];
@@ -75,10 +75,10 @@ function link_users($UserID, $TargetID)
     UPDATE users_info AS i
       JOIN users_dupes AS d ON d.UserID = i.UserID
     SET i.AdminComment = CONCAT('" . db_string($AdminComment) . "\n\n', i.AdminComment)
-    WHERE d.GroupID = $GroupID");
+    WHERE d.GroupID = {$GroupID}");
 }
 
-function unlink_user($UserID)
+function unlink_user($UserID): void
 {
     global $DB, $LoggedUser;
 
@@ -100,8 +100,8 @@ function unlink_user($UserID)
       JOIN users_dupes AS d1 ON d1.UserID = i.UserID
       JOIN users_dupes AS d2 ON d2.GroupID = d1.GroupID
     SET i.AdminComment = CONCAT('" . db_string($AdminComment) . "\n\n', i.AdminComment)
-    WHERE d2.UserID = $UserID");
-    $DB->query("DELETE FROM users_dupes WHERE UserID = '$UserID'");
+    WHERE d2.UserID = {$UserID}");
+    $DB->query(sprintf('DELETE FROM users_dupes WHERE UserID = \'%s\'', $UserID));
     $DB->query("
     DELETE g.*
     FROM dupe_groups AS g
@@ -109,7 +109,7 @@ function unlink_user($UserID)
     WHERE u.GroupID IS NULL");
 }
 
-function delete_dupegroup($GroupID)
+function delete_dupegroup($GroupID): void
 {
     global $DB;
 
@@ -122,10 +122,10 @@ function delete_dupegroup($GroupID)
         error(403);
     }
 
-    $DB->query("DELETE FROM dupe_groups WHERE ID = '$GroupID'");
+    $DB->query(sprintf('DELETE FROM dupe_groups WHERE ID = \'%s\'', $GroupID));
 }
 
-function dupe_comments($GroupID, $Comments)
+function dupe_comments($GroupID, $Comments): void
 {
     global $DB, $LoggedUser;
 
@@ -141,7 +141,7 @@ function dupe_comments($GroupID, $Comments)
     $DB->query("
     SELECT SHA1(Comments) AS CommentHash
     FROM dupe_groups
-    WHERE ID = $GroupID");
+    WHERE ID = {$GroupID}");
     [$OldCommentHash] = $DB->next_record();
     if ($OldCommentHash != sha1($Comments)) {
         $AdminComment = sqltime() . " - Linked accounts updated: Comments updated by " . $LoggedUser['Username'];
@@ -149,23 +149,23 @@ function dupe_comments($GroupID, $Comments)
             $DB->query("
         UPDATE dupe_groups
         SET Comments = '" . db_string($Comments) . "'
-        WHERE ID = '$GroupID'");
+        WHERE ID = '{$GroupID}'");
         } else {
             $DB->query("
         UPDATE dupe_groups
         SET Comments = CONCAT('" . db_string($Comments) . "\n\n',Comments)
-        WHERE ID = '$GroupID'");
+        WHERE ID = '{$GroupID}'");
         }
 
         $DB->query("
       UPDATE users_info AS i
         JOIN users_dupes AS d ON d.UserID = i.UserID
       SET i.AdminComment = CONCAT('" . db_string($AdminComment) . "\n\n', i.AdminComment)
-      WHERE d.GroupID = $GroupID");
+      WHERE d.GroupID = {$GroupID}");
     }
 }
 
-function user_dupes_table($UserID)
+function user_dupes_table($UserID): void
 {
     global $DB, $LoggedUser;
 
@@ -179,13 +179,13 @@ function user_dupes_table($UserID)
     SELECT d.ID, d.Comments, SHA1(d.Comments) AS CommentHash
     FROM dupe_groups AS d
       JOIN users_dupes AS u ON u.GroupID = d.ID
-    WHERE u.UserID = $UserID");
+    WHERE u.UserID = {$UserID}");
     if ([$GroupID, $Comments, $CommentHash] = $DB->next_record()) {
         $DB->query("
       SELECT m.ID
       FROM users_main AS m
         JOIN users_dupes AS d ON m.ID = d.UserID
-      WHERE d.GroupID = $GroupID
+      WHERE d.GroupID = {$GroupID}
       ORDER BY m.ID ASC");
         $DupeCount = $DB->record_count();
         $Dupes = $DB->to_array();
@@ -208,7 +208,7 @@ function user_dupes_table($UserID)
 <?php
   $i = 0;
     foreach ($Dupes as $Dupe) {
-        $i++;
+        ++$i;
         [$DupeID] = $Dupe;
         $DupeInfo = Users::user_info($DupeID); ?>
             <td align="left"><?=Users::format_username($DupeID, true, true, true, true)?>
@@ -222,7 +222,7 @@ function user_dupes_table($UserID)
     }
     if ($DupeCount) {
         if (0 !== $i) {
-            for ($j = $i; $j < 4; $j++) {
+            for ($j = $i; $j < 4; ++$j) {
                 echo "\t\t\t\t\t\t<td>&nbsp;</td>\n";
             }
         } ?>

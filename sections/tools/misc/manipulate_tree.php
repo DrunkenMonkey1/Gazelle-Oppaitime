@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 // Props to Leto of StC.
 if (!check_perms('users_view_invites') && !check_perms('users_disable_users') && !check_perms('users_edit_invites') && !check_perms('users_disable_any')) {
     error(404);
@@ -35,10 +35,10 @@ if ($_POST['id']) {
           LIMIT 1
         ) AS MaxPosition
       FROM invite_tree AS t1
-      WHERE t1.UserID = $UserID");
+      WHERE t1.UserID = {$UserID}");
     [$TreePosition, $TreeID, $TreeLevel, $MaxPosition] = $DB->next_record();
     if (!$MaxPosition) {
-        $MaxPosition = 1000000;
+        $MaxPosition = 1_000_000;
     } // $MaxPermission is null if the user is the last one in that tree on that level
     if (!$TreeID) {
         return;
@@ -47,10 +47,10 @@ if ($_POST['id']) {
       SELECT
         UserID
       FROM invite_tree
-      WHERE TreeID = $TreeID
-        AND TreePosition > $TreePosition
-        AND TreePosition < $MaxPosition
-        AND TreeLevel > $TreeLevel
+      WHERE TreeID = {$TreeID}
+        AND TreePosition > {$TreePosition}
+        AND TreePosition < {$MaxPosition}
+        AND TreeLevel > {$TreeLevel}
       ORDER BY TreePosition");
     $BanList = [];
 
@@ -70,7 +70,7 @@ if ($_POST['id']) {
             $DB->query("
         UPDATE users_info
         SET DisableInvites = '1'
-        WHERE UserID = '$InviteeID'");
+        WHERE UserID = '{$InviteeID}'");
             $Msg = "Successfully removed invite privileges from entire tree!";
         } else {
             error(403);

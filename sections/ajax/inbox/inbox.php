@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $UserID = $LoggedUser['ID'];
 
 
@@ -10,11 +12,9 @@ if (empty($_GET['type'])) {
 }
 if (!in_array($Section, ['inbox', 'sentbox'], true)) {
     print
-    json_encode(
-        [
+        json_encode([
             'status' => 'failure'
-        ]
-    );
+        ], JSON_THROW_ON_ERROR);
     die();
 }
 
@@ -40,8 +40,8 @@ $sql = "
 $sql .= 'sentbox' === $Section ? ' cu.SentDate ' : ' cu.ReceivedDate ';
 $sql .= "AS Date
   FROM pm_conversations AS c
-    LEFT JOIN pm_conversations_users AS cu ON cu.ConvID = c.ID AND cu.UserID = '$UserID'
-    LEFT JOIN pm_conversations_users AS cu2 ON cu2.ConvID = c.ID AND cu2.UserID != '$UserID' AND cu2.ForwardedTo = 0
+    LEFT JOIN pm_conversations_users AS cu ON cu.ConvID = c.ID AND cu.UserID = '{$UserID}'
+    LEFT JOIN pm_conversations_users AS cu2 ON cu2.ConvID = c.ID AND cu2.UserID != '{$UserID}' AND cu2.ForwardedTo = 0
     LEFT JOIN users_main AS um ON um.ID = cu2.UserID
     LEFT JOIN users_info AS ui ON ui.UserID = um.ID
     LEFT JOIN users_main AS um2 ON um2.ID = cu.ForwardedTo";
@@ -53,7 +53,7 @@ $sql .= " WHERE ";
 if (!empty($_GET['search'])) {
     $Search = db_string($_GET['search']);
     if ('user' === $_GET['searchtype']) {
-        $sql .= "um.Username LIKE '$Search' AND ";
+        $sql .= sprintf('um.Username LIKE \'%s\' AND ', $Search);
     } elseif ('subject' === $_GET['searchtype']) {
         $Words = explode(' ', $Search);
         $sql .= "c.Subject LIKE '%" . implode("%' AND c.Subject LIKE '%", $Words) . "%' AND ";
@@ -67,50 +67,58 @@ $sql .= " = '1'";
 
 $sql .= "
   GROUP BY c.ID
-  ORDER BY cu.Sticky, $Sort
-  LIMIT $Limit";
+  ORDER BY cu.Sticky, {$Sort}
+  LIMIT {$Limit}";
 $Results = $DB->query($sql);
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();
 $DB->set_query_id($Results);
 
 $CurURL = Format::get_url(['sort']);
-if (empty($CurURL)) {
-    $CurURL = "inbox.php?";
-} else {
-    $CurURL = "inbox.php?" . $CurURL . "&";
-}
+$CurURL = empty($CurURL) ? "inbox.php?" : "inbox.php?" . $CurURL . "&";
 
 $Pages = Format::get_pages($Page, $NumResults, MESSAGES_PER_PAGE, 9);
 
 $JsonMessages = [];
-while ([$ConvID, $Subject, $Unread, $Sticky, $ForwardedID, $ForwardedName, $SenderID, $Username, $Donor, $Warned, $Enabled, $Avatar, $Date] = $DB->next_record()) {
+while ([
+    $ConvID,
+    $Subject,
+    $Unread,
+    $Sticky,
+    $ForwardedID,
+    $ForwardedName,
+    $SenderID,
+    $Username,
+    $Donor,
+    $Warned,
+    $Enabled,
+    $Avatar,
+    $Date
+] = $DB->next_record()) {
     $JsonMessage = [
-        'convId' => (int)$ConvID,
+        'convId' => (int) $ConvID,
         'subject' => $Subject,
         'unread' => 1 == $Unread,
         'sticky' => 1 == $Sticky,
-        'forwardedId' => (int)$ForwardedID,
+        'forwardedId' => (int) $ForwardedID,
         'forwardedName' => $ForwardedName,
-        'senderId' => (int)$SenderID,
+        'senderId' => (int) $SenderID,
         'username' => $Username,
         'avatar' => $Avatar,
         'donor' => 1 == $Donor,
         'warned' => 1 == $Warned,
-        'enabled' => 2 == $Enabled ? false : true,
+        'enabled' => 2 != $Enabled,
         'date' => $Date
     ];
     $JsonMessages[] = $JsonMessage;
 }
 
 print
-  json_encode(
-      [
-          'status' => 'success',
-          'response' => [
-              'currentPage' => (int)$Page,
-              'pages' => ceil($NumResults / MESSAGES_PER_PAGE),
-              'messages' => $JsonMessages
-          ]
-      ]
-  );
+    json_encode([
+        'status' => 'success',
+        'response' => [
+            'currentPage' => (int) $Page,
+            'pages' => ceil($NumResults / MESSAGES_PER_PAGE),
+            'messages' => $JsonMessages
+        ]
+    ], JSON_THROW_ON_ERROR);

@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*
 User topic subscription page
 */
@@ -7,15 +9,11 @@ if (!empty($LoggedUser['DisableForums'])) {
     json_die('failure');
 }
 
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+$PerPage = $LoggedUser['PostsPerPage'] ?? POSTS_PER_PAGE;
 [$Page, $Limit] = Format::page_limit($PerPage);
 
-$ShowUnread = (!isset($_GET['showunread']) && !isset($HeavyInfo['SubscriptionsUnread']) || isset($HeavyInfo['SubscriptionsUnread']) && !!$HeavyInfo['SubscriptionsUnread'] || isset($_GET['showunread']) && !!$_GET['showunread']);
-$ShowCollapsed = (!isset($_GET['collapse']) && !isset($HeavyInfo['SubscriptionsCollapse']) || isset($HeavyInfo['SubscriptionsCollapse']) && !!$HeavyInfo['SubscriptionsCollapse'] || isset($_GET['collapse']) && !!$_GET['collapse']);
+$ShowUnread = ((!isset($_GET['showunread']) && !isset($HeavyInfo['SubscriptionsUnread'])) || (isset($HeavyInfo['SubscriptionsUnread']) && (bool) $HeavyInfo['SubscriptionsUnread']) || (isset($_GET['showunread']) && (bool) $_GET['showunread']));
+$ShowCollapsed = ((!isset($_GET['collapse']) && !isset($HeavyInfo['SubscriptionsCollapse'])) || (isset($HeavyInfo['SubscriptionsCollapse']) && (bool) $HeavyInfo['SubscriptionsCollapse']) || (isset($_GET['collapse']) && (bool) $_GET['collapse']));
 $sql = '
   SELECT
     SQL_CALC_FOUND_ROWS
@@ -35,7 +33,7 @@ if ($ShowUnread) {
 $sql .= "
   GROUP BY t.ID
   ORDER BY t.LastPostID DESC
-  LIMIT $Limit";
+  LIMIT {$Limit}";
 $PostIDs = $DB->query($sql);
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();
@@ -72,14 +70,30 @@ if ($NumResults > $PerPage * ($Page - 1)) {
 }
 
 $JsonPosts = [];
-while ([$ForumID, $ForumName, $TopicID, $ThreadTitle, $Body, $LastPostID, $Locked, $Sticky, $PostID, $AuthorID, $AuthorName, $AuthorAvatar, $EditedUserID, $EditedTime, $EditedUsername] = $DB->next_record()) {
+while ([
+    $ForumID,
+    $ForumName,
+    $TopicID,
+    $ThreadTitle,
+    $Body,
+    $LastPostID,
+    $Locked,
+    $Sticky,
+    $PostID,
+    $AuthorID,
+    $AuthorName,
+    $AuthorAvatar,
+    $EditedUserID,
+    $EditedTime,
+    $EditedUsername
+] = $DB->next_record()) {
     $JsonPost = [
-        'forumId' => (int)$ForumID,
+        'forumId' => (int) $ForumID,
         'forumName' => $ForumName,
-        'threadId' => (int)$TopicID,
+        'threadId' => (int) $TopicID,
         'threadTitle' => $ThreadTitle,
-        'postId' => (int)$PostID,
-        'lastPostId' => (int)$LastPostID,
+        'postId' => (int) $PostID,
+        'lastPostId' => (int) $LastPostID,
         'locked' => 1 == $Locked,
         'new' => ($PostID < $LastPostID && !$Locked)
     ];

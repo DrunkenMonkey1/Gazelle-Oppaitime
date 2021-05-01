@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //------------- Expire old FL Tokens and clear cache where needed ------//
 
 $DB->query("
@@ -9,7 +11,7 @@ $DB->query("
     AND Time < (NOW() - INTERVAL 4 DAY)");
 if ($DB->has_results()) {
     while ([$UserID] = $DB->next_record()) {
-        $Cache->delete_value("users_tokens_$UserID");
+        $Cache->delete_value(sprintf('users_tokens_%s', $UserID));
     }
 
     $DB->query("

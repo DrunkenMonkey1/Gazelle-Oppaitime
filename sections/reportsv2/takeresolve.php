@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 /*
  * This is the backend of the AJAXy reports resolve (When you press the shiny submit button).
  * This page shouldn't output anything except in error. If you do want output, it will be put
@@ -57,21 +57,20 @@ if (!isset($CategoryID)) {
 
 $TorrentID = $Escaped['torrentid'];
 $RawName = $Escaped['raw_name'];
+$CacheGet_value = $Cache->get_value(sprintf('torrent_%s', $TorrentID) . '_lock');
 
-if (isset($Escaped['delete']) && $Cache->get_value("torrent_$TorrentID" . '_lock')) {
-    echo "You requested to delete the torrent $TorrentID, but this is currently not possible because the upload process is still running. Please try again later.";
+if (isset($Escaped['delete']) && $CacheGet_value) {
+    echo sprintf('You requested to delete the torrent %s, but this is currently not possible because the upload process is still running. Please try again later.', $TorrentID);
     die();
 }
 
 if (('manual' == $Escaped['resolve_type'] || 'dismiss' == $Escaped['resolve_type']) && $Report) {
     if ($Escaped['comment']) {
         $Comment = $Escaped['comment'];
-    } else {
-        if ('manual' == $Escaped['resolve_type']) {
-            $Comment = 'Report was resolved manually.';
-        } elseif ('dismiss' == $Escaped['resolve_type']) {
-            $Comment = 'Report was dismissed as invalid.';
-        }
+    } elseif ('manual' == $Escaped['resolve_type']) {
+        $Comment = 'Report was resolved manually.';
+    } elseif ('dismiss' == $Escaped['resolve_type']) {
+        $Comment = 'Report was dismissed as invalid.';
     }
 
     $DB->query("
@@ -79,14 +78,14 @@ if (('manual' == $Escaped['resolve_type'] || 'dismiss' == $Escaped['resolve_type
     SET
       Status = 'Resolved',
       LastChangeTime = NOW(),
-      ModComment = '$Comment',
+      ModComment = '{$Comment}',
       ResolverID = '" . $LoggedUser['ID'] . "'
-    WHERE ID = '$ReportID'
+    WHERE ID = '{$ReportID}'
       AND Status != 'Resolved'");
 
     if ($DB->affected_rows() > 0) {
         $Cache->delete_value('num_torrent_reportsv2');
-        $Cache->delete_value("reports_torrent_$TorrentID");
+        $Cache->delete_value(sprintf('reports_torrent_%s', $TorrentID));
     } else {
         //Someone beat us to it. Inform the staffer.
 ?>
@@ -119,7 +118,7 @@ if (!isset($Escaped['resolve_type'])) {
 $DB->query("
   SELECT ID
   FROM torrents
-  WHERE ID = $TorrentID");
+  WHERE ID = {$TorrentID}");
 $TorrentExists = ($DB->has_results());
 if (!$TorrentExists) {
     $DB->query("
@@ -128,7 +127,7 @@ if (!$TorrentExists) {
       LastChangeTime = NOW(),
       ResolverID = '" . $LoggedUser['ID'] . "',
       ModComment = 'Report already dealt with (torrent deleted).'
-    WHERE ID = $ReportID");
+    WHERE ID = {$ReportID}");
 
     $Cache->decrement('num_torrent_reportsv2');
 }
@@ -140,7 +139,7 @@ if ($Report) {
     SET Status = 'Resolved',
       LastChangeTime = NOW(),
       ResolverID = '" . $LoggedUser['ID'] . "'
-    WHERE ID = $ReportID
+    WHERE ID = {$ReportID}
       AND Status != 'Resolved'");
 }
 
@@ -152,24 +151,20 @@ if ($DB->affected_rows() > 0 || !$Report) {
     }
 
 
-    if (isset($Escaped['upload'])) {
-        $Upload = true;
-    } else {
-        $Upload = false;
-    }
+    $Upload = isset($Escaped['upload']);
 
     if ('tags_lots' == $_POST['resolve_type']) {
         $DB->query("
       INSERT IGNORE INTO torrents_bad_tags
         (TorrentID, UserID, TimeAdded)
       VALUES
-        ($TorrentID, " . $LoggedUser['ID'] . " , NOW())");
+        ({$TorrentID}, " . $LoggedUser['ID'] . " , NOW())");
         $DB->query("
       SELECT GroupID
       FROM torrents
-      WHERE ID = $TorrentID");
+      WHERE ID = {$TorrentID}");
         [$GroupID] = $DB->next_record();
-        $Cache->delete_value("torrents_details_$GroupID");
+        $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
         $SendPM = true;
     }
 
@@ -178,13 +173,13 @@ if ($DB->affected_rows() > 0 || !$Report) {
       INSERT IGNORE INTO torrents_bad_folders
         (TorrentID, UserID, TimeAdded)
       VALUES
-        ($TorrentID, " . $LoggedUser['ID'] . ", NOW())");
+        ({$TorrentID}, " . $LoggedUser['ID'] . ", NOW())");
         $DB->query("
       SELECT GroupID
       FROM torrents
-      WHERE ID = $TorrentID");
+      WHERE ID = {$TorrentID}");
         [$GroupID] = $DB->next_record();
-        $Cache->delete_value("torrents_details_$GroupID");
+        $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
         $SendPM = true;
     }
     if ('filename' == $_POST['resolve_type']) {
@@ -192,13 +187,13 @@ if ($DB->affected_rows() > 0 || !$Report) {
       INSERT IGNORE INTO torrents_bad_files
         (TorrentID, UserID, TimeAdded)
       VALUES
-        ($TorrentID, " . $LoggedUser['ID'] . ", NOW())");
+        ({$TorrentID}, " . $LoggedUser['ID'] . ", NOW())");
         $DB->query("
       SELECT GroupID
       FROM torrents
-      WHERE ID = $TorrentID");
+      WHERE ID = {$TorrentID}");
         [$GroupID] = $DB->next_record();
-        $Cache->delete_value("torrents_details_$GroupID");
+        $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
         $SendPM = true;
     }
     if ('trump' == $_POST['resolve_type']) {
@@ -208,7 +203,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
         HEX(t.info_hash)
       FROM reportsv2 AS r
       LEFT JOIN torrents AS t ON r.ExtraID = t.ID
-      WHERE r.ID = $ReportID");
+      WHERE r.ID = {$ReportID}");
         if ($DB->has_results()) {
             [$ExtraID, $InfoHash] = $DB->next_record();
             $ExtraID = explode(' ', $ExtraID)[0];
@@ -217,14 +212,14 @@ if ($DB->affected_rows() > 0 || !$Report) {
             $DB->query("
         SELECT UserID
         FROM torrents
-        WHERE ID = $TorrentID");
+        WHERE ID = {$TorrentID}");
             if ($DB->has_results()) {
                 [$AffectedUsers[]] = $DB->next_record();
             }
             $DB->query("
         SELECT uid
         FROM xbt_snatched
-        WHERE fid = $TorrentID");
+        WHERE fid = {$TorrentID}");
             if ($DB->has_results()) {
                 while ([$UserID] = $DB->next_record()) {
                     $AffectedUsers[] = $UserID;
@@ -235,13 +230,13 @@ if ($DB->affected_rows() > 0 || !$Report) {
                 Tracker::update_tracker('add_token', ['info_hash' => substr('%' . chunk_split($InfoHash, 2, '%'), 0, -1), 'userid' => $UserID]);
                 $DB->query("
           INSERT INTO users_freeleeches (UserID, TorrentID, Time, Uses)
-          VALUES ($UserID, $ExtraID, NOW(), 0)
+          VALUES ({$UserID}, {$ExtraID}, NOW(), 0)
           ON DUPLICATE KEY UPDATE
             Time = VALUES(Time),
             Expired = FALSE,
             Uses = Uses");
-                Misc::send_pm($UserID, 0, "Torrent Deleted: " . $RawName, "A torrent you have snatched (or uploaded) has been trumped by a more recent torrent. This new torrent will be freeleech for you for the next 4 days.\r\n\r\nYou can find the new torrent [url=" . site_url() . "torrents.php?torrentid=$ExtraID]here[/url]");
-                $Cache->delete_value("users_tokens_$UserID");
+                Misc::send_pm($UserID, 0, "Torrent Deleted: " . $RawName, "A torrent you have snatched (or uploaded) has been trumped by a more recent torrent. This new torrent will be freeleech for you for the next 4 days.\r\n\r\nYou can find the new torrent [url=" . site_url() . sprintf('torrents.php?torrentid=%s]here[/url]', $ExtraID));
+                $Cache->delete_value(sprintf('users_tokens_%s', $UserID));
             }
         }
     }
@@ -251,9 +246,9 @@ if ($DB->affected_rows() > 0 || !$Report) {
         $DB->query("
       SELECT Username
       FROM users_main
-      WHERE ID = $UploaderID");
+      WHERE ID = {$UploaderID}");
         [$UpUsername] = $DB->next_record();
-        $Log = "Torrent $TorrentID ($RawName) uploaded by $UpUsername was deleted by " . $LoggedUser['Username'];
+        $Log = sprintf('Torrent %s (%s) uploaded by %s was deleted by ', $TorrentID, $RawName, $UpUsername) . $LoggedUser['Username'];
         $Log .= ('custom' == $Escaped['resolve_type'] ? '' : ' for the reason: ' . $ResolveType['title'] . ".");
         if (isset($Escaped['log_message']) && '' != $Escaped['log_message']) {
             $Log .= ' ( ' . $Escaped['log_message'] . ' )';
@@ -261,7 +256,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
         $DB->query("
       SELECT GroupID, hex(info_hash)
       FROM torrents
-      WHERE ID = $TorrentID");
+      WHERE ID = {$TorrentID}");
         [$GroupID, $InfoHash] = $DB->next_record();
         Torrents::delete_torrent($TorrentID, 0, $ResolveType['reason']);
 
@@ -276,19 +271,19 @@ if ($DB->affected_rows() > 0 || !$Report) {
 
     //Warnings / remove upload
     if ($Upload) {
-        $Cache->begin_transaction("user_info_heavy_$UploaderID");
+        $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UploaderID));
         $Cache->update_row(false, ['DisableUpload' => '1']);
         $Cache->commit_transaction(0);
 
         $DB->query("
       UPDATE users_info
       SET DisableUpload = '1'
-      WHERE UserID = $UploaderID");
+      WHERE UserID = {$UploaderID}");
     }
 
     if ($Warning > 0) {
         $WarnLength = $Warning * (7 * 24 * 60 * 60);
-        $Reason = "Uploader of torrent ($TorrentID) $RawName which was resolved with the preset: " . $ResolveType['title'] . '.';
+        $Reason = sprintf('Uploader of torrent (%s) %s which was resolved with the preset: ', $TorrentID, $RawName) . $ResolveType['title'] . '.';
         if ($Escaped['admin_message']) {
             $Reason .= ' (' . $Escaped['admin_message'] . ').';
         }
@@ -303,14 +298,14 @@ if ($DB->affected_rows() > 0 || !$Report) {
         if ($Upload) {
             //They removed upload
             $AdminComment .= 'Upload privileges removed by ' . $LoggedUser['Username'];
-            $AdminComment .= "\nReason: Uploader of torrent ($TorrentID) " . db_string($RawName) . ' which was resolved with the preset: ' . $ResolveType['title'] . ". (Report ID: $ReportID)";
+            $AdminComment .= "\nReason: Uploader of torrent ({$TorrentID}) " . db_string($RawName) . ' which was resolved with the preset: ' . $ResolveType['title'] . sprintf('. (Report ID: %s)', $ReportID);
         }
         if ($Escaped['admin_message']) {
             //They did nothing of note, but still want to mark it (Or upload and mark)
             $AdminComment .= ' (' . $Escaped['admin_message'] . ')';
         }
-        if ($AdminComment) {
-            $AdminComment = date('Y-m-d') . " - $AdminComment\n\n";
+        if ('' !== $AdminComment) {
+            $AdminComment = date('Y-m-d') . " - {$AdminComment}\n\n";
 
             $DB->query("
         UPDATE users_info
@@ -324,31 +319,31 @@ if ($DB->affected_rows() > 0 || !$Report) {
     //PM
     if ($Escaped['uploader_pm'] || $Warning > 0 || isset($Escaped['delete']) || $SendPM) {
         if (isset($Escaped['delete'])) {
-            $PM = '[url=' . site_url() . "torrents.php?torrentid=$TorrentID]Your above torrent[/url] was reported and has been deleted.\n\n";
+            $PM = '[url=' . site_url() . "torrents.php?torrentid={$TorrentID}]Your above torrent[/url] was reported and has been deleted.\n\n";
         } else {
-            $PM = '[url=' . site_url() . "torrents.php?torrentid=$TorrentID]Your above torrent[/url] was reported but not deleted.\n\n";
+            $PM = '[url=' . site_url() . "torrents.php?torrentid={$TorrentID}]Your above torrent[/url] was reported but not deleted.\n\n";
         }
 
         $Preset = $ResolveType['resolve_options']['pm'];
 
         if ('' != $Preset) {
-            $PM .= "Reason: $Preset\n\n";
+            $PM .= "Reason: {$Preset}\n\n";
         }
 
         if ($Warning > 0) {
-            $PM .= "This has resulted in a [url=" . site_url() . "wiki.php?action=article&amp;name=warnings]$Warning week warning.[/url]\n\n";
+            $PM .= "This has resulted in a [url=" . site_url() . "wiki.php?action=article&amp;name=warnings]{$Warning} week warning.[/url]\n\n";
         }
 
         if ($Upload) {
             $PM .= 'This has ' . ($Warning > 0 ? 'also ' : '') . "resulted in the loss of your upload privileges.\n\n";
         }
 
-        if ($Log) {
-            $PM .= "Log Message: $Log\n\n";
+        if ('' !== $Log) {
+            $PM .= "Log Message: {$Log}\n\n";
         }
 
         if ($Escaped['uploader_pm']) {
-            $PM .= "Message from " . $LoggedUser['Username'] . ": $PMMessage\n\n";
+            $PM .= "Message from " . $LoggedUser['Username'] . ": {$PMMessage}\n\n";
         }
 
         $PM .= "Report was handled by [user]" . $LoggedUser['Username'] . '[/user].';
@@ -356,7 +351,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
         Misc::send_pm($UploaderID, 0, $Escaped['raw_name'], $PM);
     }
 
-    $Cache->delete_value("reports_torrent_$TorrentID");
+    $Cache->delete_value(sprintf('reports_torrent_%s', $TorrentID));
 
     // Now we've done everything, update the DB with values
     if ($Report) {
@@ -366,7 +361,7 @@ if ($DB->affected_rows() > 0 || !$Report) {
         Type = '" . $Escaped['resolve_type'] . "',
         LogMessage = '" . db_string($Log) . "',
         ModComment = '" . $Escaped['comment'] . "'
-      WHERE ID = $ReportID");
+      WHERE ID = {$ReportID}");
     }
 } else {
     // Someone beat us to it. Inform the staffer.

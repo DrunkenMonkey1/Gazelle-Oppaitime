@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 define('EMAILS_PER_PAGE', 25);
 if (!check_perms('users_view_email')) {
     error(403);
@@ -9,7 +9,7 @@ View::show_header('Manage email blacklist');
 $Where = "";
 if (!empty($_POST['email'])) {
     $Email = db_string($_POST['email']);
-    $Where .= " WHERE Email LIKE '%$Email%'";
+    $Where .= sprintf(' WHERE Email LIKE \'%%s%\'', $Email);
 }
 if (!empty($_POST['comment'])) {
     $Comment = db_string($_POST['comment']);
@@ -18,7 +18,7 @@ if (!empty($_POST['comment'])) {
     } else {
         $Where .= " WHERE";
     }
-    $Where .= " Comment LIKE '%$Comment%'";
+    $Where .= sprintf(' Comment LIKE \'%%s%\'', $Comment);
 }
 $DB->query("
   SELECT
@@ -29,9 +29,9 @@ $DB->query("
     Email,
     Comment
   FROM email_blacklist
-  $Where
+  {$Where}
   ORDER BY Time DESC
-  LIMIT $Limit");
+  LIMIT {$Limit}");
 $Results = $DB->to_array(false, MYSQLI_ASSOC, false);
 $DB->query('SELECT FOUND_ROWS()');
 [$NumResults] = $DB->next_record();

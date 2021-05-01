@@ -1,6 +1,6 @@
-<?php
+<?php declare(strict_types=1);
 $Campaign = 'forumaudio';
-if (!$Votes = $Cache->get_value("support_$Campaign")) {
+if (!$Votes = $Cache->get_value(sprintf('support_%s', $Campaign))) {
     $Votes = [0, 0];
 }
 if (!isset($_GET['support'])) {
@@ -13,9 +13,9 @@ if (!isset($_GET['support'])) {
 </ul>
 <?php
 } elseif ('true' === $_GET['support']) {
-        $Votes[0]++;
+        ++$Votes[0];
     } elseif ('false' === $_GET['support']) {
-        $Votes[1]++;
+        ++$Votes[1];
     }
-$Cache->cache_value("support_$Campaign", $Votes, 0);
+$Cache->cache_value(sprintf('support_%s', $Campaign), $Votes, 0);
 ?>

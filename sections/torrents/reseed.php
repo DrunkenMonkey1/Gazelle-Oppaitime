@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $GroupID = $_GET['groupid'];
 $TorrentID = $_GET['torrentid'];
 
@@ -9,7 +9,7 @@ if (!is_number($GroupID) || !is_number($TorrentID)) {
 $DB->query("
   SELECT last_action, LastReseedRequest, UserID, Time
   FROM torrents
-  WHERE ID = '$TorrentID'");
+  WHERE ID = '{$TorrentID}'");
 [$LastActive, $LastReseedRequest, $UploaderID, $UploadedTime] = $DB->next_record();
 
 if (!check_perms('users_mod')) {
@@ -24,7 +24,7 @@ if (!check_perms('users_mod')) {
 $DB->query("
   UPDATE torrents
   SET LastReseedRequest = NOW()
-  WHERE ID = '$TorrentID'");
+  WHERE ID = '{$TorrentID}'");
 
 $Group = Torrents::get_groups([$GroupID]);
 extract(Torrents::array_group($Group[$GroupID]));
@@ -36,7 +36,7 @@ $Name .= $GroupName;
 $DB->query("
   SELECT uid, MAX(tstamp) AS tstamp
   FROM xbt_snatched
-  WHERE fid = '$TorrentID'
+  WHERE fid = '{$TorrentID}'
   GROUP BY uid
   ORDER BY tstamp DESC
   LIMIT 10");
@@ -48,7 +48,7 @@ if ($DB->has_results()) {
         $DB->query("
       SELECT UserID
       FROM top_snatchers
-      WHERE UserID = '$UserID'");
+      WHERE UserID = '{$UserID}'");
         if ($DB->has_results()) {
             continue;
         }
@@ -56,29 +56,29 @@ if ($DB->has_results()) {
         $UserInfo = Users::user_info($UserID);
         $Username = $UserInfo['Username'];
         $TimeStamp = $User['tstamp'];
-        $Request = "Hi $Username,
+        $Request = "Hi {$Username},
 
-The user [url=" . site_url() . "user.php?id=$LoggedUser[ID]]$LoggedUser[Username][/url] has requested a re-seed for the torrent [url=" . site_url() . "torrents.php?id=$GroupID&torrentid=$TorrentID]{$Name}[/url], which you snatched on " . date('M d Y', $TimeStamp) . ". The torrent is now un-seeded, and we need your help to resurrect it!
+The user [url=" . site_url() . sprintf('user.php?id=%s]%s[/url] has requested a re-seed for the torrent [url=', $LoggedUser[ID], $LoggedUser[Username]) . site_url() . sprintf('torrents.php?id=%s&torrentid=%s]%s[/url], which you snatched on ', $GroupID, $TorrentID, $Name) . date('M d Y', $TimeStamp) . ". The torrent is now un-seeded, and we need your help to resurrect it!
 
 The exact process for re-seeding a torrent is slightly different for each client, but the concept is the same. The idea is to download the torrent file and open it in your client, and point your client to the location where the data files are, then initiate a hash check.
 
 Thanks!";
 
-        Misc::send_pm($UserID, 0, "Re-seed request for torrent $Name", $Request);
+        Misc::send_pm($UserID, 0, sprintf('Re-seed request for torrent %s', $Name), $Request);
     }
     $NumUsers = count($Users);
 } else {
     $UserInfo = Users::user_info($UploaderID);
     $Username = $UserInfo['Username'];
 
-    $Request = "Hi $Username,
+    $Request = "Hi {$Username},
 
-The user [url=" . site_url() . "user.php?id=$LoggedUser[ID]]$LoggedUser[Username][/url] has requested a re-seed for the torrent [url=" . site_url() . "torrents.php?id=$GroupID&torrentid=$TorrentID]{$Name}[/url], which you uploaded on " . date('M d Y', strtotime($UploadedTime)) . ". The torrent is now un-seeded, and we need your help to resurrect it!
+The user [url=" . site_url() . sprintf('user.php?id=%s]%s[/url] has requested a re-seed for the torrent [url=', $LoggedUser[ID], $LoggedUser[Username]) . site_url() . sprintf('torrents.php?id=%s&torrentid=%s]%s[/url], which you uploaded on ', $GroupID, $TorrentID, $Name) . date('M d Y', strtotime($UploadedTime)) . ". The torrent is now un-seeded, and we need your help to resurrect it!
 
 The exact process for re-seeding a torrent is slightly different for each client, but the concept is the same. The idea is to download the torrent file and open it in your client, and point your client to the location where the data files are, then initiate a hash check.
 
 Thanks!";
-    Misc::send_pm($UploaderID, 0, "Re-seed request for torrent $Name", $Request);
+    Misc::send_pm($UploaderID, 0, sprintf('Re-seed request for torrent %s', $Name), $Request);
 
     $NumUsers = 1;
 }

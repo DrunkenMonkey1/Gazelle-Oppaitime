@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /**********************************************************************
  *>>>>>>>>>>>>>>>>>>>>>>>>>>> User search <<<<<<<<<<<<<<<<<<<<<<<<<<<<*
  **********************************************************************/
@@ -13,7 +15,7 @@ define('USERS_PER_PAGE', 30);
 
 if (isset($_GET['username'])) {
     $_GET['username'] = trim($_GET['username']);
-
+    
     [$Page, $Limit] = Format::page_limit(USERS_PER_PAGE);
     $DB->query("
     SELECT
@@ -29,7 +31,7 @@ if (isset($_GET['username'])) {
       JOIN users_info AS ui ON ui.UserID = um.ID
     WHERE Username LIKE '%" . db_string($_GET['username']) . "%'
     ORDER BY Username
-    LIMIT $Limit");
+    LIMIT {$Limit}");
     $Results = $DB->to_array();
     $DB->query('SELECT FOUND_ROWS();');
     [$NumResults] = $DB->next_record();
@@ -38,20 +40,20 @@ if (isset($_GET['username'])) {
 $JsonUsers = [];
 foreach ($Results as $Result) {
     [$UserID, $Username, $Enabled, $PermissionID, $Donor, $Warned, $Avatar] = $Result;
-
+    
     $JsonUsers[] = [
-        'userId' => (int)$UserID,
+        'userId' => (int) $UserID,
         'username' => $Username,
         'donor' => 1 == $Donor,
-        'warned' => (bool)$Warned,
-        'enabled' => (2 == $Enabled ? false : true),
+        'warned' => (bool) $Warned,
+        'enabled' => (2 != $Enabled),
         'class' => Users::make_class_string($PermissionID),
         'avatar' => $Avatar
     ];
 }
 
 json_die("success", [
-    'currentPage' => (int)$Page,
+    'currentPage' => (int) $Page,
     'pages' => ceil($NumResults / USERS_PER_PAGE),
     'results' => $JsonUsers
 ]);

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query("
   SELECT
     f.FriendID,
@@ -12,5 +14,5 @@ $DB->query("
       ON u.ID = f.FriendID
   WHERE f.UserID = '$LoggedUser[ID]'
   ORDER BY u.Username ASC");
-echo json_encode($DB->to_array(false, MYSQLI_ASSOC));
+echo json_encode($DB->to_array(false, MYSQLI_ASSOC), JSON_THROW_ON_ERROR);
 die();

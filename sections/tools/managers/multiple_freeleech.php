@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(403);
 }
@@ -10,19 +10,19 @@ if (isset($_POST['torrents'])) {
     $Elements = explode("\r\n", $_POST['torrents']);
     foreach ($Elements as $Element) {
         // Get all of the torrent IDs
-        if (false !== strpos($Element, "torrents.php")) {
+        if (str_contains($Element, "torrents.php")) {
             $Data = explode("id=", $Element);
             if (!empty($Data[1])) {
                 $GroupIDs[] = (int) $Data[1];
             }
-        } elseif (false !== strpos($Element, "collages.php")) {
+        } elseif (str_contains($Element, "collages.php")) {
             $Data = explode("id=", $Element);
             if (!empty($Data[1])) {
                 $CollageID = (int) $Data[1];
                 $DB->query("
                     SELECT GroupID
                     FROM collages_torrents
-                    WHERE CollageID = '$CollageID'");
+                    WHERE CollageID = '{$CollageID}'");
                 while ([$GroupID] = $DB->next_record()) {
                     $GroupIDs[] = (int) $GroupID;
                 }
@@ -30,7 +30,7 @@ if (isset($_POST['torrents'])) {
         }
     }
 
-    if (0 == sizeof($GroupIDs)) {
+    if (0 == count($GroupIDs)) {
         $Err = 'Please enter properly formatted URLs';
     } else {
         $FreeLeechType = (int) $_POST['freeleechtype'];
@@ -46,7 +46,7 @@ if (isset($_POST['torrents'])) {
                 WHERE GroupID IN (" . implode(', ', $GroupIDs) . ")");
             $TorrentIDs = $DB->collect('ID');
 
-            if (0 == sizeof($TorrentIDs)) {
+            if (0 == count($TorrentIDs)) {
                 $Err = 'Invalid group IDs';
             } else {
                 if (isset($_POST['NLOver']) && 1 == $FreeLeechType) {
@@ -63,17 +63,17 @@ if (isset($_POST['torrents'])) {
                             SELECT ID
                             FROM torrents
                             WHERE ID IN (" . implode(', ', $TorrentIDs) . ")
-                              AND Size > '$Bytes'");
+                              AND Size > '{$Bytes}'");
                         $LargeTorrents = $DB->collect('ID');
                         $TorrentIDs = array_diff($TorrentIDs, $LargeTorrents);
                     }
                 }
 
-                if (sizeof($TorrentIDs) > 0) {
+                if (count($TorrentIDs) > 0) {
                     Torrents::freeleech_torrents($TorrentIDs, $FreeLeechType, $FreeLeechReason);
                 }
 
-                if (isset($LargeTorrents) && sizeof($LargeTorrents) > 0) {
+                if (isset($LargeTorrents) && count($LargeTorrents) > 0) {
                     Torrents::freeleech_torrents($LargeTorrents, 2, $FreeLeechReason);
                 }
 

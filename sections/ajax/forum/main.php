@@ -1,10 +1,8 @@
 <?php
 
-if (isset($LoggedUser['PostsPerPage'])) {
-    $PerPage = $LoggedUser['PostsPerPage'];
-} else {
-    $PerPage = POSTS_PER_PAGE;
-}
+declare(strict_types=1);
+
+$PerPage = $LoggedUser['PostsPerPage'] ?? POSTS_PER_PAGE;
 
 //We have to iterate here because if one is empty it breaks the query
 $TopicIDs = [];
@@ -26,7 +24,7 @@ if (!empty($TopicIDs)) {
           FROM forums_posts AS p
           WHERE p.TopicID = l.TopicID
             AND p.ID <= l.PostID
-        ) / $PerPage
+        ) / {$PerPage}
       ) AS Page
     FROM forums_last_read_topics AS l
     WHERE l.TopicID IN(" . implode(',', $TopicIDs) . ")
@@ -48,15 +46,33 @@ $JsonCategories = [];
 $JsonCategory = [];
 $JsonForums = [];
 foreach ($Forums as $Forum) {
-    [$ForumID, $CategoryID, $ForumName, $ForumDescription, $MinRead, $MinWrite, $MinCreate, $NumTopics, $NumPosts, $LastPostID, $LastAuthorID, $LastTopicID, $LastTime, $SpecificRules, $LastTopic, $Locked, $Sticky] = array_values($Forum);
+    [
+        $ForumID,
+        $CategoryID,
+        $ForumName,
+        $ForumDescription,
+        $MinRead,
+        $MinWrite,
+        $MinCreate,
+        $NumTopics,
+        $NumPosts,
+        $LastPostID,
+        $LastAuthorID,
+        $LastTopicID,
+        $LastTime,
+        $SpecificRules,
+        $LastTopic,
+        $Locked,
+        $Sticky
+    ] = array_values($Forum);
     if (1 != $LoggedUser['CustomForums'][$ForumID]
-      && ($MinRead > $LoggedUser['Class']
-      || false !== array_search($ForumID, $RestrictedForums, true))
-  ) {
+        && ($MinRead > $LoggedUser['Class']
+            || in_array($ForumID, $RestrictedForums, true))
+    ) {
         continue;
     }
     $ForumDescription = display_str($ForumDescription);
-
+    
     if ($CategoryID != $LastCategoryID) {
         if (!empty($JsonForums) && !empty($JsonCategory)) {
             $JsonCategory['forums'] = $JsonForums;
@@ -64,33 +80,33 @@ foreach ($Forums as $Forum) {
         }
         $LastCategoryID = $CategoryID;
         $JsonCategory = [
-            'categoryID' => (int)$CategoryID,
+            'categoryID' => (int) $CategoryID,
             'categoryName' => $ForumCats[$CategoryID]
         ];
         $JsonForums = [];
     }
-
+    
     if ((!$Locked || $Sticky)
-      && 0 != $LastPostID
-      && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID)
-        && strtotime($LastTime) > $LoggedUser['CatchupTime'])
-  ) {
+        && 0 != $LastPostID
+        && ((empty($LastRead[$LastTopicID]) || $LastRead[$LastTopicID]['PostID'] < $LastPostID)
+            && strtotime($LastTime) > $LoggedUser['CatchupTime'])
+    ) {
         $Read = 'unread';
     } else {
         $Read = 'read';
     }
     $UserInfo = Users::user_info($LastAuthorID);
-
+    
     $JsonForums[] = [
-        'forumId' => (int)$ForumID,
+        'forumId' => (int) $ForumID,
         'forumName' => $ForumName,
         'forumDescription' => $ForumDescription,
-        'numTopics' => (float)$NumTopics,
-        'numPosts' => (float)$NumPosts,
-        'lastPostId' => (float)$LastPostID,
-        'lastAuthorId' => (float)$LastAuthorID,
+        'numTopics' => (float) $NumTopics,
+        'numPosts' => (float) $NumPosts,
+        'lastPostId' => (float) $LastPostID,
+        'lastAuthorId' => (float) $LastAuthorID,
         'lastPostAuthorName' => $UserInfo['Username'],
-        'lastTopicId' => (float)$LastTopicID,
+        'lastTopicId' => (float) $LastTopicID,
         'lastTime' => $LastTime,
         'specificRules' => $SpecificRules,
         'lastTopic' => display_str($LastTopic),
@@ -105,11 +121,9 @@ if (!empty($JsonForums) && !empty($JsonCategory)) {
     $JsonCategories[] = $JsonCategory;
 }
 
-print json_encode(
-    [
-        'status' => 'success',
-        'response' => [
-            'categories' => $JsonCategories
-        ]
+print json_encode([
+    'status' => 'success',
+    'response' => [
+        'categories' => $JsonCategories
     ]
-);
+], JSON_THROW_ON_ERROR);

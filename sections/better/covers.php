@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!empty($_GET['filter']) && 'all' == $_GET['filter']) {
     $Join = '';
     $All = true;
@@ -14,7 +14,7 @@ $DB->query("
     SQL_CALC_FOUND_ROWS
     tg.ID
   FROM torrents_group AS tg
-    $Join
+    {$Join}
   WHERE tg.WikiImage=''
   ORDER BY RAND()
   LIMIT 20");
@@ -50,13 +50,13 @@ foreach ($Results as $Result) {
     extract($Result);
     $TorrentTags = new Tags($TagList);
 
-    $DisplayName = "<a href=\"torrents.php?id=$ID\" class=\"tooltip\" title=\"View torrent group\" ";
+    $DisplayName = sprintf('<a href="torrents.php?id=%s" class="tooltip" title="View torrent group" ', $ID);
     if (!isset($LoggedUser['CoverArt']) || $LoggedUser['CoverArt']) {
         $DisplayName .= 'data-cover="' . ImageTools::process($WikiImage, 'thumb') . '" ';
     }
-    $DisplayName .= "dir=\"ltr\">$Name</a>";
+    $DisplayName .= sprintf('dir="ltr">%s</a>', $Name);
     if ($Year > 0) {
-        $DisplayName .= " [$Year]";
+        $DisplayName .= sprintf(' [%s]', $Year);
     } ?>
     <tr class="torrent">
       <td><div class="<?=Format::css_category($CategoryID)?>"></div></td>

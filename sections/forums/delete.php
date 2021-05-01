@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 // Quick SQL injection check
 if (!isset($_GET['postid']) || !is_number($_GET['postid'])) {
@@ -18,14 +20,14 @@ $DB->query("
     TopicID,
     ForumID,
     CEIL(COUNT(p.ID) / " . POSTS_PER_PAGE . ") AS Pages,
-    CEIL(SUM(IF(p.ID <= '$PostID', 1, 0)) / " . POSTS_PER_PAGE . ") AS Page,
+    CEIL(SUM(IF(p.ID <= '{$PostID}', 1, 0)) / " . POSTS_PER_PAGE . ") AS Page,
     StickyPostID
   FROM forums_posts AS p
     JOIN forums_topics AS t ON t.ID = p.TopicID
   WHERE p.TopicID = (
       SELECT TopicID
       FROM forums_posts
-      WHERE ID = '$PostID'
+      WHERE ID = '{$PostID}'
       )
   GROUP BY t.ID");
 [$TopicID, $ForumID, $Pages, $Page, $StickyPostID] = $DB->next_record();
@@ -40,34 +42,34 @@ if (!$TopicID) {
 
 $DB->query("
   DELETE FROM forums_posts
-  WHERE ID = '$PostID'");
+  WHERE ID = '{$PostID}'");
 
 $DB->query("
   SELECT MAX(ID)
   FROM forums_posts
-  WHERE TopicID = '$TopicID'");
+  WHERE TopicID = '{$TopicID}'");
 [$LastID] = $DB->next_record();
 $DB->query("
   UPDATE forums AS f, forums_topics AS t
   SET f.NumPosts = f.NumPosts - 1,
     t.NumPosts = t.NumPosts - 1
-  WHERE f.ID = '$ForumID'
-    AND t.ID = '$TopicID'");
+  WHERE f.ID = '{$ForumID}'
+    AND t.ID = '{$TopicID}'");
 
 if ($LastID < $PostID) { // Last post in a topic was removed
     $DB->query("
     SELECT p.AuthorID, u.Username, p.AddedTime
     FROM forums_posts AS p
       LEFT JOIN users_main AS u ON u.ID = p.AuthorID
-    WHERE p.ID = '$LastID'");
+    WHERE p.ID = '{$LastID}'");
     [$LastAuthorID, $LastAuthorName, $LastTime] = $DB->next_record();
     $DB->query("
     UPDATE forums_topics
     SET
-      LastPostID = '$LastID',
-      LastPostAuthorID = '$LastAuthorID',
-      LastPostTime = '$LastTime'
-    WHERE ID = '$TopicID'");
+      LastPostID = '{$LastID}',
+      LastPostAuthorID = '{$LastAuthorID}',
+      LastPostTime = '{$LastTime}'
+    WHERE ID = '{$TopicID}'");
     $DB->query("
     SELECT
       t.ID,
@@ -78,8 +80,8 @@ if ($LastID < $PostID) { // Last post in a topic was removed
       u.Username
     FROM forums_topics AS t
       LEFT JOIN users_main AS u ON u.ID = t.LastPostAuthorID
-    WHERE ForumID = '$ForumID'
-      AND t.ID != '$TopicID'
+    WHERE ForumID = '{$ForumID}'
+      AND t.ID != '{$TopicID}'
     ORDER BY LastPostID DESC
     LIMIT 1");
     [$LastTopicID, $LastTopicTitle, $LastTopicPostID, $LastTopicPostTime, $LastTopicAuthorID, $LastTopicAuthorName] = $DB->next_record(MYSQLI_BOTH, false);
@@ -88,12 +90,12 @@ if ($LastID < $PostID) { // Last post in a topic was removed
         $DB->query("
       UPDATE forums
       SET
-        LastPostTopicID = '$LastTopicID',
-        LastPostID = '$LastTopicPostID',
-        LastPostAuthorID = '$LastTopicAuthorID',
-        LastPostTime = '$LastTopicPostTime'
-      WHERE ID = '$ForumID'
-        AND LastPostTopicID = '$TopicID'");
+        LastPostTopicID = '{$LastTopicID}',
+        LastPostID = '{$LastTopicPostID}',
+        LastPostAuthorID = '{$LastTopicAuthorID}',
+        LastPostTime = '{$LastTopicPostTime}'
+      WHERE ID = '{$ForumID}'
+        AND LastPostTopicID = '{$TopicID}'");
         $UpdateArrayForums = [
             'NumPosts' => '-1',
             'LastPostID' => $LastTopicPostID,
@@ -105,11 +107,11 @@ if ($LastID < $PostID) { // Last post in a topic was removed
         $DB->query("
       UPDATE forums
       SET
-        LastPostID = '$LastID',
-        LastPostAuthorID = '$LastAuthorID',
-        LastPostTime = '$LastTime'
-      WHERE ID = '$ForumID'
-        AND LastPostTopicID = '$TopicID'");
+        LastPostID = '{$LastID}',
+        LastPostAuthorID = '{$LastAuthorID}',
+        LastPostTime = '{$LastTime}'
+      WHERE ID = '{$ForumID}'
+        AND LastPostTopicID = '{$TopicID}'");
         $UpdateArrayForums = [
             'NumPosts' => '-1',
             'LastPostID' => $LastID,
@@ -126,17 +128,17 @@ if ($StickyPostID == $PostID) {
     $DB->query("
     UPDATE forums_topics
     SET StickyPostID = 0
-    WHERE ID = $TopicID");
+    WHERE ID = {$TopicID}");
 }
 
 //We need to clear all subsequential catalogues as they've all been bumped with the absence of this post
 $ThisCatalogue = floor((POSTS_PER_PAGE * $Page - POSTS_PER_PAGE) / THREAD_CATALOGUE);
 $LastCatalogue = floor((POSTS_PER_PAGE * $Pages - POSTS_PER_PAGE) / THREAD_CATALOGUE);
-for ($i = $ThisCatalogue; $i <= $LastCatalogue; $i++) {
-    $Cache->delete_value("thread_$TopicID" . "_catalogue_$i");
+for ($i = $ThisCatalogue; $i <= $LastCatalogue; ++$i) {
+    $Cache->delete_value(sprintf('thread_%s', $TopicID) . sprintf('_catalogue_%s', $i));
 }
 
-$Cache->begin_transaction("thread_$TopicID" . '_info');
+$Cache->begin_transaction(sprintf('thread_%s', $TopicID) . '_info');
 $Cache->update_row(false, $UpdateArrayThread);
 $Cache->commit_transaction();
 
@@ -144,7 +146,7 @@ $Cache->begin_transaction('forums_list');
 $Cache->update_row($ForumID, $UpdateArrayForums);
 $Cache->commit_transaction();
 
-$Cache->delete_value("forums_$ForumID");
+$Cache->delete_value(sprintf('forums_%s', $ForumID));
 
 Subscriptions::flush_subscriptions('forums', $TopicID);
 
@@ -153,4 +155,4 @@ Subscriptions::flush_quote_notifications('forums', $TopicID);
 $DB->query("
   DELETE FROM users_notify_quoted
   WHERE Page = 'forums'
-    AND PostID = '$PostID'");
+    AND PostID = '{$PostID}'");

@@ -1,25 +1,38 @@
 <?php
 
+declare(strict_types=1);
+
 class Artists
 {
     /**
+     * Convenience function for get_artists, when you just need one group.
+     *
+     * @return array - see get_artists
+     */
+    public static function get_artist(int $GroupID): array
+    {
+        $Results = Artists::get_artists([$GroupID]);
+        
+        return $Results[$GroupID];
+    }
+    
+    /**
      * Given an array of GroupIDs, return their associated artists.
      *
-     * @param  array $GroupIDs
-     * @return an    array of the following form:
-     *                        GroupID => {
-     *                        [ArtistType] => {
-     *                        id, name, aliasid
-     *                        }
-     *                        }
-     *                        ArtistType is an int. It can be:
-     *                        1 => Main artist
-     *                        2 => Guest artist
-     *                        4 => Composer
-     *                        5 => Conductor
-     *                        6 => DJ
+     * @return array<int|string, mixed[]> array of the following form:
+     * GroupID => {
+     * [ArtistType] => {
+     * id, name, aliasid
+     * }
+     * }
+     * ArtistType is an int. It can be:
+     * 1 => Main artist
+     * 2 => Guest artist
+     * 4 => Composer
+     * 5 => Conductor
+     * 6 => DJ
      */
-    public static function get_artists($GroupIDs)
+    public static function get_artists(array $GroupIDs): array
     {
         $Results = [];
         $DBs = [];
@@ -34,7 +47,7 @@ class Artists
                 $DBs[] = $GroupID;
             }
         }
-        if (count($DBs) > 0) {
+        if ([] !== $DBs) {
             $IDs = implode(',', $DBs);
             if (empty($IDs)) {
                 $IDs = "null";
@@ -66,23 +79,10 @@ class Artists
                 $Results += array_fill_keys($Missing, []);
             }
         }
+        
         return $Results;
     }
-
-
-    /**
-     * Convenience function for get_artists, when you just need one group.
-     *
-     * @param  int   $GroupID
-     * @return array - see get_artists
-     */
-    public static function get_artist($GroupID)
-    {
-        $Results = Artists::get_artists([$GroupID]);
-        return $Results[$GroupID];
-    }
-
-
+    
     /**
      * Format an array of artists for display.
      * TODO: Revisit the logic of this, see if we can helper-function the copypasta.
@@ -90,46 +90,48 @@ class Artists
      * @param array Artists an array of the form output by get_artists
      * @param bool $MakeLink      if true, the artists will be links, if false, they will be text.
      * @param bool $IncludeHyphen if true, appends " - " to the end.
-     * @param $Escape if true, output will be escaped. Think carefully before setting it false.
+     * @param      $Escape        if true, output will be escaped. Think carefully before setting it false.
+     *
+     * @return string|void
      */
-    public static function display_artists($Artists, $MakeLink = true, $IncludeHyphen = true, $Escape = true)
+    public static function display_artists($Artists, bool $MakeLink = true, bool $IncludeHyphen = true, $Escape = true)
     {
         if (!empty($Artists)) {
-            $ampersand = ($Escape) ? ' &amp; ' : ' & ';
             $link = '';
-
+            
             switch (count($Artists)) {
-        case 0:
-          break;
-        case 3:
-          $link .= Artists::display_artist($Artists[2], $MakeLink, $Escape) . ", ";
-          // no break
-        case 2:
-          $link .= Artists::display_artist($Artists[1], $MakeLink, $Escape) . ", ";
-          // no break
-        case 1:
-          $link .= Artists::display_artist($Artists[0], $MakeLink, $Escape) . ($IncludeHyphen?' – ':'');
-          break;
-        default:
-          $link = "Various" . ($IncludeHyphen?' – ':'');
-      }
-
+                case 0:
+                    break;
+                case 3:
+                    $link .= self::display_artist($Artists[2], $MakeLink, $Escape) . ", ";
+                // no break
+                case 2:
+                    $link .= self::display_artist($Artists[1], $MakeLink, $Escape) . ", ";
+                // no break
+                case 1:
+                    $link .= self::display_artist($Artists[0], $MakeLink, $Escape) . ($IncludeHyphen ? ' – ' : '');
+                    break;
+                default:
+                    $link = "Various" . ($IncludeHyphen ? ' – ' : '');
+            }
+            
             return $link;
-        } else {
-            return '';
         }
+    
+        return '';
     }
-
-
+    
+    
     /**
      * Formats a single artist name.
      *
-     * @param  array  $Artist   an array of the form ('id'=>ID, 'name'=>Name)
-     * @param  bool   $MakeLink If true, links to the artist page.
-     * @param  bool   $Escape   If false and $MakeLink is false, returns the unescaped, unadorned artist name.
-     * @return string Formatted artist name.
+     * @param array $Artist   an array of the form ('id'=>ID, 'name'=>Name)
+     * @param bool  $MakeLink If true, links to the artist page.
+     * @param bool  $Escape   If false and $MakeLink is false, returns the unescaped, unadorned artist name.
+     *
+     * @return string|mixed|void Formatted artist name.
      */
-    public static function display_artist($Artist, $MakeLink = true, $Escape = true)
+    public static function display_artist(array $Artist, bool $MakeLink = true, bool $Escape = true)
     {
         if ($MakeLink && !$Escape) {
             error('Invalid parameters to Artists::display_artist()');
@@ -141,14 +143,12 @@ class Artists
             return $Artist['name'];
         }
     }
-
+    
     /**
      * Deletes an artist and their requests, wiki, and tags.
      * Does NOT delete their torrents.
-     *
-     * @param int $ArtistID
      */
-    public static function delete_artist($ArtistID)
+    public static function delete_artist(int $ArtistID): void
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
@@ -156,7 +156,7 @@ class Artists
       FROM artists_group
       WHERE ArtistID = " . $ArtistID);
         [$Name] = G::$DB->next_record(MYSQLI_NUM, false);
-
+        
         // Delete requests
         G::$DB->query("
       SELECT RequestID
@@ -171,47 +171,40 @@ class Artists
             G::$DB->query('DELETE FROM requests_tags WHERE RequestID=' . $RequestID);
             G::$DB->query('DELETE FROM requests_artists WHERE RequestID=' . $RequestID);
         }
-
+        
         // Delete artist
         G::$DB->query('DELETE FROM artists_group WHERE ArtistID=' . $ArtistID);
         G::$Cache->decrement('stats_artist_count');
-
+        
         // Delete wiki revisions
         G::$DB->query('DELETE FROM wiki_artists WHERE PageID=' . $ArtistID);
-
+        
         // Delete tags
         G::$DB->query('DELETE FROM artists_tags WHERE ArtistID=' . $ArtistID);
-
+        
         // Delete artist comments, subscriptions and quote notifications
         Comments::delete_page('artist', $ArtistID);
-
+        
         G::$Cache->delete_value('artist_' . $ArtistID);
         G::$Cache->delete_value('artist_groups_' . $ArtistID);
-        // Record in log
-
-        if (!empty(G::$LoggedUser['Username'])) {
-            $Username = G::$LoggedUser['Username'];
-        } else {
-            $Username = 'System';
-        }
+        $Username = empty(G::$LoggedUser['Username']) ? 'System' : G::$LoggedUser['Username'];
         Misc::write_log("Artist $ArtistID ($Name) was deleted by $Username");
         G::$DB->set_query_id($QueryID);
     }
-
-
+    
+    
     /**
      * Remove LRM (left-right-marker) and trims, because people copypaste carelessly.
      * If we don't do this, we get seemingly duplicate artist names.
      * TODO: make stricter, e.g. on all whitespace characters or Unicode normalisation
-     *
-     * @param string $ArtistName
      */
-    public static function normalise_artist_name($ArtistName)
+    public static function normalise_artist_name(string $ArtistName): string
     {
         // \u200e is &lrm;
         $ArtistName = trim($ArtistName);
         $ArtistName = preg_replace('/^(\xE2\x80\x8E)+/', '', $ArtistName);
         $ArtistName = preg_replace('/(\xE2\x80\x8E)+$/', '', $ArtistName);
+        
         return trim(preg_replace('/ +/', ' ', $ArtistName));
     }
 }

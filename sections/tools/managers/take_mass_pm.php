@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 set_time_limit(0);
 
 authorize();
@@ -18,7 +20,7 @@ $Body = $_POST['body'];
 $FromID = empty($_POST['from_system']) ? G::$LoggedUser['ID'] : 0;
 
 G::$DB->query("
-        (SELECT ID AS UserID FROM users_main WHERE PermissionID = '$PermissionID' AND ID != '$FromID') UNION (SELECT UserID FROM users_levels WHERE PermissionID = '$PermissionID' AND UserID != '$FromID')");
+        (SELECT ID AS UserID FROM users_main WHERE PermissionID = '{$PermissionID}' AND ID != '{$FromID}') UNION (SELECT UserID FROM users_levels WHERE PermissionID = '{$PermissionID}' AND UserID != '{$FromID}')");
 
 while ([$UserID] = G::$DB->next_record()) {
     Misc::send_pm($UserID, $FromID, $Subject, $Body);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 View::show_header('Create a collection', 'bbcode');
 
 if (!check_perms('site_collages_renamepersonal')) {

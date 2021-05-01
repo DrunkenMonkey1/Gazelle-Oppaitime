@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod')) {
     error(404);
 }
@@ -19,7 +19,7 @@ View::show_header('Top 10 Torrents history!');
       <table class="layout">
         <tr>
           <td class="label">Date:</td>
-          <td><input type="text" id="date" name="date" value="<?=!empty($_GET['date']) ? display_str($_GET['date']) : 'YYYY-MM-DD'?>" onfocus="if ($('#date').raw().value == 'YYYY-MM-DD') { $('#date').raw().value = ''; }" /></td>
+          <td><input type="text" id="date" name="date" value="<?=empty($_GET['date']) ? 'YYYY-MM-DD' : display_str($_GET['date'])?>" onfocus="if ($('#date').raw().value == 'YYYY-MM-DD') { $('#date').raw().value = ''; }" /></td>
         </tr>
         <tr>
           <td class="label">Type:</td>
@@ -47,16 +47,16 @@ if (!empty($_GET['date'])) {
     if (empty($_GET['datetype']) || 'day' == $_GET['datetype']) {
         $Type = 'day';
         $Where = "
-      WHERE th.Date BETWEEN '$SQLTime' AND '$SQLTime' + INTERVAL 24 HOUR
+      WHERE th.Date BETWEEN '{$SQLTime}' AND '{$SQLTime}' + INTERVAL 24 HOUR
         AND Type = 'Daily'";
     } else {
         $Type = 'week';
         $Where = "
-      WHERE th.Date BETWEEN '$SQLTime' - AND '$SQLTime' + INTERVAL 7 DAY
+      WHERE th.Date BETWEEN '{$SQLTime}' - AND '{$SQLTime}' + INTERVAL 7 DAY
         AND Type = 'Weekly'";
     }
 
-    $Details = $Cache->get_value("top10_history_$SQLTime");
+    $Details = $Cache->get_value(sprintf('top10_history_%s', $SQLTime));
     if (false === $Details) {
         $DB->query("
       SELECT
@@ -82,17 +82,17 @@ if (!empty($_GET['date'])) {
         LEFT JOIN top10_history_torrents AS tht ON tht.HistoryID = th.ID
         LEFT JOIN torrents AS t ON t.ID = tht.TorrentID
         LEFT JOIN torrents_group AS g ON g.ID = t.GroupID
-      $Where
+      {$Where}
       ORDER BY tht.Rank ASC");
 
         $Details = $DB->to_array();
 
-        $Cache->cache_value("top10_history_$SQLTime", $Details, 3600 * 24);
+        $Cache->cache_value(sprintf('top10_history_%s', $SQLTime), $Details, 3600 * 24);
     } ?>
 
   <br />
   <div class="pad box">
-    <h3>Top 10 for <?=('day' == $Type ? $Date : "the first week after $Date")?></h3>
+    <h3>Top 10 for <?=('day' == $Type ? $Date : sprintf('the first week after %s', $Date))?></h3>
   <table class="torrent_table cats numbering border">
   <tr class="colhead">
     <td class="center" style="width: 15px;"></td>
@@ -115,10 +115,10 @@ if (!empty($_GET['date'])) {
               $DisplayName = Artists::display_artists($Artists, true, true);
           }
 
-          $DisplayName .= "<a href=\"torrents.php?id=$GroupID&amp;torrentid=$TorrentID\" class=\"tooltip\" title=\"View torrent\" dir=\"ltr\">$GroupName</a>";
+          $DisplayName .= sprintf('<a href="torrents.php?id=%s&amp;torrentid=%s" class="tooltip" title="View torrent" dir="ltr">%s</a>', $GroupID, $TorrentID, $GroupName);
 
           if (1 == $GroupCategoryID && $GroupYear > 0) {
-              $DisplayName .= " [$GroupYear]";
+              $DisplayName .= sprintf(' [%s]', $GroupYear);
           }
 
           // append extra info to torrent title
@@ -134,11 +134,11 @@ if (!empty($_GET['date'])) {
           }
           //"FLAC / Lossless / Log (100%) / Cue / CD";
           if ($HasLog) {
-              $ExtraInfo .= "$AddExtra Log ($LogScore%)";
+              $ExtraInfo .= sprintf('%s Log (%s%)', $AddExtra, $LogScore);
               $AddExtra = ' / ';
           }
           if ($HasCue) {
-              $ExtraInfo .= "{$AddExtra}Cue";
+              $ExtraInfo .= sprintf('%sCue', $AddExtra);
               $AddExtra = ' / ';
           }
           if ($Media) {
@@ -146,7 +146,7 @@ if (!empty($_GET['date'])) {
               $AddExtra = ' / ';
           }
           if ($Scene) {
-              $ExtraInfo .= "{$AddExtra}Scene";
+              $ExtraInfo .= sprintf('%sScene', $AddExtra);
               $AddExtra = ' / ';
           }
           if ($Year > 0) {
@@ -157,13 +157,13 @@ if (!empty($_GET['date'])) {
               $ExtraInfo .= $AddExtra . $RemasterTitle;
           }
           if ('' != $ExtraInfo) {
-              $ExtraInfo = "- [$ExtraInfo]";
+              $ExtraInfo = sprintf('- [%s]', $ExtraInfo);
           }
 
           $DisplayName .= $ExtraInfo;
           $TorrentTags = new Tags($TorrentTags);
       } else {
-          $DisplayName = "$TitleString (Deleted)";
+          $DisplayName = sprintf('%s (Deleted)', $TitleString);
           $TorrentTags = new Tags($TagString);
       } // if ($GroupID)
 

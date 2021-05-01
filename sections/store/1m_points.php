@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 $Purchase = "1,000,000 bonus points";
 $UserID = $LoggedUser['ID'];
 
@@ -8,7 +8,7 @@ $Cost = 1300 * $GiB;
 $DB->query("
   SELECT Uploaded
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 if ($DB->has_results()) {
     [$Upload] = $DB->next_record();
 
@@ -16,12 +16,12 @@ if ($DB->has_results()) {
         $DB->query("
       UPDATE users_main
       SET BonusPoints = BonusPoints + 1000000,
-          Uploaded    = Uploaded - $Cost
-      WHERE ID = $UserID");
+          Uploaded    = Uploaded - {$Cost}
+      WHERE ID = {$UserID}");
         $DB->query("
       UPDATE users_info
       SET AdminComment = CONCAT('" . sqltime() . " - Purchased 1,000,000 " . BONUS_POINTS . "s from the store\n\n', AdminComment)
-      WHERE UserID = $UserID");
+      WHERE UserID = {$UserID}");
         $Cache->delete_value('user_info_heavy_' . $UserID);
         $Cache->delete_value('user_stats_' . $UserID);
         $Worked = true;

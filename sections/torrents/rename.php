@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $GroupID = $_POST['groupid'];
 $OldGroupID = $GroupID;
 $NewName = $_POST['name'];
-$NewRJ = $_POST['namerj'];
-$NewJP = $_POST['namejp'];
+
 
 $DB->query("
   SELECT ID
@@ -19,43 +20,41 @@ if (!$GroupID || !is_number($GroupID)) {
     error(404);
 }
 
-if (!($Contributed || check_perms('torrents_edit'))) {
+if (!$Contributed && !check_perms('torrents_edit')) {
     error(403);
 }
 
-if (empty($NewName) && empty($NewRJ) && empty($NewJP)) {
+if (empty($NewName)) {
     error('Torrent groups must have a name');
 }
 
 $DB->query("
   UPDATE torrents_group
-  SET Name = '" . db_string($NewName) . "',
-  NameRJ = '" . db_string($NewRJ) . "',
-  NameJP = '" . db_string($NewJP) . "'
-  WHERE ID = '$GroupID'");
-$Cache->delete_value("torrents_details_$GroupID");
+  SET Name = '" . db_string($NewName) . "'
+  WHERE ID = '{$GroupID}'");
+$Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
 
 Torrents::update_hash($GroupID);
 
 $DB->query("
-  SELECT Name, NameRJ, NameJP
+  SELECT Name
   FROM torrents_group
-  WHERE ID = $GroupID");
-[$OldName, $OldRJ, $OldJP] = $DB->next_record(MYSQLI_NUM, false);
+  WHERE ID = {$GroupID}");
+[$OldName] = $DB->next_record(MYSQLI_NUM, false);
 
 if ($OldName != $NewName) {
-    Misc::write_log("Torrent Group $GroupID ($OldName)'s title was changed to \"$NewName\" from \"$OldName\" by " . $LoggedUser['Username']);
-    Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "title changed to \"$NewName\" from \"$OldName\"", 0);
+    Misc::write_log(sprintf('Torrent Group %s (%s)\'s title was changed to "%s" from "%s" by ', $GroupID, $OldName,
+            $NewName, $OldName) . $LoggedUser['Username']);
+    Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'],
+        sprintf('title changed to "%s" from "%s"', $NewName, $OldName), 0);
 }
 
-if ($OldRJ != $NewRJ) {
-    Misc::write_log("Torrent Group $GroupID ($OldRJ)'s romaji title was changed to \"$NewRJ\" from \"$OldRJ\" by " . $LoggedUser['Username']);
-    Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "romaji title changed to \"$NewRJ\" from \"$OldRJ\"", 0);
-}
 
-if ($OldJP != $NewJP) {
-    Misc::write_log("Torrent Group $GroupID ($OldJP)'s japanese title was changed to \"$NewJP\" from \"$OldJP\" by " . $LoggedUser['Username']);
-    Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "japanese title changed to \"$NewJP\" from \"$OldJP\"", 0);
-}
+//if ($OldJP != $NewJP) {
+//    Misc::write_log(sprintf('Torrent Group %s (%s)\'s japanese title was changed to "%s" from "%s" by ', $GroupID,
+//            $OldJP, $NewJP, $OldJP) . $LoggedUser['Username']);
+//    Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'],
+//        sprintf('japanese title changed to "%s" from "%s"', $NewJP, $OldJP), 0);
+//}
 
-header("Location: torrents.php?id=$GroupID");
+header(sprintf('Location: torrents.php?id=%s', $GroupID));

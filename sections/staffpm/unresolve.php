@@ -1,11 +1,13 @@
 <?php
 
-if ($ID = (int)($_GET['id'])) {
+declare(strict_types=1);
+
+if (($ID = (int)($_GET['id'])) !== 0) {
     // Check if conversation belongs to user
     $DB->query("
     SELECT UserID, Level, AssignedToUser
     FROM staff_pm_conversations
-    WHERE ID = $ID");
+    WHERE ID = {$ID}");
     [$UserID, $Level, $AssignedToUser] = $DB->next_record();
 
     if ($UserID == $LoggedUser['ID']
@@ -21,9 +23,9 @@ if ($ID = (int)($_GET['id'])) {
         $DB->query("
       UPDATE staff_pm_conversations
       SET Status = 'Unanswered'
-      WHERE ID = $ID");
+      WHERE ID = {$ID}");
         // Clear cache for user
-        $Cache->delete_value("num_staff_pms_$LoggedUser[ID]");
+        $Cache->delete_value(sprintf('num_staff_pms_%s', $LoggedUser[ID]));
 
         header('Location: staffpm.php');
     } else {

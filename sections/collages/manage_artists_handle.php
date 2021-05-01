@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 
 $CollageID = $_POST['collageid'];
@@ -10,7 +12,7 @@ if (!is_number($CollageID)) {
 $DB->query("
   SELECT UserID, CategoryID
   FROM collages
-  WHERE ID = '$CollageID'");
+  WHERE ID = '{$CollageID}'");
 [$UserID, $CategoryID] = $DB->next_record();
 if ('0' === $CategoryID && $UserID !== $LoggedUser['ID'] && !check_perms('site_collages_delete')) {
     error(403);
@@ -27,15 +29,15 @@ if (!is_number($ArtistID)) {
 if ('Remove' === $_POST['submit']) {
     $DB->query("
     DELETE FROM collages_artists
-    WHERE CollageID = '$CollageID'
-      AND ArtistID = '$ArtistID'");
+    WHERE CollageID = '{$CollageID}'
+      AND ArtistID = '{$ArtistID}'");
     $Rows = $DB->affected_rows();
     $DB->query("
     UPDATE collages
-    SET NumTorrents = NumTorrents - $Rows
-    WHERE ID = '$CollageID'");
-    $Cache->delete_value("artists_collages_$ArtistID");
-    $Cache->delete_value("artists_collages_personal_$ArtistID");
+    SET NumTorrents = NumTorrents - {$Rows}
+    WHERE ID = '{$CollageID}'");
+    $Cache->delete_value(sprintf('artists_collages_%s', $ArtistID));
+    $Cache->delete_value(sprintf('artists_collages_personal_%s', $ArtistID));
 } elseif (isset($_POST['drag_drop_collage_sort_order'])) {
     @parse_str($_POST['drag_drop_collage_sort_order'], $Series);
     $Series = @array_shift($Series);
@@ -65,10 +67,10 @@ if ('Remove' === $_POST['submit']) {
     }
     $DB->query("
     UPDATE collages_artists
-    SET Sort = '$Sort'
-    WHERE CollageID = '$CollageID'
-      AND ArtistID = '$ArtistID'");
+    SET Sort = '{$Sort}'
+    WHERE CollageID = '{$CollageID}'
+      AND ArtistID = '{$ArtistID}'");
 }
 
-$Cache->delete_value("collage_$CollageID");
-header("Location: collages.php?action=manage_artists&collageid=$CollageID");
+$Cache->delete_value(sprintf('collage_%s', $CollageID));
+header(sprintf('Location: collages.php?action=manage_artists&collageid=%s', $CollageID));

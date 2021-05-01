@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (![$Labels, $InFlow, $OutFlow, $Max] = $Cache->get_value('torrents_timeline')) {
     $DB->query("
     SELECT DATE_FORMAT(Time,\"%b %Y\") AS Month, COUNT(ID)

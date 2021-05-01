@@ -1,36 +1,33 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_view_flow')) {
     error(403);
 }
 
 //Timeline generation
-if (!isset($_GET['page'])) {
-    if (![$Labels, $InFlow, $OutFlow] = $Cache->get_value('users_timeline')) {
-        $DB->query("
+if (!isset($_GET['page']) && ![$Labels, $InFlow, $OutFlow] = $Cache->get_value('users_timeline')) {
+    $DB->query("
       SELECT DATE_FORMAT(JoinDate, \"%b %y\") AS Month, COUNT(UserID)
       FROM users_info
       GROUP BY Month
       ORDER BY JoinDate DESC
       LIMIT 1, 11");
-        $TimelineIn = array_reverse($DB->to_array());
-        $DB->query("
+    $TimelineIn = array_reverse($DB->to_array());
+    $DB->query("
       SELECT DATE_FORMAT(BanDate, \"%b %y\") AS Month, COUNT(UserID)
       FROM users_info
       WHERE BanDate > 0
       GROUP BY Month
       ORDER BY BanDate DESC
       LIMIT 1, 11");
-        $TimelineOut = array_reverse($DB->to_array());
-
-        $Labels = [];
-        foreach ($TimelineIn as $Month) {
-            [$Labels[], $InFlow[]] = $Month;
-        }
-        foreach ($TimelineOut as $Month) {
-            [, $OutFlow[]] = $Month;
-        }
-        $Cache->cache_value('users_timeline', [$Labels, $InFlow, $OutFlow], mktime(0, 0, 0, date('n') + 1, 2));
+    $TimelineOut = array_reverse($DB->to_array());
+    $Labels = [];
+    foreach ($TimelineIn as $Month) {
+        [$Labels[], $InFlow[]] = $Month;
     }
+    foreach ($TimelineOut as $Month) {
+        [, $OutFlow[]] = $Month;
+    }
+    $Cache->cache_value('users_timeline', [$Labels, $InFlow, $OutFlow], mktime(0, 0, 0, date('n') + 1, 2));
 }
 //End timeline generation
 
@@ -95,7 +92,7 @@ $RS = $DB->query("
         GROUP BY Date
       ) AS i ON j.Date = i.Date
     ORDER BY j.Date DESC
-    LIMIT $Limit");
+    LIMIT {$Limit}");
 $DB->query('SELECT FOUND_ROWS()');
 [$Results] = $DB->next_record();
 
@@ -103,9 +100,9 @@ View::show_header('User Flow', 'chart');
 $DB->set_query_id($RS);
 ?>
 <div class="thin">
-<?php  if (!isset($_GET['page'])) { ?>
-  <div class="box pad center">
-    <canvas class="chart" id="chart_user_timeline" data-chart='{
+    <?php if (!isset($_GET['page'])) { ?>
+        <div class="box pad center">
+            <canvas class="chart" id="chart_user_timeline" data-chart='{
       "type": "line",
       "data": {
         "labels": <?php print '["' . implode('","', $Labels) . '"]'; ?>,
@@ -122,44 +119,44 @@ $DB->set_query_id($RS);
         }]
       }
     }'></canvas>
-  </div>
-<?php  } ?>
-  <div class="linkbox">
-<?php
-$Pages = Format::get_pages($Page, $Results, DAYS_PER_PAGE, 11);
-echo $Pages;
-?>
-  </div>
-  <div class="box">
-  <table width="100%">
-    <tr class="colhead">
-      <td>Date</td>
-      <td>(+) Joined</td>
-      <td>(-) Manual</td>
-      <td>(-) Ratio</td>
-      <td>(-) Inactivity</td>
-      <td>(-) Total</td>
-      <td>Net Growth</td>
-    </tr>
-<?php
-  while ([$Date, $Month, $Joined, $Manual, $Ratio, $Inactivity] = $DB->next_record()) {
-      $TotalOut = $Ratio + $Inactivity + $Manual;
-      $TotalGrowth = $Joined - $TotalOut; ?>
-    <tr class="row">
-      <td><?=$Date?></td>
-      <td><?=number_format($Joined)?></td>
-      <td><?=number_format($Manual)?></td>
-      <td><?=number_format((float)$Ratio)?></td>
-      <td><?=number_format($Inactivity)?></td>
-      <td><?=number_format($TotalOut)?></td>
-      <td><?=number_format($TotalGrowth)?></td>
-    </tr>
-<?php
-  } ?>
-  </table>
-  </div>
-  <div class="linkbox">
-    <?=$Pages?>
-  </div>
+        </div>
+    <?php } ?>
+    <div class="linkbox">
+        <?php
+        $Pages = Format::get_pages($Page, $Results, DAYS_PER_PAGE, 11);
+        echo $Pages;
+        ?>
+    </div>
+    <div class="box">
+        <table width="100%">
+            <tr class="colhead">
+                <td>Date</td>
+                <td>(+) Joined</td>
+                <td>(-) Manual</td>
+                <td>(-) Ratio</td>
+                <td>(-) Inactivity</td>
+                <td>(-) Total</td>
+                <td>Net Growth</td>
+            </tr>
+            <?php
+            while ([$Date, $Month, $Joined, $Manual, $Ratio, $Inactivity] = $DB->next_record()) {
+                $TotalOut = (int) $Ratio + (int) $Inactivity + (int) $Manual;
+                $TotalGrowth = $Joined - $TotalOut; ?>
+                <tr class="row">
+                    <td><?= $Date ?></td>
+                    <td><?= number_format((int) $Joined) ?></td>
+                    <td><?= number_format((int) $Manual) ?></td>
+                    <td><?= number_format((float) $Ratio) ?></td>
+                    <td><?= number_format((int) $Inactivity) ?></td>
+                    <td><?= number_format((int) $TotalOut) ?></td>
+                    <td><?= number_format((int) $TotalGrowth) ?></td>
+                </tr>
+                <?php
+            } ?>
+        </table>
+    </div>
+    <div class="linkbox">
+        <?= $Pages ?>
+    </div>
 </div>
 <?php View::show_footer(); ?>

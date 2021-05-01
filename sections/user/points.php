@@ -1,8 +1,8 @@
-<?php
+<?php declare(strict_types=1);
 $Amount = (int) db_string($_POST['amount']);
 $To = (int) db_string($_POST['to']);
 $UserID = (int) $LoggedUser['ID'];
-$Adjust = isset($_POST['adjust'])?true:false;
+$Adjust = isset($_POST['adjust']);
 $Message = $_POST['message'];
 
 // 10% tax
@@ -12,17 +12,17 @@ if ($LoggedUser['DisablePoints']) {
     $Err = 'You are not allowed to send ' . BONUS_POINTS . '.';
 } else {
     if ($Adjust) {
-        $Amount = $Amount/(1-$Tax);
+        $Amount /= 1-$Tax;
     }
 
     $SentAmount = (int) ($Amount*(1-$Tax));
 
     $Amount = (int) $Amount;
 
-    if ($UserID == $To) {
-        $Err = 'If you sent ' . BONUS_POINTS . ' to yourself it wouldn\'t even do anything. Stop that.';
+    if ($UserID === $To) {
+        $Err = 'If you sent ' . BONUS_POINTS . " to yourself it wouldn't even do anything. Stop that.";
     } elseif ($Amount < 0) {
-        $Err = 'You can\'t send a negative amount of ' . BONUS_POINTS . '.';
+        $Err = "You can't send a negative amount of " . BONUS_POINTS . '.';
     } elseif ($Amount < 100) {
         $Err = 'You must send at least 100 ' . BONUS_POINTS . '.';
     } else {
@@ -30,9 +30,9 @@ if ($LoggedUser['DisablePoints']) {
       SELECT ui.DisablePoints
       FROM users_main AS um
         JOIN users_info AS ui ON um.ID = ui.UserID
-      WHERE ID = $To");
+      WHERE ID = {$To}");
         if (!$DB->has_results()) {
-            $Err = 'That user doesn\'t exist.';
+            $Err = "That user doesn't exist.";
         } else {
             [$Disabled] = $DB->next_record();
             if ($Disabled) {
@@ -41,33 +41,33 @@ if ($LoggedUser['DisablePoints']) {
                 $DB->query("
           SELECT BonusPoints
           FROM users_main
-          WHERE ID = $UserID");
+          WHERE ID = {$UserID}");
                 if ($DB->has_results()) {
                     [$BP] = $DB->next_record();
 
                     if ($BP < $Amount) {
-                        $Err = 'You don\'t have enough ' . BONUS_POINTS . '.';
+                        $Err = "You don't have enough " . BONUS_POINTS . '.';
                     } else {
                         $DB->query("
               UPDATE users_main
-              SET BonusPoints = BonusPoints - $Amount
-              WHERE ID = $UserID");
+              SET BonusPoints = BonusPoints - {$Amount}
+              WHERE ID = {$UserID}");
                         $DB->query("
               UPDATE users_main
               SET BonusPoints = BonusPoints + " . $SentAmount . "
-              WHERE ID = $To");
+              WHERE ID = {$To}");
 
                         $UserInfo = Users::user_info($UserID);
                         $ToInfo = Users::user_info($To);
 
                         $DB->query("
               UPDATE users_info
-              SET AdminComment = CONCAT('" . sqltime() . " - Sent $Amount " . BONUS_POINTS . " (" . $SentAmount . " after tax) to [user]" . $ToInfo['Username'] . "[/user]\n\n', AdminComment)
-              WHERE UserID = $UserID");
+              SET AdminComment = CONCAT('" . sqltime() . sprintf(' - Sent %s ', $Amount) . BONUS_POINTS . " (" . $SentAmount . " after tax) to [user]" . $ToInfo['Username'] . "[/user]\n\n', AdminComment)
+              WHERE UserID = {$UserID}");
                         $DB->query("
               UPDATE users_info
               SET AdminComment = CONCAT('" . sqltime() . " - Received " . $SentAmount . " " . BONUS_POINTS . " from [user]" . $UserInfo['Username'] . "[/user]\n\n', AdminComment)
-              WHERE UserID = $To");
+              WHERE UserID = {$To}");
 
                         $PM = '[user]' . $UserInfo['Username'] . '[/user] has sent you a gift of ' . $SentAmount . ' ' . BONUS_POINTS . '!';
 
@@ -75,7 +75,7 @@ if ($LoggedUser['DisablePoints']) {
                             $PM .= "\n\n" . '[quote=' . $UserInfo['Username'] . ']' . $Message . '[/quote]';
                         }
 
-                        Misc::send_pm($To, 0, 'You\'ve received a gift!', $PM);
+                        Misc::send_pm($To, 0, "You've received a gift!", $PM);
 
                         $Cache->delete_value('user_info_heavy_' . $UserID);
                         $Cache->delete_value('user_stats_' . $UserID);

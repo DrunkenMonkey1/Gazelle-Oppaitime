@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 //****************************************************************************//
 //--------------- Take upload ------------------------------------------------//
 // This pages handles the backend of the torrent upload function. It checks   //
@@ -8,10 +9,11 @@
 
 // Maximum allowed size for uploaded files.
 // http://php.net/upload-max-filesize
-ini_set('upload_max_filesize', 2097152); // 2 Mebibytes
+ini_set('upload_max_filesize', '2_097_152'); // 2 Mebibytes
 
-ini_set('max_file_uploads', 100);
-define('MAX_FILENAME_LENGTH', 180);
+ini_set('max_file_uploads', '100');
+define('MAX_FILENAME_LENGTH', '180');
+
 include SERVER_ROOT . '/classes/validate.class.php';
 include SERVER_ROOT . '/classes/feed.class.php';
 include SERVER_ROOT . '/sections/torrents/functions.php';
@@ -34,35 +36,33 @@ define('QUERY_EXCEPTION', true); // Shut up debugging
 // movies and not add anything for other categories but this is fucking dumb   //
 
 $Properties = [];
-$Type = $Categories[(int)$_POST['type']];
+$Type = $Categories[(int) $_POST['type']];
 $TypeID = $_POST['type'] + 1;
 $Properties['CategoryID'] = $TypeID;
 $Properties['CategoryName'] = $Type;
 $Properties['Title'] = $_POST['title'];
-$Properties['TitleRJ'] = $_POST['title_rj'];
-$Properties['TitleJP'] = $_POST['title_jp'];
 $Properties['Year'] = $_POST['year'];
 
-$Properties['Studio'] = isset($_POST['studio']) ? $_POST['studio'] : '';
+$Properties['Studio'] = $_POST['studio'] ?? '';
 
-$Properties['Series'] = isset($_POST['series']) ? $_POST['series'] : '';
+$Properties['Series'] = $_POST['series'] ?? '';
 
-$Properties['CatalogueNumber'] = isset($_POST['catalogue']) ? $_POST['catalogue'] : '';
-$Properties['Pages'] = isset($_POST['pages']) ? $_POST['pages'] : 0;
-$Properties['Container'] = isset($_POST['container']) ? $_POST['container'] : '';
+$Properties['CatalogueNumber'] = $_POST['catalogue'] ?? '';
+$Properties['Pages'] = $_POST['pages'] ?? 0;
+$Properties['Container'] = $_POST['container'] ?? '';
 
 $Properties['Media'] = $_POST['media'];
 
-$Properties['Codec'] = isset($_POST['codec']) ? $_POST['codec'] : '';
+$Properties['Codec'] = $_POST['codec'] ?? '';
 if (!($_POST['resolution'] ?? false)) {
     $_POST['resolution'] = $_POST['ressel'] ?? '';
 }
 $Properties['Resolution'] = $_POST['resolution'] ?? '';
-$Properties['AudioFormat'] = isset($_POST['audioformat']) ? $_POST['audioformat'] : '';
-$Properties['Subbing'] = isset($_POST['sub']) ? $_POST['sub'] : '';
-$Properties['Language'] = isset($_POST['lang']) ? $_POST['lang'] : '';
-$Properties['Subber'] = isset($_POST['subber']) ? $_POST['subber'] : '';
-$Properties['DLsiteID'] = (isset($_POST['dlsiteid'])) ? $_POST['dlsiteid'] : '';
+$Properties['AudioFormat'] = $_POST['audioformat'] ?? '';
+$Properties['Subbing'] = $_POST['sub'] ?? '';
+$Properties['Language'] = $_POST['lang'] ?? '';
+$Properties['Subber'] = $_POST['subber'] ?? '';
+$Properties['DLsiteID'] = $_POST['dlsiteid'] ?? '';
 $Properties['Censored'] = (isset($_POST['censored'])) ? '1' : '0';
 $Properties['Anonymous'] = (isset($_POST['anonymous'])) ? '1' : '0';
 $Properties['Archive'] = (isset($_POST['archive']) && '---' != $_POST['archive']) ? $_POST['archive'] : '';
@@ -83,7 +83,7 @@ if (isset($_POST['release'])) {
 $Properties['GroupDescription'] = trim($_POST['album_desc']);
 $Properties['TorrentDescription'] = $_POST['release_desc'];
 $Properties['MediaInfo'] = $_POST['mediainfo'];
-$Properties['Screenshots'] = isset($_POST['screenshots']) ? $_POST['screenshots'] : "";
+$Properties['Screenshots'] = $_POST['screenshots'] ?? "";
 
 if ($_POST['album_desc']) {
     $Properties['GroupDescription'] = trim($_POST['album_desc']);
@@ -106,10 +106,8 @@ if ('Movies' == $Type || 'Manga' == $Type || 'Anime' == $Type || 'Games' == $Typ
     } else {
         $Artists = $_POST['idols'];
     }
-} else {
-    if (!empty($_POST['idols'])) {
-        $Artists = $_POST['idols'];
-    }
+} elseif (!empty($_POST['idols'])) {
+    $Artists = $_POST['idols'];
 }
 
 if (!empty($_POST['requestid'])) {
@@ -119,154 +117,145 @@ if (!empty($_POST['requestid'])) {
 //******************************************************************************//
 //--------------- Validate data in upload form ---------------------------------//
 
-$Validate->SetFields('type', '1', 'inarray', 'Please select a valid type.', ['inarray' => array_keys($Categories)]);
+
+$Validate->SetFields('type',
+    '1', 'inarray',
+    'Please select a valid type.',
+    ['inarray' => array_keys($Categories)]);
 switch ($Type) {
-  case 'Movies':
-  case 'Anime':
-    $Validate->SetFields(
-        'codec',
-        '1',
-        'inarray',
-        'Please select a valid codec.',
-        ['inarray'=>$Codecs]
-    );
-
-    $Validate->SetFields(
-        'resolution',
-        '1',
-        'regex',
-        'Please set a valid resolution.',
-        ['regex'=>'/^(SD)|([0-9]+(p|i))|([0-9]K)|([0-9]+x[0-9]+)$/']
-    );
-
-    $Validate->SetFields(
-        'audioformat',
-        '1',
-        'inarray',
-        'Please select a valid audio format.',
-        ['inarray'=>$AudioFormats]
-    );
-
-    $Validate->SetFields(
-        'sub',
-        '1',
-        'inarray',
-        'Please select a valid sub format.',
-        ['inarray'=>$Subbing]
-    );
-
-    $Validate->SetFields('censored', '1', 'inarray', 'Set valid censoring', ['inarray'=>[0, 1]]);
-
-    // no break
-  case 'Games':
-    $Validate->SetFields(
-        'container',
-        '1',
-        'inarray',
-        'Please select a valid container.',
-        ['inarray'=>array_merge($Containers, $ContainersGames)]
-    );
-
-    // no break
-  case 'Manga':
-    if (!isset($_POST['groupid']) || !$_POST['groupid']) {
+    case 'Movies':
+    case 'Anime':
         $Validate->SetFields(
-            'year',
+            'codec',
             '1',
-            'number',
-            'The year of the original release must be entered.',
-            ['maxlength'=>3000, 'minlength'=>1800]
+            'inarray',
+            'Please select a valid codec.',
+            ['inarray' => $Codecs]
         );
-        if ('Manga' == $Type) {
+        
+        $Validate->SetFields(
+            'resolution',
+            '1',
+            'regex',
+            'Please set a valid resolution.',
+            ['regex' => '/^(SD)|([0-9]+(p|i))|([0-9]K)|([0-9]+x[0-9]+)$/']
+        );
+        
+        $Validate->SetFields(
+            'audioformat',
+            '1',
+            'inarray',
+            'Please select a valid audio format.',
+            ['inarray' => $AudioFormats]
+        );
+        
+        $Validate->SetFields(
+            'sub',
+            '1',
+            'inarray',
+            'Please select a valid sub format.',
+            ['inarray' => $Subbing]
+        );
+        
+        $Validate->SetFields('censored',
+            '1', 'inarray',
+            'Set valid censoring',
+            ['inarray' => [0, 1]]);
+    
+    // no break
+    case 'Games':
+        $Validate->SetFields(
+            'container',
+            '1',
+            'inarray',
+            'Please select a valid container.',
+            ['inarray' => array_merge($Containers, $ContainersGames)]
+        );
+    
+    // no break
+    case 'Manga':
+        if (!isset($_POST['groupid']) || !$_POST['groupid']) {
             $Validate->SetFields(
-                'pages',
+                'year',
                 '1',
                 'number',
-                'That is not a valid page count',
-                ['minlength'=>1]
+                'The year of the original release must be entered.',
+                ['maxlength' => 3000, 'minlength' => 1800]
+            );
+            if ('Manga' === $Type) {
+                $Validate->SetFields(
+                    'pages',
+                    '1',
+                    'number',
+                    'That is not a valid page count',
+                    ['minlength' => 1]
+                );
+            }
+        }
+        
+        $Validate->SetFields(
+            'media',
+            '1',
+            'inarray',
+            'Please select a valid media/platform.',
+            ['inarray' => array_merge($Media, $MediaManga, $Platform)]
+        );
+        
+        $Validate->SetFields(
+            'lang',
+            '1',
+            'inarray',
+            'Please select a valid language.',
+            ['inarray' => $Languages]
+        );
+        
+        $Validate->SetFields(
+            'release_desc',
+            '0',
+            'string',
+            'The release description has a minimum length of 10 characters.',
+            ['maxlength' => 1_000_000, 'minlength' => 10]
+        );
+    
+    // no break
+    default:
+        if (!isset($_POST['groupid']) || !$_POST['groupid']) {
+            $Validate->SetFields(
+                'title',
+                '0',
+                'string',
+                'Title must be between 1 and 300 characters.',
+                ['maxlength' => 300, 'minlength' => 1]
+            );
+            
+            $Validate->SetFields(
+                'tags',
+                '1',
+                'string',
+                'You must enter at least five tag. Maximum length is 1500 characters.',
+                ['maxlength' => 1500, 'minlength' => 2]
+            );
+            
+            $Validate->SetFields(
+                'image',
+                '0',
+                'link',
+                'The image URL you entered was invalid.',
+                ['maxlength' => 255, 'minlength' => 12]
             );
         }
-    }
-
-    $Validate->SetFields(
-        'media',
-        '1',
-        'inarray',
-        'Please select a valid media/platform.',
-        ['inarray'=>array_merge($Media, $MediaManga, $Platform)]
-    );
-
-    $Validate->SetFields(
-        'lang',
-        '1',
-        'inarray',
-        'Please select a valid language.',
-        ['inarray'=>$Languages]
-    );
-
-    $Validate->SetFields(
-        'release_desc',
-        '0',
-        'string',
-        'The release description has a minimum length of 10 characters.',
-        ['maxlength'=>1000000, 'minlength'=>10]
-    );
-
-    // no break
-  default:
-    if (!isset($_POST['groupid']) || !$_POST['groupid']) {
+        
         $Validate->SetFields(
-            'title',
-            '0',
-            'string',
-            'Title must be between 1 and 300 characters.',
-            ['maxlength'=>300, 'minlength'=>1]
-        );
-        $Validate->SetFields(
-            'title_rj',
-            '0',
-            'string',
-            'Romaji Title must be between 1 and 300 characters.',
-            ['maxlength'=>300, 'minlength'=>1]
-        );
-
-        $Validate->SetFields(
-            'title_jp',
-            '0',
-            'string',
-            'Japanese Title must be between 1 and 512 bytes.',
-            ['maxlength'=>512, 'minlength'=>1]
-        );
-
-        $Validate->SetFields(
-            'tags',
+            'album_desc',
             '1',
             'string',
-            'You must enter at least five tag. Maximum length is 1500 characters.',
-            ['maxlength'=>1500, 'minlength'=>2]
+            'The description has a minimum length of 10 characters.',
+            ['maxlength' => 1_000_000, 'minlength' => 10]
         );
-
-        $Validate->SetFields(
-            'image',
-            '0',
-            'link',
-            'The image URL you entered was invalid.',
-            ['maxlength'=>255, 'minlength'=>12]
-        );
-    }
-
-    $Validate->SetFields(
-        'album_desc',
-        '1',
-        'string',
-        'The description has a minimum length of 10 characters.',
-        ['maxlength'=>1000000, 'minlength'=>10]
-    );
-    $Validate->SetFields('groupid', '0', 'number', 'Group ID was not numeric');
+        $Validate->SetFields('groupid', '0', 'number', 'Group ID was not numeric');
 }
 
 $Err = $Validate->ValidateForm($_POST); // Validate the form
-
 if (count(explode(',', $Properties['TagList'])) < 5) {
     $Err = 'You must enter at least 5 tags.';
 }
@@ -290,12 +279,11 @@ $LogName = '';
 if (empty($Properties['GroupID']) && empty($ArtistForm)) {
     $ArtistNames = [];
     $ArtistForm = [];
-    for ($i = 0; $i < count($Artists); $i++) {
-        if ('' != trim($Artists[$i])) {
-            if (!in_array($Artists[$i], $ArtistNames, true)) {
-                $ArtistForm[$i] = ['name' => Artists::normalise_artist_name($Artists[$i])];
-                array_push($ArtistNames, $ArtistForm[$i]['name']);
-            }
+    $ArtistsCount = count($Artists);
+    for ($i = 0; $i < $ArtistsCount; ++$i) {
+        if ('' != trim($Artists[$i]) && !in_array($Artists[$i], $ArtistNames, true)) {
+            $ArtistForm[$i] = ['name' => Artists::normalise_artist_name($Artists[$i])];
+            $ArtistNames[] = $ArtistForm[$i]['name'];
         }
     }
     $LogName .= Artists::display_artists($ArtistForm, false, true, false);
@@ -308,8 +296,8 @@ if (empty($Properties['GroupID']) && empty($ArtistForm)) {
     ORDER BY ag.Name ASC", $Properties['GroupID']);
     $ArtistForm = [];
     while ([$ArtistID, $ArtistName] = $DB->next_record(MYSQLI_BOTH, false)) {
-        array_push($ArtistForm, ['id' => $ArtistID, 'name' => display_str($ArtistName)]);
-        array_push($ArtistsUnescaped, ['name' => $ArtistName]);
+        $ArtistForm[] = ['id' => $ArtistID, 'name' => display_str($ArtistName)];
+        $ArtistsUnescaped[] = ['name' => $ArtistName];
     }
     $LogName .= Artists::display_artists($ArtistsUnescaped, false, true, false);
 }
@@ -354,14 +342,14 @@ foreach ($FileList as $File) {
     check_file($Type, $Name);
     // Make sure the filename is not too long
     if (mb_strlen($Name, 'UTF-8') + mb_strlen($DirName, 'UTF-8') + 1 > MAX_FILENAME_LENGTH) {
-        $TooLongPaths[] = "$DirName/$Name";
+        $TooLongPaths[] = sprintf('%s/%s', $DirName, $Name);
     }
     // Add file info to array
     $TmpFileList[] = Torrents::filelist_format_file($File);
 }
-if (count($TooLongPaths) > 0) {
+if ([] !== $TooLongPaths) {
     $Names = implode(' <br />', $TooLongPaths);
-    $Err = "The torrent contained one or more files with too long a name:<br /> $Names";
+    $Err = sprintf('The torrent contained one or more files with too long a name:<br /> %s', $Names);
 }
 $FilePath = $DirName;
 $FileString = implode("\n", $TmpFileList);
@@ -398,7 +386,15 @@ if ($T['GroupID']) {
     WHERE id = ?", $T['GroupID']);
     if ($DB->has_results()) {
         // Don't escape tg.Name. It's written directly to the log table
-        [$GroupID, $WikiImage, $WikiBody, $RevisionID, $T['Title'], $T['Year'], $T['TagList']] = $DB->next_record(MYSQLI_NUM, [4]);
+        [
+            $GroupID,
+            $WikiImage,
+            $WikiBody,
+            $RevisionID,
+            $T['Title'],
+            $T['Year'],
+            $T['TagList']
+        ] = $DB->next_record(MYSQLI_NUM, [4]);
         $T['TagList'] = str_replace([' ', '.', '_'], [', ', '.', '.'], $T['TagList']);
         if (!$T['Image'] && $WikiImage) {
             $T['Image'] = $WikiImage;
@@ -423,7 +419,7 @@ if (!isset($GroupID) || !$GroupID) {
       WHERE Name = ?", $Artist['name']);
         if ($DB->has_results()) {
             while ([$ArtistID, $Name] = $DB->next_record(MYSQLI_NUM, false)) {
-                if (!strcasecmp($Artist['name'], $Name)) {
+                if (0 === strcasecmp($Artist['name'], $Name)) {
                     $ArtistForm[$Num] = ['id' => $ArtistID, 'name' => $Name];
                     break;
                 }
@@ -452,9 +448,9 @@ if ((!isset($GroupID) || !$GroupID)) {
           INSERT INTO artists_group (Name)
           VALUES ( ? )", $Artist['name']);
                 $ArtistID = $DB->inserted_id();
-
+                
                 $Cache->increment('stats_artist_count');
-
+                
                 $ArtistForm[$Num] = ['id' => $ArtistID, 'name' => $Artist['name']];
                 $ArtistsAdded[strtolower($Artist['name'])] = $ArtistForm[$Num];
             }
@@ -465,20 +461,17 @@ if ((!isset($GroupID) || !$GroupID)) {
 
 if (!isset($GroupID) || !$GroupID) {
     // Create torrent group
-    $DB->query(
-        "
+    $DB->query("
     INSERT INTO torrents_group
-      (CategoryID, Name, NameRJ, NameJP, Year,
+      (CategoryID, Name, Year,
       Series, Studio, CatalogueNumber, Pages, Time,
       WikiBody, WikiImage, DLsiteID)
     VALUES
-      ( ?, ?, ?, ?, ?,
+      ( ?, ?, ?,
         ?, ?, ?, ?, NOW(),
         ?, ?, ? )",
         $TypeID,
         $T['Title'],
-        $T['TitleRJ'],
-        $T['TitleJP'],
         $T['Year'],
         $T['Series'],
         $T['Studio'],
@@ -489,6 +482,7 @@ if (!isset($GroupID) || !$GroupID) {
         $T['DLsiteID']
     );
     $GroupID = $DB->inserted_id();
+    
     foreach ($ArtistForm as $Num => $Artist) {
         $DB->query("
       INSERT IGNORE INTO torrents_artists (GroupID, ArtistID, UserID)
@@ -497,16 +491,14 @@ if (!isset($GroupID) || !$GroupID) {
         $Cache->delete_value('artist_groups_' . $Artist['id']);
     }
     $Cache->increment('stats_group_count');
-
+    
     // Add screenshots
     $Screenshots = explode("\n", $T['Screenshots']);
     $Screenshots = array_map("trim", $Screenshots);
-    $Screenshots = array_filter($Screenshots, function ($s) {
-        return preg_match('/^' . IMAGE_REGEX . '$/i', $s);
-    });
+    $Screenshots = array_filter($Screenshots, fn ($s) => preg_match('/^' . IMAGE_REGEX . '$/i', $s));
     $Screenshots = array_unique($Screenshots);
     $Screenshots = array_slice($Screenshots, 0, 10);
-
+    
     if (!empty($Screenshots)) {
         $Screenshot = '';
         $DB->prepare_query("
@@ -522,9 +514,9 @@ if (!isset($GroupID) || !$GroupID) {
     UPDATE torrents_group
     SET Time = NOW()
     WHERE ID = ?", $GroupID);
-    $Cache->delete_value("torrent_group_$GroupID");
-    $Cache->delete_value("torrents_details_$GroupID");
-    $Cache->delete_value("detail_files_$GroupID");
+    $Cache->delete_value(sprintf('torrent_group_%s', $GroupID));
+    $Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
+    $Cache->delete_value(sprintf('detail_files_%s', $GroupID));
 }
 
 // Description
@@ -535,7 +527,7 @@ if (!isset($NoRevision) || !$NoRevision) {
     VALUES
       ( ?, ?, ?, 'Uploaded new torrent', NOW(), ? )", $GroupID, $T['GroupDescription'], $LoggedUser['ID'], $T['Image']);
     $RevisionID = $DB->inserted_id();
-
+    
     // Revision ID
     $DB->query("
     UPDATE torrents_group
@@ -558,7 +550,7 @@ if (!$T['GroupID']) {
         ON DUPLICATE KEY UPDATE
           Uses = Uses + 1;", $Tag, $LoggedUser['ID']);
             $TagID = $DB->inserted_id();
-
+            
             $DB->query("
         INSERT INTO torrents_tags
           (TagID, GroupID, UserID)
@@ -580,7 +572,7 @@ $DB->query("
   WHERE Second = 'freeleech'");
 if ($DB->has_results()) {
     $FreeLeechTags = $DB->to_array('Name');
-    foreach ($FreeLeechTags as $Tag => $Exp) {
+    foreach (array_keys($FreeLeechTags) as $Tag) {
         if ('global' == $Tag || in_array($Tag, $Tags, true)) {
             $T['FreeTorrent'] = '1';
             $T['FreeLeechType'] = '3';
@@ -637,28 +629,28 @@ $TorrentID = $DB->inserted_id();
 $Tor->Dec['comment'] = 'https://' . SITE_DOMAIN . '/torrents.php?torrentid=' . $TorrentID;
 
 Tracker::update_tracker('add_torrent', [
-    'id'          => $TorrentID,
-    'info_hash'   => rawurlencode($InfoHash),
+    'id' => $TorrentID,
+    'info_hash' => rawurlencode($InfoHash),
     'freetorrent' => $T['FreeTorrent']
 ]);
 $Debug->set_flag('upload: ocelot updated');
 
 // Prevent deletion of this torrent until the rest of the upload process is done
 // (expire the key after 10 minutes to prevent locking it for too long in case there's a fatal error below)
-$Cache->cache_value("torrent_{$TorrentID}_lock", true, 600);
+$Cache->cache_value(sprintf('torrent_%s_lock', $TorrentID), true, 600);
 
 //give BP if necessary
 if (("Movies" == $Type || "Anime" == $Type) && ('ISO' == $T['Container'] || 'M2TS' == $T['Container'] || 'VOB IFO' == $T['Container'])) {
-    $BPAmt = (int) 2*($TotalSize / (1024*1024*1024))*1000;
-
+    $BPAmt = (int) 2 * ($TotalSize / (1024 * 1024 * 1024)) * 1000;
+    
     $DB->query("
     UPDATE users_main
     SET BonusPoints = BonusPoints + ?
     WHERE ID = ?", $BPAmt, $LoggedUser['ID']);
-
+    
     $DB->query("
     UPDATE users_info
-    SET AdminComment = CONCAT(NOW(), ' - Received $BPAmt " . BONUS_POINTS . " for uploading a torrent $TorrentID\n\n', AdminComment)
+    SET AdminComment = CONCAT(NOW(), ' - Received {$BPAmt} " . BONUS_POINTS . " for uploading a torrent {$TorrentID}\n\n', AdminComment)
     WHERE UserID = ?", $LoggedUser['ID']);
     $Cache->delete_value('user_info_heavy_' . $LoggedUser['ID']);
     $Cache->delete_value('user_stats_' . $LoggedUser['ID']);
@@ -668,11 +660,9 @@ if (("Movies" == $Type || "Anime" == $Type) && ('ISO' == $T['Container'] || 'M2T
 if (3 == $T['FreeLeechType']) {
     // Figure out which duration to use
     $Expiry = 0;
-    foreach ($FreeLeechTags as $Tag => $Exp) {
-        if ('global' == $Tag || in_array($Tag, $Tags, true)) {
-            if (((int) $FreeLeechTags[$Tag]['First']) > $Expiry) {
-                $Expiry = (int) $FreeLeechTags[$Tag]['First'];
-            }
+    foreach (array_keys($FreeLeechTags) as $Tag) {
+        if (('global' == $Tag || in_array($Tag, $Tags, true)) && ((int) $FreeLeechTags[$Tag]['First']) > $Expiry) {
+            $Expiry = (int) $FreeLeechTags[$Tag]['First'];
         }
     }
     if ($Expiry > 0) {
@@ -682,7 +672,7 @@ if (3 == $T['FreeLeechType']) {
       VALUES
         (" . $TorrentID . ", FROM_UNIXTIME(" . $Expiry . "))
       ON DUPLICATE KEY UPDATE
-        ExpiryTime = FROM_UNIXTIME(UNIX_TIMESTAMP(ExpiryTime) + ($Expiry - FROM_UNIXTIME(NOW())))");
+        ExpiryTime = FROM_UNIXTIME(UNIX_TIMESTAMP(ExpiryTime) + ({$Expiry} - FROM_UNIXTIME(NOW())))");
     } else {
         Torrents::freeleech_torrents($TorrentID, 0, 0);
     }
@@ -692,8 +682,10 @@ if (3 == $T['FreeLeechType']) {
 //--------------- Write torrent file -------------------------------------------//
 
 file_put_contents(TORRENT_STORE . $TorrentID . '.torrent', $Tor->encode());
-Misc::write_log("Torrent $TorrentID ($LogName) (" . number_format($TotalSize / (1024 * 1024), 2) . ' MB) was uploaded by ' . $LoggedUser['Username']);
-Torrents::write_group_log($GroupID, $TorrentID, $LoggedUser['ID'], 'uploaded (' . number_format($TotalSize / (1024 * 1024), 2) . ' MB)', 0);
+Misc::write_log(sprintf('Torrent %s (%s) (', $TorrentID, $LogName) . number_format($TotalSize / (1024 * 1024),
+        2) . ' MB) was uploaded by ' . $LoggedUser['Username']);
+Torrents::write_group_log($GroupID, $TorrentID, $LoggedUser['ID'],
+    'uploaded (' . number_format($TotalSize / (1024 * 1024), 2) . ' MB)', 0);
 
 Torrents::update_hash($GroupID);
 $Debug->set_flag('upload: sphinx updated');
@@ -702,7 +694,7 @@ $Debug->set_flag('upload: sphinx updated');
 //---------------------- Recent Uploads ----------------------------------------//
 
 if ('' != trim($T['Image'])) {
-    $RecentUploads = $Cache->get_value("recent_uploads_$UserID");
+    $RecentUploads = $Cache->get_value(sprintf('recent_uploads_%s', $UserID));
     if (is_array($RecentUploads)) {
         do {
             foreach ($RecentUploads as $Item) {
@@ -710,7 +702,7 @@ if ('' != trim($T['Image'])) {
                     break 2;
                 }
             }
-
+            
             // Only reached if no matching GroupIDs in the cache already.
             if (5 === count($RecentUploads)) {
                 array_pop($RecentUploads);
@@ -719,8 +711,9 @@ if ('' != trim($T['Image'])) {
                 'ID' => $GroupID,
                 'Name' => trim($T['Title']),
                 'Artist' => Artists::display_artists($ArtistForm, false, true),
-                'WikiImage' => trim($T['Image'])]);
-            $Cache->cache_value("recent_uploads_$UserID", $RecentUploads, 0);
+                'WikiImage' => trim($T['Image'])
+            ]);
+            $Cache->cache_value(sprintf('recent_uploads_%s', $UserID), $RecentUploads, 0);
         } while (0);
     }
 }
@@ -734,20 +727,25 @@ if ('' != trim($T['Image'])) {
 
 if ($PublicTorrent) {
     View::show_header('Warning'); ?>
-  <h1>Warning</h1>
-  <p><strong>Your torrent has been uploaded - but you must re-download your torrent file from <a href="torrents.php?id=<?=$GroupID?>&torrentid=<?=$TorrentID?>">here</a> because the site modified it to make it private.</strong></p>
-<?php
-  View::show_footer();
+    <h1>Warning</h1>
+    <p><strong>Your torrent has been uploaded - but you must re-download your torrent file from
+            <a href="torrents.php?id=<?= $GroupID ?>&torrentid=<?= $TorrentID ?>">here</a> because the site modified it
+            to make it private.</strong></p>
+    <?php
+    View::show_footer();
 } elseif ($UnsourcedTorrent) {
     View::show_header('Warning'); ?>
-  <h1>Warning</h1>
-  <p><strong>Your torrent has been uploaded - but you must re-download your torrent file from <a href="torrents.php?id=<?=$GroupID?>&torrentid=<?=$TorrentID?>">here</a> because the site modified it to add a source flag.</strong></p>
-<?php
-  View::show_footer();
+    <h1>Warning</h1>
+    <p><strong>Your torrent has been uploaded - but you must re-download your torrent file from
+            <a href="torrents.php?id=<?= $GroupID ?>&torrentid=<?= $TorrentID ?>">here</a> because the site modified it
+            to add a source flag.</strong></p>
+    <?php
+    View::show_footer();
 } elseif ($RequestID) {
-    header("Location: requests.php?action=takefill&requestid=$RequestID&torrentid=$TorrentID&auth=" . $LoggedUser['AuthKey']);
+    header(sprintf('Location: requests.php?action=takefill&requestid=%s&torrentid=%s&auth=', $RequestID,
+            $TorrentID) . $LoggedUser['AuthKey']);
 } else {
-    header("Location: torrents.php?id=$GroupID&torrentid=$TorrentID");
+    header(sprintf('Location: torrents.php?id=%s&torrentid=%s', $GroupID, $TorrentID));
 }
 if (function_exists('fastcgi_finish_request')) {
     fastcgi_finish_request();
@@ -764,14 +762,16 @@ $Announce = '';
 
 $Announce .= Artists::display_artists($ArtistForm, false);
 
-$Announce .= substr(trim(empty($T['Title']) ? (empty($T['TitleRJ']) ? $T['TitleJP'] : $T['TitleRJ']) : $T['Title']), 0, 100);
+$Announce .= substr(trim($T['Title']), 0,
+    100);
 $Announce .= ' ';
 if ('Other' != $Type) {
     $Announce .= '[' . Torrents::torrent_info($T, false, false, false) . ']';
 }
 $Title = '[' . $T['CategoryName'] . '] ' . $Announce;
 
-$Announce = "$Title - " . site_url() . "torrents.php?id=$GroupID / " . site_url() . "torrents.php?action=download&id=$TorrentID";
+$Announce = sprintf('%s - ', $Title) . site_url() . sprintf('torrents.php?id=%s / ',
+        $GroupID) . site_url() . sprintf('torrents.php?action=download&id=%s', $TorrentID);
 
 $Announce .= ' - ' . trim($T['TagList']);
 
@@ -782,7 +782,10 @@ $Debug->set_flag('upload: announced on irc');
 // Manage notifications
 
 // For RSS
-$Item = $Feed->item($Title, Text::strip_bbcode($Body), 'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id=' . $TorrentID, $Properties['Anonymous'] ? 'Anonymous' : $LoggedUser['Username'], 'torrents.php?id=' . $GroupID, trim($T['TagList']));
+$Item = $Feed->item($Title, Text::strip_bbcode($Body),
+    'torrents.php?action=download&amp;authkey=[[AUTHKEY]]&amp;torrent_pass=[[PASSKEY]]&amp;id=' . $TorrentID,
+    '' !== $Properties['Anonymous'] ? 'Anonymous' : $LoggedUser['Username'], 'torrents.php?id=' . $GroupID,
+    trim($T['TagList']));
 
 
 //Notifications
@@ -812,7 +815,7 @@ if (!empty($ArtistsUnescaped)) {
             $SQL .= implode(' OR ', $GuestArtistNameList);
             $SQL .= ')) OR ';
         }
-        if (count($ArtistNameList) > 0) {
+        if ([] !== $ArtistNameList) {
             $SQL .= implode(' OR ', $ArtistNameList);
             $SQL .= " OR ";
         }
@@ -901,24 +904,24 @@ $Debug->set_flag('upload: notification query finished');
 if ($DB->has_results()) {
     $UserArray = $DB->to_array('UserID');
     $FilterArray = $DB->to_array('ID');
-
+    
     $InsertSQL = '
     INSERT IGNORE INTO users_notify_torrents (UserID, GroupID, TorrentID, FilterID)
     VALUES ';
     $Rows = [];
     foreach ($UserArray as $User) {
         [$FilterID, $UserID, $Passkey] = $User;
-        $Rows[] = "('$UserID', '$GroupID', '$TorrentID', '$FilterID')";
-        $Feed->populate("torrents_notify_$Passkey", $Item);
-        $Cache->delete_value("notifications_new_$UserID");
+        $Rows[] = sprintf('(\'%s\', \'%s\', \'%s\', \'%s\')', $UserID, $GroupID, $TorrentID, $FilterID);
+        $Feed->populate(sprintf('torrents_notify_%s', $Passkey), $Item);
+        $Cache->delete_value(sprintf('notifications_new_%s', $UserID));
     }
     $InsertSQL .= implode(',', $Rows);
     $DB->query($InsertSQL);
     $Debug->set_flag('upload: notification inserts finished');
-
+    
     foreach ($FilterArray as $Filter) {
         [$FilterID, $UserID, $Passkey] = $Filter;
-        $Feed->populate("torrents_notify_{$FilterID}_$Passkey", $Item);
+        $Feed->populate(sprintf('torrents_notify_%s_%s', $FilterID, $Passkey), $Item);
     }
 }
 
@@ -927,9 +930,9 @@ $DB->query("
   SELECT u.ID, u.torrent_pass
   FROM users_main AS u
     JOIN bookmarks_torrents AS b ON b.UserID = u.ID
-  WHERE b.GroupID = $GroupID");
+  WHERE b.GroupID = {$GroupID}");
 while ([$UserID, $Passkey] = $DB->next_record()) {
-    $Feed->populate("torrents_bookmarks_t_$Passkey", $Item);
+    $Feed->populate(sprintf('torrents_bookmarks_t_%s', $Passkey), $Item);
 }
 
 $Feed->populate('torrents_all', $Item);
@@ -937,8 +940,8 @@ $Feed->populate('torrents_' . strtolower($Type), $Item);
 $Debug->set_flag('upload: notifications handled');
 
 // Clear cache
-$Cache->delete_value("torrents_details_$GroupID");
+$Cache->delete_value(sprintf('torrents_details_%s', $GroupID));
 $Cache->delete_value("contest_scores");
 
 // Allow deletion of this torrent now
-$Cache->delete_value("torrent_{$TorrentID}_lock");
+$Cache->delete_value(sprintf('torrent_%s_lock', $TorrentID));

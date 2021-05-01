@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 function class_list($Selected = 0)
 {
     global $Classes;
@@ -10,7 +10,7 @@ function class_list($Selected = 0)
 
         $Name = $Class['Name'];
         $Level = $Class['Level'];
-        $Return .= "<option value=\"$Level\"";
+        $Return .= sprintf('<option value="%s"', $Level);
         if ($Selected == $Level) {
             $Return .= ' selected="selected"';
         }

@@ -1,15 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 class Subscriptions
 {
     /**
      * Parse a post/comment body for quotes and notify all quoted users that have quote notifications enabled.
-     * @param string $Body
-     * @param int    $PostID
-     * @param string $Page
-     * @param int    $PageID
      */
-    public static function quote_notify($Body, $PostID, $Page, $PageID)
+    public static function quote_notify(string $Body, int $PostID, string $Page, int $PageID): void
     {
         $QueryID = G::$DB->get_query_id();
         /*
@@ -22,8 +20,8 @@ class Subscriptions
          */
         $Matches = [];
         preg_match_all('/\[quote(?:=(.*)(?:\|.*)?)?]|\[\/quote]/iU', $Body, $Matches, PREG_SET_ORDER);
-
-        if (count($Matches)) {
+        
+        if (count($Matches) > 0) {
             $Usernames = [];
             $Level = 0;
             foreach ($Matches as $M) {
@@ -39,7 +37,7 @@ class Subscriptions
         }
         // remove any dupes in the array (the fast way)
         $Usernames = array_flip(array_flip($Usernames));
-
+        
         G::$DB->query("
       SELECT m.ID
       FROM users_main AS m
@@ -47,7 +45,7 @@ class Subscriptions
       WHERE m.Username IN ('" . implode("', '", $Usernames) . "')
         AND i.NotifyOnQuote = '1'
         AND i.UserID != " . G::$LoggedUser['ID']);
-
+        
         $Results = G::$DB->to_array();
         foreach ($Results as $Result) {
             $UserID = db_string($Result['ID']);
@@ -55,7 +53,7 @@ class Subscriptions
             $Page = db_string($Page);
             $PageID = db_string($PageID);
             $PostID = db_string($PostID);
-
+            
             G::$DB->query(
                 "
         INSERT IGNORE INTO users_notify_quoted
@@ -77,14 +75,12 @@ class Subscriptions
         }
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * (Un)subscribe from a forum thread.
      * If UserID == 0, G::$LoggedUser[ID] is used
-     * @param int $TopicID
-     * @param int $UserID
      */
-    public static function subscribe($TopicID, $UserID = 0)
+    public static function subscribe(int $TopicID, int $UserID = 0): void
     {
         if (0 == $UserID) {
             $UserID = G::$LoggedUser['ID'];
@@ -102,21 +98,58 @@ class Subscriptions
             G::$DB->query("
         INSERT IGNORE INTO users_subscriptions (UserID, TopicID)
         VALUES ($UserID, " . db_string($TopicID) . ")");
-            array_push($UserSubscriptions, $TopicID);
+            $UserSubscriptions[] = $TopicID;
         }
         G::$Cache->replace_value("subscriptions_user_$UserID", $UserSubscriptions, 0);
         G::$Cache->delete_value("subscriptions_user_new_$UserID");
         G::$DB->set_query_id($QueryID);
     }
-
+    
+    /**
+     * Read $UserID's subscriptions. If the cache key isn't set, it gets filled.
+     * If UserID == 0, G::$LoggedUser[ID] is used
+     *
+     * @return array Array of TopicIDs
+     */
+    public static function get_subscriptions(int $UserID = 0): array
+    {
+        if (0 == $UserID) {
+            $UserID = G::$LoggedUser['ID'];
+        }
+        $QueryID = G::$DB->get_query_id();
+        $UserSubscriptions = G::$Cache->get_value("subscriptions_user_$UserID");
+        if (false === $UserSubscriptions) {
+            G::$DB->query('
+        SELECT TopicID
+        FROM users_subscriptions
+        WHERE UserID = ' . db_string($UserID));
+            $UserSubscriptions = G::$DB->collect(0);
+            G::$Cache->cache_value("subscriptions_user_$UserID", $UserSubscriptions, 0);
+        }
+        G::$DB->set_query_id($QueryID);
+        
+        return $UserSubscriptions;
+    }
+    
+    /**
+     * Returns the key which holds this $TopicID in the subscription array.
+     * Use type-aware comparison operators with this! (ie. if (self::has_subscribed($TopicID) !== false) { ... })
+     */
+    public static function has_subscribed(int $TopicID): bool|int
+    {
+        $UserSubscriptions = self::get_subscriptions();
+        
+        return array_search($TopicID, $UserSubscriptions, true);
+    }
+    
     /**
      * (Un)subscribe from comments.
      * If UserID == 0, G::$LoggedUser[ID] is used
+     *
      * @param string $Page   'artist', 'collages', 'requests' or 'torrents'
      * @param int    $PageID ArtistID, CollageID, RequestID or GroupID
-     * @param int    $UserID
      */
-    public static function subscribe_comments($Page, $PageID, $UserID = 0)
+    public static function subscribe_comments(string $Page, int $PageID, int $UserID = 0): void
     {
         if (0 == $UserID) {
             $UserID = G::$LoggedUser['ID'];
@@ -137,44 +170,19 @@ class Subscriptions
           (UserID, Page, PageID)
         VALUES
           ($UserID, '" . db_string($Page) . "', " . db_string($PageID) . ")");
-            array_push($UserCommentSubscriptions, [$Page, $PageID]);
+            $UserCommentSubscriptions[] = [$Page, $PageID];
         }
         G::$Cache->replace_value("subscriptions_comments_user_$UserID", $UserCommentSubscriptions, 0);
         G::$Cache->delete_value("subscriptions_comments_user_new_$UserID");
         G::$DB->set_query_id($QueryID);
     }
-
-    /**
-     * Read $UserID's subscriptions. If the cache key isn't set, it gets filled.
-     * If UserID == 0, G::$LoggedUser[ID] is used
-     * @param  int   $UserID
-     * @return array Array of TopicIDs
-     */
-    public static function get_subscriptions($UserID = 0)
-    {
-        if (0 == $UserID) {
-            $UserID = G::$LoggedUser['ID'];
-        }
-        $QueryID = G::$DB->get_query_id();
-        $UserSubscriptions = G::$Cache->get_value("subscriptions_user_$UserID");
-        if (false === $UserSubscriptions) {
-            G::$DB->query('
-        SELECT TopicID
-        FROM users_subscriptions
-        WHERE UserID = ' . db_string($UserID));
-            $UserSubscriptions = G::$DB->collect(0);
-            G::$Cache->cache_value("subscriptions_user_$UserID", $UserSubscriptions, 0);
-        }
-        G::$DB->set_query_id($QueryID);
-        return $UserSubscriptions;
-    }
-
+    
     /**
      * Same as self::get_subscriptions, but for comment subscriptions
-     * @param  int   $UserID
+     *
      * @return array Array of ($Page, $PageID)
      */
-    public static function get_comment_subscriptions($UserID = 0)
+    public static function get_comment_subscriptions(int $UserID = 0): array
     {
         if (0 == $UserID) {
             $UserID = G::$LoggedUser['ID'];
@@ -190,17 +198,31 @@ class Subscriptions
             G::$Cache->cache_value("subscriptions_comments_user_$UserID", $UserCommentSubscriptions, 0);
         }
         G::$DB->set_query_id($QueryID);
+        
         return $UserCommentSubscriptions;
     }
-
+    
+    /**
+     * Same as has_subscribed, but for comment subscriptions.
+     *
+     * @param string $Page 'artist', 'collages', 'requests' or 'torrents'
+     */
+    public static function has_subscribed_comments(string $Page,  $PageID): bool|int
+    {
+        $UserCommentSubscriptions = self::get_comment_subscriptions();
+        
+        return array_search([$Page, $PageID], $UserCommentSubscriptions, true);
+    }
+    
     /**
      * Returns whether or not the current user has new subscriptions. This handles both forum and comment subscriptions.
+     *
      * @return int Number of unread subscribed threads/comments
      */
-    public static function has_new_subscriptions()
+    public static function has_new_subscriptions(): int
     {
         $QueryID = G::$DB->get_query_id();
-
+        
         $NewSubscriptions = G::$Cache->get_value('subscriptions_user_new_' . G::$LoggedUser['ID']);
         if (false === $NewSubscriptions) {
             // forum subscriptions
@@ -214,7 +236,7 @@ class Subscriptions
             AND IF(t.IsLocked = '1' AND t.IsSticky = '0'" . ", t.LastPostID, IF(l.PostID IS NULL, 0, l.PostID)) < t.LastPostID
             AND s.UserID = " . G::$LoggedUser['ID']);
             [$NewForumSubscriptions] = G::$DB->next_record();
-
+            
             // comment subscriptions
             G::$DB->query("
           SELECT COUNT(1)
@@ -226,19 +248,21 @@ class Subscriptions
             AND (s.Page != 'collages' OR co.Deleted = '0')
             AND IF(lr.PostID IS NULL, 0, lr.PostID) < c.ID");
             [$NewCommentSubscriptions] = G::$DB->next_record();
-
-            $NewSubscriptions = $NewForumSubscriptions + $NewCommentSubscriptions;
+            
+            $NewSubscriptions = $NewForumSubscriptions . $NewCommentSubscriptions;
             G::$Cache->cache_value('subscriptions_user_new_' . G::$LoggedUser['ID'], $NewSubscriptions, 0);
         }
         G::$DB->set_query_id($QueryID);
-        return (int)$NewSubscriptions;
+        
+        return (int) $NewSubscriptions;
     }
-
+    
     /**
      * Returns whether or not the current user has new quote notifications.
+     *
      * @return int Number of unread quote notifications
      */
-    public static function has_new_quote_notifications()
+    public static function has_new_quote_notifications(): int
     {
         $QuoteNotificationsCount = G::$Cache->get_value('notify_quoted_' . G::$LoggedUser['ID']);
         if (false === $QuoteNotificationsCount) {
@@ -258,68 +282,19 @@ class Subscriptions
             G::$DB->set_query_id($QueryID);
             G::$Cache->cache_value('notify_quoted_' . G::$LoggedUser['ID'], $QuoteNotificationsCount, 0);
         }
-        return (int)$QuoteNotificationsCount;
+        
+        return (int) $QuoteNotificationsCount;
     }
-
-    /**
-     * Returns the key which holds this $TopicID in the subscription array.
-     * Use type-aware comparison operators with this! (ie. if (self::has_subscribed($TopicID) !== false) { ... })
-     * @param  int      $TopicID
-     * @return bool|int
-     */
-    public static function has_subscribed($TopicID)
-    {
-        $UserSubscriptions = self::get_subscriptions();
-        return array_search($TopicID, $UserSubscriptions, true);
-    }
-
-    /**
-     * Same as has_subscribed, but for comment subscriptions.
-     * @param  string   $Page   'artist', 'collages', 'requests' or 'torrents'
-     * @param  int      $PageID
-     * @return bool|int
-     */
-    public static function has_subscribed_comments($Page, $PageID)
-    {
-        $UserCommentSubscriptions = self::get_comment_subscriptions();
-        return array_search([$Page, $PageID], $UserCommentSubscriptions, true);
-    }
-
-    /**
-     * Clear the subscription cache for all subscribers of a forum thread or artist/collage/request/torrent comments.
-     * @param type $Page   'forums', 'artist', 'collages', 'requests' or 'torrents'
-     * @param type $PageID TopicID, ArtistID, CollageID, RequestID or GroupID, respectively
-     */
-    public static function flush_subscriptions($Page, $PageID)
-    {
-        $QueryID = G::$DB->get_query_id();
-        if ('forums' == $Page) {
-            G::$DB->query("
-        SELECT UserID
-        FROM users_subscriptions
-        WHERE TopicID = '$PageID'");
-        } else {
-            G::$DB->query("
-        SELECT UserID
-        FROM users_subscriptions_comments
-        WHERE Page = '$Page'
-          AND PageID = '$PageID'");
-        }
-        $Subscribers = G::$DB->collect('UserID');
-        foreach ($Subscribers as $Subscriber) {
-            G::$Cache->delete_value("subscriptions_user_new_$Subscriber");
-        }
-        G::$DB->set_query_id($QueryID);
-    }
-
+    
     /**
      * Move all $Page subscriptions from $OldPageID to $NewPageID (for example when merging torrent groups).
      * Passing $NewPageID = null will delete the subscriptions.
+     *
      * @param string   $Page      'forums', 'artist', 'collages', 'requests' or 'torrents'
      * @param int      $OldPageID TopicID, ArtistID, CollageID, RequestID or GroupID, respectively
      * @param int|null $NewPageID As $OldPageID, or null to delete the subscriptions
      */
-    public static function move_subscriptions($Page, $OldPageID, $NewPageID)
+    public static function move_subscriptions(string $Page, int $OldPageID, ?int $NewPageID): void
     {
         self::flush_subscriptions($Page, $OldPageID);
         $QueryID = G::$DB->get_query_id();
@@ -399,13 +374,43 @@ class Subscriptions
         }
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
-     * Clear the quote notification cache for all subscribers of a forum thread or artist/collage/request/torrent comments.
+     * Clear the subscription cache for all subscribers of a forum thread or artist/collage/request/torrent comments.
+     *
+     * @param type $Page   'forums', 'artist', 'collages', 'requests' or 'torrents'
+     * @param type $PageID TopicID, ArtistID, CollageID, RequestID or GroupID, respectively
+     */
+    public static function flush_subscriptions($Page, $PageID): void
+    {
+        $QueryID = G::$DB->get_query_id();
+        if ('forums' == $Page) {
+            G::$DB->query("
+        SELECT UserID
+        FROM users_subscriptions
+        WHERE TopicID = '$PageID'");
+        } else {
+            G::$DB->query("
+        SELECT UserID
+        FROM users_subscriptions_comments
+        WHERE Page = '$Page'
+          AND PageID = '$PageID'");
+        }
+        $Subscribers = G::$DB->collect('UserID');
+        foreach ($Subscribers as $Subscriber) {
+            G::$Cache->delete_value("subscriptions_user_new_$Subscriber");
+        }
+        G::$DB->set_query_id($QueryID);
+    }
+    
+    /**
+     * Clear the quote notification cache for all subscribers of a forum thread or artist/collage/request/torrent
+     * comments.
+     *
      * @param string $Page   'forums', 'artist', 'collages', 'requests' or 'torrents'
      * @param int    $PageID TopicID, ArtistID, CollageID, RequestID or GroupID, respectively
      */
-    public static function flush_quote_notifications($Page, $PageID)
+    public static function flush_quote_notifications(string $Page, int $PageID): void
     {
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("

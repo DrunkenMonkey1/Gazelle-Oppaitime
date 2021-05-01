@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 $DB->query("
   SELECT Password
   FROM bad_passwords

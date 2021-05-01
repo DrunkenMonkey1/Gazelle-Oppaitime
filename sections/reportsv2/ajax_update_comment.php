@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // perform the back end of updating a report comment
 
 authorize();
@@ -16,11 +18,11 @@ $Message = db_string($_POST['comment']);
 $DB->query("
   SELECT ModComment
   FROM reportsv2
-  WHERE ID = $ReportID");
+  WHERE ID = {$ReportID}");
 [$ModComment] = $DB->next_record();
 if (isset($ModComment)) {
     $DB->query("
     UPDATE reportsv2
-    SET ModComment = '$Message'
-    WHERE ID = $ReportID");
+    SET ModComment = '{$Message}'
+    WHERE ID = {$ReportID}");
 }

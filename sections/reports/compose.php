@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('admin_reports')) {
     error(403);
 }
@@ -48,7 +48,7 @@ switch ($Type) {
         $Error = 'No user with the reported ID found';
     } else {
         [$Username] = $DB->next_record();
-        $TypeLink = "the user [user]{$Username}[/user]";
+        $TypeLink = sprintf('the user [user]%s[/user]', $Username);
         $Subject = 'User Report: ' . display_str($Username);
     }
     break;
@@ -62,7 +62,7 @@ switch ($Type) {
         $Error = 'No request with the reported ID found';
     } else {
         [$Name] = $DB->next_record();
-        $TypeLink = 'the request [url=' . site_url() . "requests.php?action=view&amp;id=$ThingID]" . display_str($Name) . '[/url]';
+        $TypeLink = 'the request [url=' . site_url() . sprintf('requests.php?action=view&amp;id=%s]', $ThingID) . display_str($Name) . '[/url]';
         $Subject = 'Request Report: ' . display_str($Name);
     }
     break;
@@ -75,7 +75,7 @@ switch ($Type) {
         $Error = 'No collage with the reported ID found';
     } else {
         [$Name] = $DB->next_record();
-        $TypeLink = 'the collage [url=' . site_url() . "collage.php?id=$ThingID]" . display_str($Name) . '[/url]';
+        $TypeLink = 'the collage [url=' . site_url() . sprintf('collage.php?id=%s]', $ThingID) . display_str($Name) . '[/url]';
         $Subject = 'Collage Report: ' . display_str($Name);
     }
     break;
@@ -88,16 +88,12 @@ switch ($Type) {
         $Error = 'No forum thread with the reported ID found';
     } else {
         [$Title] = $DB->next_record();
-        $TypeLink = 'the forum thread [url=' . site_url() . "forums.php?action=viewthread&amp;threadid=$ThingID]" . display_str($Title) . '[/url]';
+        $TypeLink = 'the forum thread [url=' . site_url() . sprintf('forums.php?action=viewthread&amp;threadid=%s]', $ThingID) . display_str($Title) . '[/url]';
         $Subject = 'Forum Thread Report: ' . display_str($Title);
     }
     break;
   case 'post':
-    if (isset($LoggedUser['PostsPerPage'])) {
-        $PerPage = $LoggedUser['PostsPerPage'];
-    } else {
-        $PerPage = POSTS_PER_PAGE;
-    }
+    $PerPage = isset($LoggedUser['PostsPerPage']) ? $LoggedUser['PostsPerPage'] : POSTS_PER_PAGE;
     $DB->query("
       SELECT
         p.ID,
@@ -115,7 +111,7 @@ switch ($Type) {
         $Error = 'No forum post with the reported ID found';
     } else {
         [$PostID, $Body, $TopicID, $PostNum] = $DB->next_record();
-        $TypeLink = 'this [url=' . site_url() . "forums.php?action=viewthread&amp;threadid=$TopicID&amp;post=$PostNum#post$PostID]forum post[/url]";
+        $TypeLink = 'this [url=' . site_url() . sprintf('forums.php?action=viewthread&amp;threadid=%s&amp;post=%s#post%s]forum post[/url]', $TopicID, $PostNum, $PostID);
         $Subject = 'Forum Post Report: Post ID #' . display_str($PostID);
     }
     break;
@@ -127,7 +123,7 @@ switch ($Type) {
     if (!$DB->has_results()) {
         $Error = 'No comment with the reported ID found';
     } else {
-        $TypeLink = '[url=' . site_url() . "comments.php?action=jump&amp;postid=$ThingID]this comment[/url]";
+        $TypeLink = '[url=' . site_url() . sprintf('comments.php?action=jump&amp;postid=%s]this comment[/url]', $ThingID);
         $Subject = 'Comment Report: ID #' . display_str($ThingID);
     }
     break;
@@ -145,7 +141,7 @@ $DB->query("
   WHERE ID = ?", $ReportID);
 [$Reason] = $DB->next_record();
 
-$Body = "You reported $TypeLink for the reason:\n[quote]{$Reason}[/quote]";
+$Body = "You reported {$TypeLink} for the reason:\n[quote]{$Reason}[/quote]";
 
 ?>
 <div class="thin">
@@ -161,10 +157,10 @@ $Body = "You reported $TypeLink for the reason:\n[quote]{$Reason}[/quote]";
       <input type="hidden" name="auth" value="<?=$LoggedUser['AuthKey']?>" />
       <div id="quickpost">
         <h3>Subject</h3>
-        <input type="text" name="subject" size="95" value="<?=(!empty($Subject) ? $Subject : '')?>" />
+        <input type="text" name="subject" size="95" value="<?=(empty($Subject) ? '' : $Subject)?>" />
         <br />
         <h3>Body</h3>
-        <textarea id="body" name="body" cols="95" rows="10"><?=(!empty($Body) ? $Body : '')?></textarea>
+        <textarea id="body" name="body" cols="95" rows="10"><?=(empty($Body) ? '' : $Body)?></textarea>
       </div>
       <div id="preview" class="hidden"></div>
       <div id="buttons" class="center">

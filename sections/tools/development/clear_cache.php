@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('users_mod') || !check_perms('admin_clear_cache')) {
     error(403);
 }
@@ -7,12 +7,12 @@ View::show_header('Clear a cache key');
 
 //Make sure the form was sent
 if (!empty($_GET['key'])) {
-    $Keys = array_map('trim', preg_split('/\s+/', $_GET['key']));
+    $Keys = array_map('trim', preg_split('#\s+#', $_GET['key']));
 }
 if (isset($Keys) && 'clear' == $_GET['type']) {
     foreach ($Keys as $Key) {
-        if (preg_match('/(.*?)(\d+)\.\.(\d+)$/', $Key, $Matches) && is_number($Matches[2]) && is_number($Matches[3])) {
-            for ($i = $Matches[2]; $i <= $Matches[3]; $i++) {
+        if (preg_match('#(.*?)(\d+)\.\.(\d+)$#', $Key, $Matches) && is_number($Matches[2]) && is_number($Matches[3])) {
+            for ($i = $Matches[2]; $i <= $Matches[3]; ++$i) {
                 $Cache->delete_value($Matches[1] . $i);
             }
         } else {

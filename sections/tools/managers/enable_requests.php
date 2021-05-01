@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!check_perms('users_mod')) {
     error(403);
@@ -133,8 +133,8 @@ $QueryID = $DB->query("
     " . implode(' ', $Joins) . "
     WHERE
     " . implode(' AND ', $Where) . "
-    ORDER BY $OrderBy $OrderWay
-    LIMIT $Limit");
+    ORDER BY {$OrderBy} {$OrderWay}
+    LIMIT {$Limit}");
 
 $DB->query("SELECT FOUND_ROWS()");
 [$NumResults] = $DB->next_record();
@@ -175,7 +175,7 @@ $DB->set_query_id($QueryID);
 <?php     }
     $DB->set_query_id($QueryID); ?>
     </table>
-    <form action="" method="GET" id="search_form" <?=!isset($_GET['search']) ? 'class="hidden"' : ''?>>
+    <form action="" method="GET" id="search_form" <?=isset($_GET['search']) ? '' : 'class="hidden"'?>>
         <input type="hidden" name="action" value="enable_requests" />
         <input type="hidden" name="view" value="<?=$_GET['view']?>" />
         <input type="hidden" name="search" value="1" />

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 class DonationsBitcoin
 {
     /**
@@ -7,7 +9,7 @@ class DonationsBitcoin
      *
      * @return array (BitcoinAddress => Amount, ...)
      */
-    public static function get_received()
+    public static function get_received(): array
     {
         if (defined('BITCOIN_RPC_URL')) {
             $Donations = BitcoinRpc::listreceivedbyaddress();
@@ -19,13 +21,14 @@ class DonationsBitcoin
         foreach ($Donations as $Account) {
             $BTCUsers[$Account->address] = $Account->amount;
         }
+        
         return $BTCUsers;
     }
-
+    
     /**
      * Ask bitcoind for the current account balance
      *
-     * @return float balance
+     * @return mixed|void balance
      */
     public static function get_balance()
     {
@@ -33,18 +36,18 @@ class DonationsBitcoin
             return BitcoinRpc::getbalance();
         }
     }
-
+    
     /**
      * Get a user's existing bitcoin address or generate a new one
      *
-     * @param  int   $UserID
-     * @param  bool  $GenAddress whether to create a new address if it doesn't exist
-     * @return false if no address exists and $GenAddress is false
-     *                          string bitcoin address otherwise
+     * @param bool $GenAddress whether to create a new address if it doesn't exist
+     *
+     * @return mixed|bool|void if no address exists and $GenAddress is false
+     * string bitcoin address otherwise
      */
-    public static function get_address($UserID, $GenAddress = false)
+    public static function get_address(int $UserID, bool $GenAddress = false)
     {
-        $UserID = (int)$UserID;
+        $UserID = (int) $UserID;
         $QueryID = G::$DB->get_query_id();
         G::$DB->query("
       SELECT BitcoinAddress
@@ -52,7 +55,7 @@ class DonationsBitcoin
       WHERE UserID = '$UserID'");
         [$Addr] = G::$DB->next_record();
         G::$DB->set_query_id($QueryID);
-
+        
         if (!empty($Addr)) {
             return $Addr;
         } elseif ($GenAddress) {
@@ -69,16 +72,17 @@ class DonationsBitcoin
         WHERE UserID = '$UserID'
           AND BitcoinAddress IS NULL");
             G::$DB->set_query_id($QueryID);
+            
             return $NewAddr;
         } else {
             return false;
         }
     }
-
+    
     /**
      * Ask bitcoind for the total amount of bitcoins received
      *
-     * @return float amount
+     * @return float|mixed amount
      */
     public static function get_total_received()
     {
@@ -93,16 +97,18 @@ class DonationsBitcoin
                 return $Account->amount;
             }
         }
+        
         return 0.0;
     }
-
+    
     /**
      * Translate bitcoin addresses to user IDs
      *
-     * @param  array $Addresses list of bitcoin addresses
+     * @param array $Addresses list of bitcoin addresses
+     *
      * @return array (BitcoinAddress => UserID, ...)
      */
-    public static function get_userids($Addresses)
+    public static function get_userids(array $Addresses)
     {
         if (!is_array($Addresses) || empty($Addresses)) {
             return false;
@@ -112,17 +118,16 @@ class DonationsBitcoin
       SELECT BitcoinAddress, UserID
       FROM users_info
       WHERE BitcoinAddress IN ('" . implode("', '", $Addresses) . "')");
-        if (G::$DB->has_results()) {
-            $UserIDs = G::$DB->to_pair(0, 1);
-        } else {
-            $UserIDs = [];
-        }
+        $UserIDs = G::$DB->has_results() ? G::$DB->to_pair(0, 1) : [];
         G::$DB->set_query_id($QueryID);
+        
         return $UserIDs;
     }
-
+    
     /**
      * Find and process new donations since the last time this function was called.
+     *
+     * @return bool|void
      */
     public static function find_new_donations()
     {
@@ -140,6 +145,7 @@ class DonationsBitcoin
             // This shouldn't happen. Perhaps bitcoind was restarted recently
             // or the block index was removed. Either way, try again later
             send_irc('PRIVMSG ' . LAB_CHAN . " :Bad bitcoin donation data (is $NewAmount, was $OldAmount). If this persists, something is probably wrong");
+            
             return false;
         }
         if ($NewAmount > $OldAmount) {
@@ -158,7 +164,8 @@ class DonationsBitcoin
                         unset($NewDonations[$Address]);
                         continue;
                     }
-                    $Debug->log_var(['old' => $OldDonations[$Address], 'new' => $Amount], "New donations from $Address");
+                    $Debug->log_var(['old' => $OldDonations[$Address], 'new' => $Amount],
+                        "New donations from $Address");
                     // PHP doesn't do fixed-point math, and json_decode has already botched the precision
                     // so let's just round this off to satoshis and pray that we're on a 64 bit system
                     $Amount = round($Amount - $OldDonations[$Address], 8);
@@ -173,14 +180,16 @@ class DonationsBitcoin
             G::$Cache->cache_value('btc_total_received', $NewAmount, 0);
         }
     }
-
+    
     /**
      * Record a donation in the database
      *
      * @param string $Address bitcoin address
      * @param float  $Amount  amount of bitcoins transferred
+     *
+     * @return bool|void
      */
-    public static function store_donation($Address, $Amount)
+    public static function store_donation(string $Address, float $Amount)
     {
         if (!is_numeric($Amount) || $Amount <= 0) {
             // Panic!

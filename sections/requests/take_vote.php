@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //******************************************************************************//
 //--------------- Vote on a request --------------------------------------------//
 //This page is ajax!
@@ -27,7 +29,7 @@ $Bounty = ($Amount * (1 - $RequestTax));
 $DB->query("
   SELECT TorrentID
   FROM requests
-  WHERE ID = $RequestID");
+  WHERE ID = {$RequestID}");
 [$Filled] = $DB->next_record();
 
 if ($LoggedUser['BytesUploaded'] >= $Amount && empty($Filled)) {
@@ -37,15 +39,15 @@ if ($LoggedUser['BytesUploaded'] >= $Amount && empty($Filled)) {
     INSERT IGNORE INTO requests_votes
       (RequestID, UserID, Bounty)
     VALUES
-      ($RequestID, " . $LoggedUser['ID'] . ", $Bounty)");
+      ({$RequestID}, " . $LoggedUser['ID'] . sprintf(', %s)', $Bounty));
 
     if ($DB->affected_rows() < 1) {
         //Insert failed, probably a dupe vote, just increase their bounty.
         $DB->query("
         UPDATE requests_votes
-        SET Bounty = (Bounty + $Bounty)
+        SET Bounty = (Bounty + {$Bounty})
         WHERE UserID = " . $LoggedUser['ID'] . "
-          AND RequestID = $RequestID");
+          AND RequestID = {$RequestID}");
         echo 'dupe';
     }
 
@@ -54,10 +56,10 @@ if ($LoggedUser['BytesUploaded'] >= $Amount && empty($Filled)) {
     $DB->query("
     UPDATE requests
     SET LastVote = NOW()
-    WHERE ID = $RequestID");
+    WHERE ID = {$RequestID}");
 
-    $Cache->delete_value("request_$RequestID");
-    $Cache->delete_value("request_votes_$RequestID");
+    $Cache->delete_value(sprintf('request_%s', $RequestID));
+    $Cache->delete_value(sprintf('request_votes_%s', $RequestID));
 
     $ArtistForm = Requests::get_artists($RequestID);
     foreach ($ArtistForm as $Artist) {
@@ -67,7 +69,7 @@ if ($LoggedUser['BytesUploaded'] >= $Amount && empty($Filled)) {
     // Subtract amount from user
     $DB->query("
     UPDATE users_main
-    SET Uploaded = (Uploaded - $Amount)
+    SET Uploaded = (Uploaded - {$Amount})
     WHERE ID = " . $LoggedUser['ID']);
     $Cache->delete_value('user_stats_' . $LoggedUser['ID']);
 
@@ -76,7 +78,7 @@ if ($LoggedUser['BytesUploaded'] >= $Amount && empty($Filled)) {
     $DB->query("
     SELECT UserID
     FROM requests_votes
-    WHERE RequestID = '$RequestID'
+    WHERE RequestID = '{$RequestID}'
       AND UserID != '$LoggedUser[ID]'");
     $UserIDs = [];
     while ([$UserID] = $DB->next_record()) {

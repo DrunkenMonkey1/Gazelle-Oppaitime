@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 //TODO: Redo HTML
 if (!check_perms('admin_manage_permissions')) {
     error(403);
@@ -14,7 +14,7 @@ include SERVER_ROOT . "/classes/permissions_form.php";
 $DB->query("
   SELECT CustomPermissions
   FROM users_main
-  WHERE ID = '$UserID'");
+  WHERE ID = '{$UserID}'");
 
 [$Customs] = $DB->next_record(MYSQLI_NUM, false);
 
@@ -25,10 +25,10 @@ $Delta = [];
 if (isset($_POST['action'])) {
     authorize();
 
-    foreach ($PermissionsArray as $Perm => $Explaination) {
-        $Setting = isset($_POST["perm_$Perm"]) ? 1 : 0;
+    foreach (array_keys($PermissionsArray) as $Perm) {
+        $Setting = isset($_POST[sprintf('perm_%s', $Perm)]) ? 1 : 0;
         $Default = isset($Defaults[$Perm]) ? 1 : 0;
-        if ($Setting != $Default) {
+        if ($Setting !== $Default) {
             $Delta[$Perm] = $Setting;
         }
     }
@@ -37,13 +37,13 @@ if (isset($_POST['action'])) {
     }
     $Delta['MaxCollages'] = $_POST['maxcollages'];
 
-    $Cache->begin_transaction("user_info_heavy_$UserID");
+    $Cache->begin_transaction(sprintf('user_info_heavy_%s', $UserID));
     $Cache->update_row(false, ['CustomPermissions' => $Delta]);
     $Cache->commit_transaction(0);
     $DB->query("
     UPDATE users_main
     SET CustomPermissions = '" . db_string(serialize($Delta)) . "'
-    WHERE ID = '$UserID'");
+    WHERE ID = '{$UserID}'");
 } elseif (!empty($Customs)) {
     $Delta = unserialize($Customs);
 }
@@ -51,22 +51,22 @@ if (isset($_POST['action'])) {
 $Permissions = array_merge($Defaults, $Delta);
 $MaxCollages = $Customs['MaxCollages'] + $Delta['MaxCollages'];
 
-function display_perm($Key, $Title)
+function display_perm($Key, $Title): void
 {
     global $Defaults, $Permissions;
-    $Perm = "<input id=\"default_$Key\" type=\"checkbox\" disabled=\"disabled\"";
+    $Perm = sprintf('<input id="default_%s" type="checkbox" disabled="disabled"', $Key);
     if (isset($Defaults[$Key]) && $Defaults[$Key]) {
         $Perm .= ' checked="checked"';
     }
-    $Perm .= " /><input type=\"checkbox\" name=\"perm_$Key\" id=\"$Key\" value=\"1\"";
+    $Perm .= sprintf(' /><input type="checkbox" name="perm_%s" id="%s" value="1"', $Key, $Key);
     if (isset($Permissions[$Key]) && $Permissions[$Key]) {
         $Perm .= ' checked="checked"';
     }
-    $Perm .= " /> <label for=\"$Key\">$Title</label><br />";
-    echo "$Perm\n";
+    $Perm .= sprintf(' /> <label for="%s">%s</label><br />', $Key, $Title);
+    echo $Perm . PHP_EOL;
 }
 
-View::show_header("$Username &gt; Permissions");
+View::show_header(sprintf('%s &gt; Permissions', $Username));
 ?>
 <script type="text/javascript">//<![CDATA[
 function reset() {

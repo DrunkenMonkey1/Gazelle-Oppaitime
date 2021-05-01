@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 // perform the back end of subscribing to collages
 authorize();
 
@@ -22,7 +24,7 @@ if (($Key = array_search($CollageID, $UserSubscriptions, true)) !== false) {
     $DB->query('
     DELETE FROM users_collage_subs
     WHERE UserID = ' . db_string($LoggedUser['ID']) . "
-      AND CollageID = $CollageID");
+      AND CollageID = {$CollageID}");
     unset($UserSubscriptions[$Key]);
     Collages::decrease_subscriptions($CollageID);
 } else {
@@ -30,10 +32,10 @@ if (($Key = array_search($CollageID, $UserSubscriptions, true)) !== false) {
     INSERT IGNORE INTO users_collage_subs
       (UserID, CollageID, LastVisit)
     VALUES
-      ($LoggedUser[ID], $CollageID, NOW())");
-    array_push($UserSubscriptions, $CollageID);
+      ($LoggedUser[ID], {$CollageID}, NOW())");
+    $UserSubscriptions[] = $CollageID;
     Collages::increase_subscriptions($CollageID);
 }
 $Cache->replace_value('collage_subs_user_' . $LoggedUser['ID'], $UserSubscriptions, 0);
 $Cache->delete_value('collage_subs_user_new_' . $LoggedUser['ID']);
-$Cache->delete_value("collage_$CollageID");
+$Cache->delete_value(sprintf('collage_%s', $CollageID));

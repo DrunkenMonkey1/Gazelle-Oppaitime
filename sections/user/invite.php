@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (isset($_GET['userid']) && check_perms('users_view_invites')) {
     if (!is_number($_GET['userid'])) {
         error(403);
@@ -26,7 +26,7 @@ if (isset($_GET['userid']) && check_perms('users_view_invites')) {
 $DB->query("
   SELECT InviteKey, Email, Expires
   FROM invites
-  WHERE InviterID = '$UserID'
+  WHERE InviterID = '{$UserID}'
   ORDER BY Expires");
 $Pending = $DB->to_array();
 
@@ -36,46 +36,28 @@ if (empty($_GET['order'])) {
     $CurrentOrder = 'id';
     $CurrentSort = 'desc';
     $NewSort = 'asc';
-} else {
-    if (in_array($_GET['order'], $OrderWays, true)) {
-        $CurrentOrder = $_GET['order'];
-        if ('asc' == $_GET['sort'] || 'desc' == $_GET['sort']) {
-            $CurrentSort = $_GET['sort'];
-            $NewSort = ('asc' == $_GET['sort'] ? 'desc' : 'asc');
-        } else {
-            error(404);
-        }
+} elseif (in_array($_GET['order'], $OrderWays, true)) {
+    $CurrentOrder = $_GET['order'];
+    if ('asc' == $_GET['sort'] || 'desc' == $_GET['sort']) {
+        $CurrentSort = $_GET['sort'];
+        $NewSort = ('asc' == $_GET['sort'] ? 'desc' : 'asc');
     } else {
         error(404);
     }
+} else {
+    error(404);
 }
 
-switch ($CurrentOrder) {
-  case 'username':
-    $OrderBy = "um.Username";
-    break;
-  case 'email':
-    $OrderBy = "um.Email";
-    break;
-  case 'joined':
-    $OrderBy = "ui.JoinDate";
-    break;
-  case 'lastseen':
-    $OrderBy = "um.LastAccess";
-    break;
-  case 'uploaded':
-    $OrderBy = "um.Uploaded";
-    break;
-  case 'downloaded':
-    $OrderBy = "um.Downloaded";
-    break;
-  case 'ratio':
-    $OrderBy = "(um.Uploaded / um.Downloaded)";
-    break;
-  default:
-    $OrderBy = "um.ID";
-    break;
-}
+$OrderBy = match ($CurrentOrder) {
+    'username' => "um.Username",
+    'email' => "um.Email",
+    'joined' => "ui.JoinDate",
+    'lastseen' => "um.LastAccess",
+    'uploaded' => "um.Uploaded",
+    'downloaded' => "um.Downloaded",
+    'ratio' => "(um.Uploaded / um.Downloaded)",
+    default => "um.ID",
+};
 
 $CurrentURL = Format::get_url(['action', 'order', 'sort']);
 
@@ -89,8 +71,8 @@ $DB->query("
     LastAccess
   FROM users_main AS um
     LEFT JOIN users_info AS ui ON ui.UserID = um.ID
-  WHERE ui.Inviter = '$UserID'
-  ORDER BY $OrderBy $CurrentSort");
+  WHERE ui.Inviter = '{$UserID}'
+  ORDER BY {$OrderBy} {$CurrentSort}");
 
 $Invited = $DB->to_array();
 
@@ -128,7 +110,7 @@ View::show_header('Invites', $JSIncludes);
 $DB->query("
   SELECT can_leech
   FROM users_main
-  WHERE ID = $UserID");
+  WHERE ID = {$UserID}");
 [$CanLeech] = $DB->next_record();
 
 if (!$Sneaky

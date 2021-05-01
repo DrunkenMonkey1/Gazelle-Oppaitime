@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_debug')) {
     error(403);
 }
@@ -74,11 +74,7 @@ switch (empty($_GET['order_by']) ? '' : $_GET['order_by']) {
 }
 $Pie->generate();
 
-if (!empty($_GET['order_way']) && 'asc' == $_GET['order_way']) {
-    $SortWay = SORT_ASC;
-} else {
-    $SortWay = SORT_DESC;
-}
+$SortWay = !empty($_GET['order_way']) && 'asc' == $_GET['order_way'] ? SORT_ASC : SORT_DESC;
 
 array_multisort($Sort, $SortWay, $Tables);
 //End sorting

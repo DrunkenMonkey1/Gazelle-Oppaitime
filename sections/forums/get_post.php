@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //TODO: make this use the cache version of the thread, save the db query
 /*********************************************************************\
 //--------------Get Post--------------------------------------------//
@@ -27,7 +29,7 @@ $DB->query("
     t.ForumID
   FROM forums_posts AS p
     JOIN forums_topics AS t ON p.TopicID = t.ID
-  WHERE p.ID = '$PostID'");
+  WHERE p.ID = '{$PostID}'");
 [$Body, $ForumID] = $DB->next_record(MYSQLI_NUM);
 
 // Is the user allowed to view the post?

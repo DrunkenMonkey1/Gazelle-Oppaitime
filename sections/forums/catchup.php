@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!isset($_GET['forumid']) || ('all' != $_GET['forumid'] && !is_number($_GET['forumid']))) {
     error(403);

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (!check_perms('site_torrents_notify')) {
     error(403);
 }
@@ -55,7 +55,7 @@ $Notifications[] = [
 
 $i = 0;
 foreach ($Notifications as $N) { // $N stands for Notifications
-    $i++;
+    ++$i;
     $NewFilter = false === $N['ID'];
     $N['Artists']      = implode(', ', explode('|', substr($N['Artists'], 1, -1)));
     $N['Tags']         = implode(', ', explode('|', substr($N['Tags'], 1, -1)));
@@ -100,7 +100,7 @@ foreach ($Notifications as $N) { // $N stands for Notifications
 <?php  if (!$NewFilter) { ?>
     <input type="hidden" name="id<?=$i?>" value="<?=$N['ID']?>">
 <?php  } ?>
-    <table <?=(!$NewFilter ? 'id="filter_' . $N['ID'] . '" class="layout hidden"' : 'class="layout"')?>>
+    <table <?=($NewFilter ? 'class="layout"' : 'id="filter_' . $N['ID'] . '" class="layout hidden"')?>>
 <?php  if ($NewFilter) { ?>
       <tr>
         <td class="label"><strong>Notification filter name</strong></td>

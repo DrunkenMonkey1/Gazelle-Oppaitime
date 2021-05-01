@@ -1,12 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 include SERVER_ROOT . '/sections/torrents/functions.php';
 
-if (!empty($_GET['order_way']) && 'asc' == $_GET['order_way']) {
-    $OrderWay = 'asc';
-} else {
-    $OrderWay = 'desc';
-}
+$OrderWay = !empty($_GET['order_way']) && 'asc' == $_GET['order_way'] ? 'asc' : 'desc';
 
 if (empty($_GET['order_by']) || !isset(TorrentSearch::$SortOrders[$_GET['order_by']])) {
     $OrderBy = 'time';
@@ -15,7 +13,7 @@ if (empty($_GET['order_by']) || !isset(TorrentSearch::$SortOrders[$_GET['order_b
 }
 
 $GroupResults = !isset($_GET['group_results']) || '0' != $_GET['group_results'];
-$Page = !empty($_GET['page']) ? (int)$_GET['page'] : 1;
+$Page = empty($_GET['page']) ? 1 : (int)$_GET['page'];
 $Search = new TorrentSearch($GroupResults, $OrderBy, $OrderWay, $Page, TORRENTS_PER_PAGE);
 $Results = $Search->query($_GET);
 $Groups = $Search->get_groups();
@@ -45,7 +43,8 @@ foreach ($Results as $Key => $GroupID) {
     $GroupName = $GroupInfo['Name'];
     if ($GroupResults) {
         $Torrents = $GroupInfo['Torrents'];
-        $GroupTime = $MaxSize = $TotalLeechers = $TotalSeeders = $TotalSnatched = 0;
+        $GroupTime = $TotalLeechers = $TotalSeeders = $TotalSnatched = 0;
+        $MaxSize = $TotalLeechers = $TotalSeeders = $TotalSnatched = 0;
         foreach ($Torrents as $T) {
             $GroupTime = max($GroupTime, strtotime($T['Time']));
             $MaxSize = max($MaxSize, $T['Size']);
@@ -124,7 +123,7 @@ foreach ($Results as $Key => $GroupID) {
 }
 
 json_print('success', [
-    'currentPage' => intval($Page),
+    'currentPage' => (int) $Page,
     'pages' => ceil($NumResults / TORRENTS_PER_PAGE),
     'results' => $JsonGroups
 ]);

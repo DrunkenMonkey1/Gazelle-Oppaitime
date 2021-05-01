@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enforce_login();
 // Get user level
 $DB->query(
@@ -14,7 +16,7 @@ $DB->query(
 );
 [$SupportFor, $DisplayStaff] = $DB->next_record();
 
-if (!('' != $SupportFor || '1' == $DisplayStaff)) {
+if ('' == $SupportFor && '1' != $DisplayStaff) {
     // Logged in user is not FLS or Staff
     error(403);
 }
@@ -26,25 +28,25 @@ if (($Message = db_string($_POST['message'])) && ($Name = db_string($_POST['name
             // Create new response
             $DB->query("
         INSERT INTO staff_pm_responses (Message, Name)
-        VALUES ('$Message', '$Name')");
+        VALUES ('{$Message}', '{$Name}')");
             echo '1';
         } else {
             $DB->query("
         SELECT *
         FROM staff_pm_responses
-        WHERE ID = $ID");
+        WHERE ID = {$ID}");
             if ($DB->has_results()) {
                 // Edit response
                 $DB->query("
           UPDATE staff_pm_responses
-          SET Message = '$Message', Name = '$Name'
-          WHERE ID = $ID");
+          SET Message = '{$Message}', Name = '{$Name}'
+          WHERE ID = {$ID}");
                 echo '2';
             } else {
                 // Create new response
                 $DB->query("
           INSERT INTO staff_pm_responses (Message, Name)
-          VALUES ('$Message', '$Name')");
+          VALUES ('{$Message}', '{$Name}')");
                 echo '1';
             }
         }

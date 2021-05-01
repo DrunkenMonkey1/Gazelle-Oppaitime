@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 define('PAYPAL_ADDRESS', '');
 
 define('PAYPAL_CURRENCY', 'EUR');
 define('PAYPAL_SYMBOL', '&#8364;');
 define('PAYPAL_MINIMUM', 5);
 
-function btc_received()
+function btc_received(): void
 {
 }
 
-function btc_balance()
+function btc_balance(): void
 {
 }
 
@@ -22,7 +24,7 @@ function btc_address($UserID, $GenAddress = false)
     $DB->query("
     SELECT BitcoinAddress
     FROM users_info
-    WHERE UserID = '$UserID'");
+    WHERE UserID = '{$UserID}'");
     [$Addr] = $DB->next_record();
 
     if (!empty($Addr)) {
@@ -34,7 +36,7 @@ function btc_address($UserID, $GenAddress = false)
         $DB->query("
       UPDATE users_info
       SET BitcoinAddress = '" . db_string($NewAddr) . "'
-      WHERE UserID = '$UserID'
+      WHERE UserID = '{$UserID}'
         AND BitcoinAddress IS NULL");
         return $NewAddr;
     } else {

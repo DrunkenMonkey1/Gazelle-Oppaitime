@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (isset($_POST['donation'])) {
     $Donation = $_POST['donation'];
     if (!is_numeric($Donation) || $Donation < 1) {
@@ -10,7 +10,7 @@ if (isset($_POST['donation'])) {
     $DB->query("
     SELECT BonusPoints
     FROM users_main
-    WHERE ID = $UserID");
+    WHERE ID = {$UserID}");
     if ($DB->has_results()) {
         [$Points] = $DB->next_record();
 
@@ -19,11 +19,11 @@ if (isset($_POST['donation'])) {
 
             $DB->query("
         UPDATE users_main
-        SET BonusPoints = BonusPoints - $Donation
-        WHERE ID = $UserID");
+        SET BonusPoints = BonusPoints - {$Donation}
+        WHERE ID = {$UserID}");
             $DB->query("
         UPDATE misc
-        SET First = First + $Donation
+        SET First = First + {$Donation}
         WHERE Name = 'FreeleechPool'");
             $Cache->delete_value('user_info_heavy_' . $UserID);
 
@@ -39,13 +39,13 @@ if (isset($_POST['donation'])) {
                     $PoolTipped = true;
                     $NumTorrents = rand(2, 6);
                     $Torrents = [];
-                    for ($i = 0; $i < $NumTorrents; $i++) {
-                        $TorrentSize = intval($Pool * (($i==$NumTorrents-1)?1:(rand(10, 80)/100)) * 100000);
+                    for ($i = 0; $i < $NumTorrents; ++$i) {
+                        $TorrentSize = (int) ($Pool * (($i === $NumTorrents-1)?1:(rand(10, 80)/100)) * 100000);
                         $DB->query("
               SELECT ID, Size
               FROM torrents
-              WHERE Size < $TorrentSize
-                AND Size > ($TorrentSize * 0.9)
+              WHERE Size < {$TorrentSize}
+                AND Size > ({$TorrentSize} * 0.9)
                 AND Seeders > 0
                 AND FreeLeechType = '0'
               ORDER BY Seeders ASC, Size DESC
@@ -55,14 +55,11 @@ if (isset($_POST['donation'])) {
                             $DB->query("
                 INSERT INTO shop_freeleeches
                 (TorrentID, ExpiryTime)
-                VALUES($TorrentID, NOW() + INTERVAL 2 DAY)");
+                VALUES({$TorrentID}, NOW() + INTERVAL 2 DAY)");
                             Torrents::freeleech_torrents($TorrentID, 1, 3);
                             $Pool -= $TorrentSize/100000;
-                        } else {
-                            // Failed to find a torrent. Maybe try again with a new value, maybe move on
-                            if (rand(1, 5) > 1) {
-                                $i--;
-                            }
+                        } elseif (rand(1, 5) > 1) {
+                            --$i;
                         }
                     }
 
@@ -70,7 +67,7 @@ if (isset($_POST['donation'])) {
                     $DB->query("
             UPDATE misc
             SET First = 0,
-                Second = $Target
+                Second = {$Target}
             WHERE Name = 'FreeleechPool'");
                 }
             }

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (isset($_POST['title'])) {
     if (strlen($_POST['title']) > 30) {
         error("Title too long");
@@ -11,7 +11,7 @@ if (isset($_POST['title'])) {
     $DB->query("
     SELECT BonusPoints
     FROM users_main
-    WHERE ID = $UserID");
+    WHERE ID = {$UserID}");
     if ($DB->has_results()) {
         [$Points] = $DB->next_record();
 

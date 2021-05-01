@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /***************************************************************
 * Temp handler for changing the category for a single torrent.
 ****************************************************************/
@@ -28,16 +30,16 @@ switch ($Categories[$NewCategoryID-1]) {
     $DB->query("
       SELECT ArtistID, AliasID, Redirect, Name
       FROM artists_alias
-      WHERE Name LIKE '$ArtistName'");
+      WHERE Name LIKE '{$ArtistName}'");
     if (!$DB->has_results()) {
         $Redirect = 0;
         $DB->query("
         INSERT INTO artists_group (Name)
-        VALUES ('$ArtistName')");
+        VALUES ('{$ArtistName}')");
         $ArtistID = $DB->inserted_id();
         $DB->query("
         INSERT INTO artists_alias (ArtistID, Name)
-        VALUES ('$ArtistID', '$ArtistName')");
+        VALUES ('{$ArtistID}', '{$ArtistName}')");
         $AliasID = $DB->inserted_id();
     } else {
         [$ArtistID, $AliasID, $Redirect, $ArtistName] = $DB->next_record();
@@ -50,14 +52,14 @@ switch ($Categories[$NewCategoryID-1]) {
       INSERT INTO torrents_group
         (ArtistID, CategoryID, Name, Year, ReleaseType, Time, WikiBody, WikiImage)
       VALUES
-        ($ArtistID, '1', '$Title', '$Year', '$ReleaseType', NOW(), '', '')");
+        ({$ArtistID}, '1', '{$Title}', '{$Year}', '{$ReleaseType}', NOW(), '', '')");
     $GroupID = $DB->inserted_id();
 
     $DB->query("
       INSERT INTO torrents_artists
         (GroupID, ArtistID, AliasID, Importance, UserID)
       VALUES
-        ('$GroupID', '$ArtistID', '$AliasID', '1', '$LoggedUser[ID]')");
+        ('{$GroupID}', '{$ArtistID}', '{$AliasID}', '1', '$LoggedUser[ID]')");
     break;
   case 'Audiobooks':
   case 'Comedy':
@@ -69,7 +71,7 @@ switch ($Categories[$NewCategoryID-1]) {
       INSERT INTO torrents_group
         (CategoryID, Name, Year, Time, WikiBody, WikiImage)
       VALUES
-        ($NewCategoryID, '$Title', '$Year', NOW(), '', '')");
+        ({$NewCategoryID}, '{$Title}', '{$Year}', NOW(), '', '')");
     $GroupID = $DB->inserted_id();
     break;
   case 'Applications':
@@ -80,42 +82,42 @@ switch ($Categories[$NewCategoryID-1]) {
       INSERT INTO torrents_group
         (CategoryID, Name, Time, WikiBody, WikiImage)
       VALUES
-        ($NewCategoryID, '$Title', NOW(), '', '')");
+        ({$NewCategoryID}, '{$Title}', NOW(), '', '')");
     $GroupID = $DB->inserted_id();
     break;
 }
 
 $DB->query("
   UPDATE torrents
-  SET GroupID = '$GroupID'
-  WHERE ID = '$TorrentID'");
+  SET GroupID = '{$GroupID}'
+  WHERE ID = '{$TorrentID}'");
 
 // Delete old group if needed
 $DB->query("
   SELECT ID
   FROM torrents
-  WHERE GroupID = '$OldGroupID'");
+  WHERE GroupID = '{$OldGroupID}'");
 if (!$DB->has_results()) {
     $DB->query("
     UPDATE comments
-    SET PageID = '$GroupID'
+    SET PageID = '{$GroupID}'
     WHERE Page = 'torrents'
-      AND PageID = '$OldGroupID'");
+      AND PageID = '{$OldGroupID}'");
     Torrents::delete_group($OldGroupID);
-    $Cache->delete_value("torrent_comments_{$GroupID}_catalogue_0");
+    $Cache->delete_value(sprintf('torrent_comments_%s_catalogue_0', $GroupID));
 } else {
     Torrents::update_hash($OldGroupID);
 }
 
 Torrents::update_hash($GroupID);
 
-$Cache->delete_value("torrent_download_$TorrentID");
+$Cache->delete_value(sprintf('torrent_download_%s', $TorrentID));
 
-Misc::write_log("Torrent $TorrentID was edited by $LoggedUser[Username]");
-Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], "merged from group $OldGroupID", 0);
+Misc::write_log(sprintf('Torrent %s was edited by %s', $TorrentID, $LoggedUser[Username]));
+Torrents::write_group_log($GroupID, 0, $LoggedUser['ID'], sprintf('merged from group %s', $OldGroupID), 0);
 $DB->query("
   UPDATE group_log
-  SET GroupID = $GroupID
-  WHERE GroupID = $OldGroupID");
+  SET GroupID = {$GroupID}
+  WHERE GroupID = {$OldGroupID}");
 
-header("Location: torrents.php?id=$GroupID");
+header(sprintf('Location: torrents.php?id=%s', $GroupID));

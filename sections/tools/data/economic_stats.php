@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /*
 Tools necessary for economic management
 1. Current overall stats (!economy)
@@ -31,6 +32,7 @@ if (!check_perms('site_view_flow')) {
 }
 View::show_header('Economy');
 
+
 if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
     $DB->query("
     SELECT SUM(Uploaded), SUM(Downloaded), COUNT(ID)
@@ -50,13 +52,16 @@ if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
     $DB->query("
     SELECT SUM(Snatched), COUNT(ID)
     FROM torrents");
-    [$TotalSnatches, $TotalTorrents] = $DB->next_record(); // This is the total number of snatches for torrents that still exist
-
+    [
+        $TotalSnatches,
+        $TotalTorrents
+    ] = $DB->next_record(); // This is the total number of snatches for torrents that still exist
+    
     $DB->query("
     SELECT COUNT(uid)
     FROM xbt_snatched");
     [$TotalOverallSnatches] = $DB->next_record();
-
+    
     if (($PeerStats = $Cache->get_value('stats_peers')) === false) {
         $DB->query("
       SELECT COUNT(fid)
@@ -71,7 +76,7 @@ if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
     } else {
         [$TotalLeechers, $TotalSeeders] = $PeerStats;
     }
-    $TotalPeers = $TotalLeechers + $TotalSeeders;
+    $TotalPeers = (int) $TotalLeechers + (int) $TotalSeeders;
     $DB->query("
     SELECT COUNT(ID)
     FROM users_main
@@ -83,67 +88,107 @@ if (!$EconomicStats = $Cache->get_value('new_economic_stats')) {
     [$TotalPeerUsers] = $DB->next_record();
     $Cache->cache_value(
         'new_economic_stats',
-        [$TotalUpload, $TotalDownload, $NumUsers, $TotalBounty,
-            $AvailableBounty, $TotalSnatches, $TotalTorrents,
-            $TotalOverallSnatches, $TotalSeeders, $TotalPeers,
-            $TotalPeerUsers],
+        [
+            $TotalUpload,
+            $TotalDownload,
+            $NumUsers,
+            $TotalBounty,
+            $AvailableBounty,
+            $TotalSnatches,
+            $TotalTorrents,
+            $TotalOverallSnatches,
+            $TotalSeeders,
+            $TotalPeers,
+            $TotalPeerUsers
+        ],
         3600
     );
 } else {
-    [$TotalUpload, $TotalDownload, $NumUsers, $TotalBounty, $AvailableBounty,
-    $TotalSnatches, $TotalTorrents, $TotalOverallSnatches, $TotalSeeders,
-    $TotalPeers, $TotalPeerUsers] = $EconomicStats;
+    [
+        $TotalUpload,
+        $TotalDownload,
+        $NumUsers,
+        $TotalBounty,
+        $AvailableBounty,
+        $TotalSnatches,
+        $TotalTorrents,
+        $TotalOverallSnatches,
+        $TotalSeeders,
+        $TotalPeers,
+        $TotalPeerUsers
+    ] = $EconomicStats;
 }
 
-$TotalLeechers = $TotalPeers - $TotalSeeders;
+$TotalLeechers = $TotalPeers - (int) $TotalSeeders;
 
 ?>
 <div class="thin">
-  <div class="box">
-    <div class="head">Overall stats</div>
-    <div class="pad">
-      <ul class="stats nobullet">
-        <li><strong>Total upload: </strong><?=Format::get_size($TotalUpload)?></li>
-        <li><strong>Total download: </strong><?=Format::get_size($TotalDownload)?></li>
-        <li><strong>Total buffer: </strong><?=Format::get_size($TotalUpload - $TotalDownload)?></li>
-        <br />
-        <li><strong>Mean ratio: </strong><?=Format::get_ratio_html($TotalUpload, $TotalDownload)?></li>
-        <li><strong>Mean upload: </strong><?=Format::get_size($TotalUpload / $NumUsers)?></li>
-        <li><strong>Mean download: </strong><?=Format::get_size($TotalDownload / $NumUsers)?></li>
-        <li><strong>Mean buffer: </strong><?=Format::get_size(($TotalUpload - $TotalDownload) / $NumUsers)?></li>
-        <br />
-        <li><strong>Total request bounty: </strong><?=Format::get_size($TotalBounty)?></li>
-        <li><strong>Available request bounty: </strong><?=Format::get_size($AvailableBounty)?></li>
-      </ul>
+    <div class="box">
+        <div class="head">Overall stats</div>
+        <div class="pad">
+            <ul class="stats nobullet">
+                <li><strong>Total upload: </strong><?= Format::get_size($TotalUpload) ?></li>
+                <li><strong>Total download: </strong><?= Format::get_size($TotalDownload) ?></li>
+                <li><strong>Total buffer: </strong><?= Format::get_size($TotalUpload - (int) $TotalDownload) ?></li>
+                <br/>
+                <li><strong>Mean ratio: </strong><?= Format::get_ratio_html($TotalUpload, $TotalDownload) ?></li>
+                <li><strong>Mean upload: </strong><?= Format::get_size($TotalUpload / $NumUsers) ?></li>
+                <li><strong>Mean download: </strong><?= Format::get_size((int) $TotalDownload / $NumUsers) ?></li>
+                <li><strong>Mean
+                        buffer: </strong><?= Format::get_size(((int) $TotalUpload - (int) $TotalDownload) / $NumUsers) ?>
+                </li>
+                <br/>
+                <li><strong>Total request bounty: </strong><?= Format::get_size($TotalBounty) ?></li>
+                <li><strong>Available request bounty: </strong><?= Format::get_size($AvailableBounty) ?></li>
+            </ul>
+        </div>
     </div>
-  </div>
-  <br />
-  <div class="box">
-    <div class="head">Swarms and snatches</div>
-    <div class="pad">
-      <ul class="stats nobullet">
-        <li><strong>Total seeders: </strong><?=number_format($TotalSeeders)?></li>
-        <li><strong>Total leechers: </strong><?=number_format($TotalLeechers)?></li>
-        <li><strong>Total peers: </strong><?=number_format($TotalSeeders + $TotalLeechers)?></li>
-        <li><strong>Total snatches: </strong><?=number_format($TotalOverallSnatches)?></li>
-        <li><strong>Seeder/leecher ratio: </strong><?=Format::get_ratio_html($TotalSeeders, $TotalLeechers)?></li>
-        <li><strong>Seeder/snatch ratio: </strong><?=Format::get_ratio_html($TotalSeeders, $TotalOverallSnatches)?></li>
-        <br />
-        <li><strong>Mean seeders per torrent: </strong><?=number_format($TotalSeeders / $TotalTorrents, 2)?></li>
-        <li><strong>Mean leechers per torrent: </strong><?=number_format($TotalLeechers / $TotalTorrents, 2)?></li>
-        <li><strong>Mean snatches per torrent: </strong><?=number_format($TotalSnatches / $TotalTorrents, 2)?></li>
-        <br />
-        <li><strong>Mean seeding per user: </strong><?=number_format($TotalSeeders / $NumUsers, 2)?></li>
-        <li><strong>Mean leeching per user: </strong><?=number_format($TotalLeechers / $NumUsers, 2)?></li>
-        <li><strong>Mean snatches per user: </strong><?=number_format($TotalOverallSnatches / $NumUsers, 2)?></li>
-        <br />
-        <li><strong>Total users in at least 1 swarm: </strong><?=number_format($TotalPeerUsers)?></li>
-        <li><strong>Mean seeding per user in at least 1 swarm: </strong><?=number_format($TotalSeeders / $TotalPeerUsers, 2)?></li>
-        <li><strong>Mean leeching per user in at least 1 swarm: </strong><?=number_format($TotalLeechers / $TotalPeerUsers, 2)?></li>
-        <li><strong>Mean snatches per user in at least 1 swarm: </strong><?=number_format($TotalSnatches / $TotalPeerUsers, 2)?></li>
-      </ul>
+    <br/>
+    <div class="box">
+        <div class="head">Swarms and snatches</div>
+        <div class="pad">
+            <ul class="stats nobullet">
+                <li><strong>Total seeders: </strong><?= number_format((int) $TotalSeeders) ?></li>
+                <li><strong>Total leechers: </strong><?= number_format($TotalLeechers) ?></li>
+                <li><strong>Total peers: </strong><?= number_format((int) $TotalSeeders + $TotalLeechers) ?></li>
+                <li><strong>Total snatches: </strong><?= number_format((int) $TotalOverallSnatches) ?></li>
+                <li><strong>Seeder/leecher ratio: </strong><?= Format::get_ratio_html($TotalSeeders, $TotalLeechers) ?>
+                </li>
+                <li><strong>Seeder/snatch ratio: </strong><?= Format::get_ratio_html($TotalSeeders,
+                        $TotalOverallSnatches) ?></li>
+                <br/>
+                <li><strong>Mean seeders per
+                        torrent: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalSeeders,
+                        (int) $TotalTorrents), 2) ?>
+                </li>
+                <li><strong>Mean leechers per torrent: </strong><?= number_format(Misc::DivisionByZeroFix($TotalLeechers,
+                        (int) $TotalTorrents), 2) ?>
+                </li>
+                <li><strong>Mean snatches per torrent: </strong><?= number_format(Misc::DivisionByZeroFix($TotalSnatches ?? 0,
+                        (int) $TotalTorrents), 2) ?>
+                </li>
+                <br/>
+                <li><strong>Mean seeding per user: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalSeeders,
+                        $NumUsers), 2) ?></li>
+                <li><strong>Mean leeching per user: </strong><?= number_format($TotalLeechers / $NumUsers, 2) ?></li>
+                <li><strong>Mean snatches per
+                        user: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalOverallSnatches,
+                        (int) $NumUsers), 2) ?>
+                </li>
+                <br/>
+                <li><strong>Total users in at least 1 swarm: </strong><?= number_format((int)$TotalPeerUsers) ?></li>
+                <li><strong>Mean seeding per user in at least 1
+                        swarm: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalSeeders, (int) $TotalPeerUsers),
+                        2) ?></li>
+                <li><strong>Mean leeching per user in at least 1
+                        swarm: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalLeechers,
+                        (int) $TotalPeerUsers), 2) ?></li>
+                <li><strong>Mean snatches per user in at least 1
+                        swarm: </strong><?= number_format(Misc::DivisionByZeroFix((int) $TotalSnatches, (int)$TotalPeerUsers),
+                        2) ?></li>
+            </ul>
+        </div>
     </div>
-  </div>
 </div>
 <?php
 View::show_footer();

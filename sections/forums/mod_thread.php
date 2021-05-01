@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*********************************************************************\
 //--------------Mod thread-------------------------------------------//
 
@@ -47,7 +49,7 @@ $Action = '';
 if (1 == $Locked) {
     $DB->query("
     DELETE FROM forums_last_read_topics
-    WHERE TopicID = '$TopicID'");
+    WHERE TopicID = '{$TopicID}'");
 }
 
 $DB->query("
@@ -64,7 +66,7 @@ $DB->query("
   FROM forums_topics AS t
     LEFT JOIN forums_posts AS p ON p.TopicID = t.ID
     LEFT JOIN forums AS f ON f.ID = t.ForumID
-  WHERE t.ID = '$TopicID'
+  WHERE t.ID = '{$TopicID}'
   GROUP BY p.TopicID");
 [$OldForumID, $OldForumName, $MinClassWrite, $Posts, $ThreadAuthorID, $OldTitle, $OldLocked, $OldSticky, $OldRanking] = $DB->next_record(MYSQLI_BOTH, false);
 
@@ -80,10 +82,10 @@ if (isset($_POST['delete'])) {
 
     $DB->query("
     DELETE FROM forums_posts
-    WHERE TopicID = '$TopicID'");
+    WHERE TopicID = '{$TopicID}'");
     $DB->query("
     DELETE FROM forums_topics
-    WHERE ID = '$TopicID'");
+    WHERE ID = '{$TopicID}'");
 
     $DB->query("
     SELECT
@@ -97,14 +99,14 @@ if (isset($_POST['delete'])) {
         SELECT COUNT(pp.ID)
         FROM forums_posts AS pp
           JOIN forums_topics AS tt ON pp.TopicID = tt.ID
-        WHERE tt.ForumID = '$ForumID'
+        WHERE tt.ForumID = '{$ForumID}'
       ),
       t.IsLocked,
       t.IsSticky
     FROM forums_topics AS t
       JOIN forums_posts AS p ON p.ID = t.LastPostID
       LEFT JOIN users_main AS um ON um.ID = p.AuthorID
-    WHERE t.ForumID = '$ForumID'
+    WHERE t.ForumID = '{$ForumID}'
     GROUP BY t.ID
     ORDER BY t.LastPostID DESC
     LIMIT 1");
@@ -114,15 +116,15 @@ if (isset($_POST['delete'])) {
     UPDATE forums
     SET
       NumTopics = NumTopics - 1,
-      NumPosts = NumPosts - '$Posts',
-      LastPostTopicID = '$NewLastTopic',
-      LastPostID = '$NewLastPostID',
-      LastPostAuthorID = '$NewLastAuthorID',
-      LastPostTime = '$NewLastAddedTime'
-    WHERE ID = '$ForumID'");
-    $Cache->delete_value("forums_$ForumID");
+      NumPosts = NumPosts - '{$Posts}',
+      LastPostTopicID = '{$NewLastTopic}',
+      LastPostID = '{$NewLastPostID}',
+      LastPostAuthorID = '{$NewLastAuthorID}',
+      LastPostTime = '{$NewLastAddedTime}'
+    WHERE ID = '{$ForumID}'");
+    $Cache->delete_value(sprintf('forums_%s', $ForumID));
 
-    $Cache->delete_value("thread_$TopicID");
+    $Cache->delete_value(sprintf('thread_%s', $TopicID));
 
     $Cache->begin_transaction('forums_list');
     $UpdateArray = [
@@ -139,7 +141,7 @@ if (isset($_POST['delete'])) {
 
     $Cache->update_row($ForumID, $UpdateArray);
     $Cache->commit_transaction(0);
-    $Cache->delete_value("thread_{$TopicID}_info");
+    $Cache->delete_value(sprintf('thread_%s_info', $TopicID));
 
     // subscriptions
     Subscriptions::move_subscriptions('forums', $TopicID, null);
@@ -149,9 +151,9 @@ if (isset($_POST['delete'])) {
     $DB->query("
     DELETE FROM users_notify_quoted
     WHERE Page = 'forums'
-      AND PageID = '$TopicID'");
+      AND PageID = '{$TopicID}'");
 
-    header("Location: forums.php?action=viewforum&forumid=$ForumID");
+    header(sprintf('Location: forums.php?action=viewforum&forumid=%s', $ForumID));
 } else { // If we're just editing it
     $Action = 'editing';
 
@@ -160,7 +162,7 @@ if (isset($_POST['delete'])) {
         $Action = 'trashing';
     }
 
-    $Cache->begin_transaction("thread_{$TopicID}_info");
+    $Cache->begin_transaction(sprintf('thread_%s_info', $TopicID));
     $UpdateArray = [
         'IsSticky' => $Sticky,
         'Ranking' => $Ranking,
@@ -174,27 +176,27 @@ if (isset($_POST['delete'])) {
     $DB->query("
     UPDATE forums_topics
     SET
-      IsSticky = '$Sticky',
-      Ranking = '$Ranking',
-      IsLocked = '$Locked',
-      Title = '$Title',
-      ForumID = '$ForumID'
-    WHERE ID = '$TopicID'");
+      IsSticky = '{$Sticky}',
+      Ranking = '{$Ranking}',
+      IsLocked = '{$Locked}',
+      Title = '{$Title}',
+      ForumID = '{$ForumID}'
+    WHERE ID = '{$TopicID}'");
 
     // always clear cache when editing a thread.
     // if a thread title, etc. is changed, this cache key must be cleared so the thread listing
     //    properly shows the new thread title.
-    $Cache->delete_value("forums_$ForumID");
+    $Cache->delete_value(sprintf('forums_%s', $ForumID));
 
     if ($ForumID != $OldForumID) { // If we're moving a thread, change the forum stats
-        $Cache->delete_value("forums_$OldForumID");
+        $Cache->delete_value(sprintf('forums_%s', $OldForumID));
 
         $DB->query("
       SELECT MinClassRead, MinClassWrite, Name
       FROM forums
-      WHERE ID = '$ForumID'");
+      WHERE ID = '{$ForumID}'");
         [$MinClassRead, $MinClassWrite, $ForumName] = $DB->next_record(MYSQLI_NUM, false);
-        $Cache->begin_transaction("thread_{$TopicID}_info");
+        $Cache->begin_transaction(sprintf('thread_%s_info', $TopicID));
         $UpdateArray = [
             'ForumName' => $ForumName,
             'MinClassRead' => $MinClassRead,
@@ -218,7 +220,7 @@ if (isset($_POST['delete'])) {
           SELECT COUNT(pp.ID)
           FROM forums_posts AS pp
             JOIN forums_topics AS tt ON pp.TopicID = tt.ID
-          WHERE tt.ForumID = '$OldForumID'
+          WHERE tt.ForumID = '{$OldForumID}'
         ),
         t.IsLocked,
         t.IsSticky,
@@ -226,7 +228,7 @@ if (isset($_POST['delete'])) {
       FROM forums_topics AS t
         JOIN forums_posts AS p ON p.ID = t.LastPostID
         LEFT JOIN users_main AS um ON um.ID = p.AuthorID
-      WHERE t.ForumID = '$OldForumID'
+      WHERE t.ForumID = '{$OldForumID}'
       ORDER BY t.LastPostID DESC
       LIMIT 1");
         [$NewLastTopic, $NewLastPostID, $NewLastTitle, $NewLastAuthorID, $NewLastAuthorName, $NewLastAddedTime, $NumPosts, $NewLocked, $NewSticky, $NewRanking] = $DB->next_record(MYSQLI_NUM, false);
@@ -235,12 +237,12 @@ if (isset($_POST['delete'])) {
       UPDATE forums
       SET
         NumTopics = NumTopics - 1,
-        NumPosts = NumPosts - '$Posts',
-        LastPostTopicID = '$NewLastTopic',
-        LastPostID = '$NewLastPostID',
-        LastPostAuthorID = '$NewLastAuthorID',
-        LastPostTime = '$NewLastAddedTime'
-      WHERE ID = '$OldForumID'");
+        NumPosts = NumPosts - '{$Posts}',
+        LastPostTopicID = '{$NewLastTopic}',
+        LastPostID = '{$NewLastPostID}',
+        LastPostAuthorID = '{$NewLastAuthorID}',
+        LastPostTime = '{$NewLastAddedTime}'
+      WHERE ID = '{$OldForumID}'");
 
 
         $UpdateArray = [
@@ -273,12 +275,12 @@ if (isset($_POST['delete'])) {
           SELECT COUNT(pp.ID)
           FROM forums_posts AS pp
             JOIN forums_topics AS tt ON pp.TopicID = tt.ID
-          WHERE tt.ForumID = '$ForumID'
+          WHERE tt.ForumID = '{$ForumID}'
         )
         FROM forums_topics AS t
           JOIN forums_posts AS p ON p.ID = t.LastPostID
           LEFT JOIN users_main AS um ON um.ID = p.AuthorID
-        WHERE t.ForumID = '$ForumID'
+        WHERE t.ForumID = '{$ForumID}'
         ORDER BY t.LastPostID DESC
         LIMIT 1");
         [$NewLastTopic, $NewLastPostID, $NewLastTitle, $NewLastAuthorID, $NewLastAuthorName, $NewLastAddedTime, $NumPosts] = $DB->next_record(MYSQLI_NUM, false);
@@ -287,12 +289,12 @@ if (isset($_POST['delete'])) {
       UPDATE forums
       SET
         NumTopics = NumTopics + 1,
-        NumPosts = NumPosts + '$Posts',
-        LastPostTopicID = '$NewLastTopic',
-        LastPostID = '$NewLastPostID',
-        LastPostAuthorID = '$NewLastAuthorID',
-        LastPostTime = '$NewLastAddedTime'
-      WHERE ID = '$ForumID'");
+        NumPosts = NumPosts + '{$Posts}',
+        LastPostTopicID = '{$NewLastTopic}',
+        LastPostID = '{$NewLastPostID}',
+        LastPostAuthorID = '{$NewLastAuthorID}',
+        LastPostTime = '{$NewLastAddedTime}'
+      WHERE ID = '{$ForumID}'");
 
 
         $UpdateArray = [
@@ -316,7 +318,7 @@ if (isset($_POST['delete'])) {
         $DB->query("
       SELECT LastPostTopicID
       FROM forums
-      WHERE ID = '$ForumID'");
+      WHERE ID = '{$ForumID}'");
         [$LastTopicID] = $DB->next_record();
         if ($LastTopicID == $TopicID) {
             $UpdateArray = [
@@ -332,16 +334,16 @@ if (isset($_POST['delete'])) {
     }
     if ($Locked) {
         $CatalogueID = floor($NumPosts / THREAD_CATALOGUE);
-        for ($i = 0; $i <= $CatalogueID; $i++) {
-            $Cache->expire_value("thread_{$TopicID}_catalogue_$i", 3600 * 24 * 7); // 7 days
+        for ($i = 0; $i <= $CatalogueID; ++$i) {
+            $Cache->expire_value(sprintf('thread_%s_catalogue_%s', $TopicID, $i), 3600 * 24 * 7); // 7 days
         }
-        $Cache->expire_value("thread_{$TopicID}_info", 3600 * 24 * 7); // 7 days
+        $Cache->expire_value(sprintf('thread_%s_info', $TopicID), 3600 * 24 * 7); // 7 days
 
         $DB->query("
       UPDATE forums_polls
       SET Closed = '0'
-      WHERE TopicID = '$TopicID'");
-        $Cache->delete_value("polls_$TopicID");
+      WHERE TopicID = '{$TopicID}'");
+        $Cache->delete_value(sprintf('polls_%s', $TopicID));
     }
 
     // topic notes and notifications
@@ -350,41 +352,33 @@ if (isset($_POST['delete'])) {
     case 'editing':
       if ($OldTitle != $RawTitle) {
           // title edited
-          $TopicNotes[] = "Title edited from \"$OldTitle\" to \"$RawTitle\"";
+          $TopicNotes[] = sprintf('Title edited from "%s" to "%s"', $OldTitle, $RawTitle);
       }
       if ($OldLocked != $Locked) {
-          if (!$OldLocked) {
-              $TopicNotes[] = 'Locked';
-          } else {
-              $TopicNotes[] = 'Unlocked';
-          }
+          $TopicNotes[] = $OldLocked ? 'Unlocked' : 'Locked';
       }
       if ($OldSticky != $Sticky) {
-          if (!$OldSticky) {
-              $TopicNotes[] = 'Stickied';
-          } else {
-              $TopicNotes[] = 'Unstickied';
-          }
+          $TopicNotes[] = $OldSticky ? 'Unstickied' : 'Stickied';
       }
       if ($OldRanking != $Ranking) {
-          $TopicNotes[] = "Ranking changed from \"$OldRanking\" to \"$Ranking\"";
+          $TopicNotes[] = sprintf('Ranking changed from "%s" to "%s"', $OldRanking, $Ranking);
       }
       if ($ForumID != $OldForumID) {
-          $TopicNotes[] = "Moved from [url=" . site_url() . "forums.php?action=viewforum&forumid=$OldForumID]{$OldForumName}[/url] to [url=" . site_url() . "forums.php?action=viewforum&forumid=$ForumID]{$ForumName}[/url]";
+          $TopicNotes[] = "Moved from [url=" . site_url() . sprintf('forums.php?action=viewforum&forumid=%s]%s[/url] to [url=', $OldForumID, $OldForumName) . site_url() . sprintf('forums.php?action=viewforum&forumid=%s]%s[/url]', $ForumID, $ForumName);
       }
       break;
     case 'trashing':
-      $TopicNotes[] = "Trashed (moved from [url=" . site_url() . "forums.php?action=viewforum&forumid=$OldForumID]{$OldForumName}[/url] to [url=" . site_url() . "forums.php?action=viewforum&forumid=$ForumID]{$ForumName}[/url])";
-      $Notification = "Your thread \"$NewLastTitle\" has been trashed";
+      $TopicNotes[] = "Trashed (moved from [url=" . site_url() . sprintf('forums.php?action=viewforum&forumid=%s]%s[/url] to [url=', $OldForumID, $OldForumName) . site_url() . sprintf('forums.php?action=viewforum&forumid=%s]%s[/url])', $ForumID, $ForumName);
+      $Notification = sprintf('Your thread "%s" has been trashed', $NewLastTitle);
       break;
     default:
       break;
   }
     if (isset($Notification)) {
-        NotificationsManager::notify_user($ThreadAuthorID, NotificationsManager::FORUMALERTS, $Notification, "forums.php?action=viewthread&threadid=$TopicID");
+        NotificationsManager::notify_user($ThreadAuthorID, NotificationsManager::FORUMALERTS, $Notification, sprintf('forums.php?action=viewthread&threadid=%s', $TopicID));
     }
     if (count($TopicNotes) > 0) {
         Forums::add_topic_note($TopicID, implode("\n", $TopicNotes));
     }
-    header("Location: forums.php?action=viewthread&threadid=$TopicID&page=$Page");
+    header(sprintf('Location: forums.php?action=viewthread&threadid=%s&page=%s', $TopicID, $Page));
 }

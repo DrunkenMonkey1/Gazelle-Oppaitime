@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 authorize();
 if (!check_perms('torrents_edit')) {
     error(403);
@@ -25,11 +27,11 @@ if (1 === $DB->record_count()) {
 $DB->query("
   SELECT GroupID
   FROM torrents_artists
-  WHERE AliasID='$AliasID'");
+  WHERE AliasID='{$AliasID}'");
 if ($DB->has_results()) {
     [$GroupID] = $DB->next_record();
     if (0 != $GroupID) {
-        error("That alias still has the group (<a href=\"torrents.php?id=$GroupID\">$GroupID</a>) attached. Fix that first.");
+        error(sprintf('That alias still has the group (<a href="torrents.php?id=%s">%s</a>) attached. Fix that first.', $GroupID, $GroupID));
     }
 }
 
@@ -37,17 +39,17 @@ $DB->query("
   SELECT aa.ArtistID, ag.Name, aa.Name
   FROM artists_alias AS aa
     JOIN artists_group AS ag ON aa.ArtistID=ag.ArtistID
-  WHERE aa.AliasID=$AliasID");
+  WHERE aa.AliasID={$AliasID}");
 [$ArtistID, $ArtistName, $AliasName] = $DB->next_record(MYSQLI_NUM, false);
 
 $DB->query("
   DELETE FROM artists_alias
-  WHERE AliasID='$AliasID'");
+  WHERE AliasID='{$AliasID}'");
 $DB->query("
   UPDATE artists_alias
   SET Redirect='0'
-  WHERE Redirect='$AliasID'");
+  WHERE Redirect='{$AliasID}'");
 
-Misc::write_log("The alias $AliasID ($AliasName) was removed from the artist $ArtistID ($ArtistName) by user $LoggedUser[ID] ($LoggedUser[Username])");
+Misc::write_log(sprintf('The alias %s (%s) was removed from the artist %s (%s) by user %s (%s)', $AliasID, $AliasName, $ArtistID, $ArtistName, $LoggedUser[ID], $LoggedUser[Username]));
 
-header("Location: $_SERVER[HTTP_REFERER]");
+header(sprintf('Location: %s', $_SERVER[HTTP_REFERER]));

@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 if (empty($_GET['nojump'])) {
     $ArticleID = Wiki::alias_to_id($_GET['search']);
     if ($ArticleID) {
@@ -28,17 +28,17 @@ if (!in_array($Type, ['Title', 'Body'], true)) {
 $Words = explode(' ', $Search);
 
 $Type = $TypeTable[$_GET['type']];
-if (!$Type) {
+if ('' === $Type) {
     $Type = 'Title';
 }
 
 $Order = $OrderTable[$_GET['order']];
-if (!$Order) {
+if ('' === $Order) {
     $Order = 'ID';
 }
 
 $Way = $WayTable[$_GET['way']];
-if (!$Way) {
+if ('' === $Way) {
     $Way = 'DESC';
 }
 
@@ -52,14 +52,14 @@ $SQL = "
   FROM wiki_articles
   WHERE MinClassRead <= '" . $LoggedUser['EffectiveClass'] . "'";
 if ('' != $Search) {
-    $SQL .= " AND $Type LIKE '%";
-    $SQL .= implode("%' AND $Type LIKE '%", $Words);
+    $SQL .= sprintf(' AND %s LIKE \'%', $Type);
+    $SQL .= implode(sprintf('%\' AND %s LIKE \'%', $Type), $Words);
     $SQL .= "%' ";
 }
 
 $SQL .= "
-  ORDER BY $Order $Way
-  LIMIT $Limit ";
+  ORDER BY {$Order} {$Way}
+  LIMIT {$Limit} ";
 $RS = $DB->query($SQL);
 $DB->query("
   SELECT FOUND_ROWS()");

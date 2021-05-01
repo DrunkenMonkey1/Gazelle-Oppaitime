@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //----------- Award Automated Badges -----------------------//
 
 $GiB = 1024*1024*1024;
@@ -12,7 +14,7 @@ foreach (AUTOMATED_BADGE_IDS['DL'] as $DL=>$Badge) {
     SELECT ID
     FROM users_main
     WHERE Downloaded >= " . ($DL*$GiB) . "
-      AND ID NOT IN (SELECT UserID FROM users_badges WHERE BadgeID = $Badge)");
+      AND ID NOT IN (SELECT UserID FROM users_badges WHERE BadgeID = {$Badge})");
 
     if ($DB->has_results()) {
         $IDs = $DB->collect('ID');
@@ -31,7 +33,7 @@ foreach (AUTOMATED_BADGE_IDS['UL'] as $UL=>$Badge) {
     SELECT ID
     FROM users_main
     WHERE Uploaded >= " . ($UL*$GiB) . "
-      AND ID NOT IN (SELECT UserID FROM users_badges WHERE BadgeID = $Badge)");
+      AND ID NOT IN (SELECT UserID FROM users_badges WHERE BadgeID = {$Badge})");
 
     if ($DB->has_results()) {
         $IDs = $DB->collect('ID');

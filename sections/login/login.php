@@ -1,4 +1,5 @@
-<?php View::show_header('Login'); ?>
+<?php declare(strict_types=1);
+View::show_header('Login'); ?>
   <span id="no-cookies" class="hidden warning">You appear to have cookies disabled.<br /><br /></span>
 <?php
 if (!$Banned) {

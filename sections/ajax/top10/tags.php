@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 
 // error out on invalid requests (before caching)
 if (isset($_GET['details'])) {
@@ -14,12 +16,12 @@ if (isset($_GET['details'])) {
 }
 
 // defaults to 10 (duh)
-$Limit = isset($_GET['limit']) ? intval($_GET['limit']) : 10;
+$Limit = isset($_GET['limit']) ? (int) $_GET['limit'] : 10;
 $Limit = in_array($Limit, [10, 100, 250], true) ? $Limit : 10;
 $OuterResults = [];
 
 if ('all' == $Details || 'ut' == $Details) {
-    if (!$TopUsedTags = $Cache->get_value("topusedtag_$Limit")) {
+    if (!$TopUsedTags = $Cache->get_value(sprintf('topusedtag_%s', $Limit))) {
         $DB->query("
       SELECT
         t.ID,
@@ -29,16 +31,16 @@ if ('all' == $Details || 'ut' == $Details) {
         JOIN torrents_tags AS tt ON tt.TagID = t.ID
       GROUP BY tt.TagID
       ORDER BY Uses DESC
-      LIMIT $Limit");
+      LIMIT {$Limit}");
         $TopUsedTags = $DB->to_array();
-        $Cache->cache_value("topusedtag_$Limit", $TopUsedTags, 3600 * 12);
+        $Cache->cache_value(sprintf('topusedtag_%s', $Limit), $TopUsedTags, 3600 * 12);
     }
 
     $OuterResults[] = generate_tag_json('Most Used Torrent Tags', 'ut', $TopUsedTags, $Limit);
 }
 
 if ('all' == $Details || 'ur' == $Details) {
-    if (!$TopRequestTags = $Cache->get_value("toprequesttag_$Limit")) {
+    if (!$TopRequestTags = $Cache->get_value(sprintf('toprequesttag_%s', $Limit))) {
         $DB->query("
       SELECT
         t.ID,
@@ -49,9 +51,9 @@ if ('all' == $Details || 'ur' == $Details) {
         JOIN requests_tags AS r ON r.TagID = t.ID
       GROUP BY r.TagID
       ORDER BY Uses DESC
-      LIMIT $Limit");
+      LIMIT {$Limit}");
         $TopRequestTags = $DB->to_array();
-        $Cache->cache_value("toprequesttag_$Limit", $TopRequestTags, 3600 * 12);
+        $Cache->cache_value(sprintf('toprequesttag_%s', $Limit), $TopRequestTags, 3600 * 12);
     }
 
     $OuterResults[] = generate_tag_json('Most Used Request Tags', 'ur', $TopRequestTags, $Limit);

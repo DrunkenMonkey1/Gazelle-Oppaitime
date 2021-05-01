@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 if (!check_perms('users_mod')) {
     error(403);
@@ -23,27 +23,27 @@ if (isset($_GET['deny']) && isset($_GET['type']) && isset($_GET['value'])) {
 
     $DB->query("
     DELETE FROM deletion_requests
-    WHERE Value = '$Value'");
+    WHERE Value = '{$Value}'");
 
     $DB->query("
     SELECT UserID
     FROM users_history_" . strtolower($Type) . "s
-    WHERE $Type = '$Value'");
+    WHERE {$Type} = '{$Value}'");
     if ($DB->has_results()) {
         [$UserID] = $DB->next_record();
         if ($UserID != $_GET['userid']) {
             $Err = "The specified UserID is incorrect.";
         }
     } else {
-        $Err = "That $Type doesn't exist.";
+        $Err = sprintf('That %s doesn\'t exist.', $Type);
     }
 
     if (empty($Err)) {
         if (!$Deny) {
             $DB->query("
-        SELECT $Type
+        SELECT {$Type}
         FROM users_history_" . strtolower($Type) . "s
-        WHERE UserID = '$UserID'");
+        WHERE UserID = '{$UserID}'");
             $ToDelete = [];
             while ([$EncValue] = $DB->next_record()) {
                 if (Crypto::decrypt($Value) == Crypto::decrypt($EncValue)) {
@@ -53,14 +53,14 @@ if (isset($_GET['deny']) && isset($_GET['type']) && isset($_GET['value'])) {
             foreach ($ToDelete as $DelValue) {
                 $DB->query("
           DELETE FROM users_history_" . strtolower($Type) . "s
-          WHERE UserID = $UserID
-            AND $Type = '$DelValue'");
+          WHERE UserID = {$UserID}
+            AND {$Type} = '{$DelValue}'");
             }
-            $Succ = "$Type deleted.";
-            Misc::send_pm($UserID, 0, "$Type Deletion Request Accepted.", "Your deletion request has been accepted. What $Type? I don't know! We don't have it anymore!");
+            $Succ = sprintf('%s deleted.', $Type);
+            Misc::send_pm($UserID, 0, sprintf('%s Deletion Request Accepted.', $Type), sprintf('Your deletion request has been accepted. What %s? I don\'t know! We don\'t have it anymore!', $Type));
         } else {
             $Succ = "Request denied.";
-            Misc::send_pm($UserID, 0, "$Type Deletion Request Denied.", "Your deletion request has been denied.\n\nIf you wish to discuss this matter further, please create a staff PM, or join " . BOT_HELP_CHAN . " on IRC to speak with a staff member.");
+            Misc::send_pm($UserID, 0, sprintf('%s Deletion Request Denied.', $Type), "Your deletion request has been denied.\n\nIf you wish to discuss this matter further, please create a staff PM, or join " . BOT_HELP_CHAN . " on IRC to speak with a staff member.");
         }
     }
 

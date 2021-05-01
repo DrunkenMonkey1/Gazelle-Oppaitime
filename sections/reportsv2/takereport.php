@@ -1,4 +1,6 @@
 <?php
+
+declare(strict_types=1);
 /*
  * This page handles the backend from when a user submits a report.
  * It checks for (in order):
@@ -40,10 +42,8 @@ if (!isset($_POST['type'])) {
 
 
 foreach ($ReportType['report_fields'] as $Field => $Value) {
-    if ('1' == $Value) {
-        if (empty($_POST[$Field])) {
-            $Err = "You are missing a required field ($Field) for a " . $ReportType['title'] . ' report.';
-        }
+    if ('1' == $Value && empty($_POST[$Field])) {
+        $Err = sprintf('You are missing a required field (%s) for a ', $Field) . $ReportType['title'] . ' report.';
     }
 }
 
@@ -83,7 +83,7 @@ if (!empty($_POST['image'])) {
 }
 
 if (!empty($_POST['track'])) {
-    if (preg_match('/([0-9]+( [0-9]+)*)|All/is', $_POST['track'], $Matches)) {
+    if (preg_match('#(\d+( \d+)*)|All#is', $_POST['track'], $Matches)) {
         $Tracks = $Matches[0];
     } else {
         $Err = 'Tracks should be given in a space-separated list of numbers with no other characters.';
@@ -101,7 +101,7 @@ if (!empty($_POST['extra'])) {
 $DB->query("
   SELECT GroupID
   FROM torrents
-  WHERE ID = $TorrentID");
+  WHERE ID = {$TorrentID}");
 if (!$DB->has_results()) {
     $Err = "A torrent with that ID doesn't exist!";
 }
@@ -116,11 +116,11 @@ if (!empty($Err)) {
 $DB->query("
   SELECT ID
   FROM reportsv2
-  WHERE TorrentID = $TorrentID
+  WHERE TorrentID = {$TorrentID}
     AND ReporterID = " . db_string($LoggedUser['ID']) . "
     AND ReportedTime > '" . time_minus(3) . "'");
 if ($DB->has_results()) {
-    header("Location: torrents.php?torrentid=$TorrentID");
+    header(sprintf('Location: torrents.php?torrentid=%s', $TorrentID));
     die();
 }
 
@@ -128,25 +128,25 @@ $DB->query("
   INSERT INTO reportsv2
     (ReporterID, TorrentID, Type, UserComment, Status, ReportedTime, Track, Image, ExtraID, Link)
   VALUES
-    (" . db_string($LoggedUser['ID']) . ", $TorrentID, '" . db_string($Type) . "', '$Extra', 'New', NOW(), '" . db_string($Tracks) . "', '" . db_string($Images) . "', '" . db_string($ExtraIDs) . "', '" . db_string($Links) . "')");
+    (" . db_string($LoggedUser['ID']) . sprintf(', %s, \'', $TorrentID) . db_string($Type) . sprintf('\', \'%s\', \'New\', NOW(), \'', $Extra) . db_string($Tracks) . "', '" . db_string($Images) . "', '" . db_string($ExtraIDs) . "', '" . db_string($Links) . "')");
 
 $ReportID = $DB->inserted_id();
 
 $DB->query("
   SELECT UserID
   FROM torrents
-  WHERE ID = $TorrentID");
+  WHERE ID = {$TorrentID}");
 [$UploaderID] = $DB->next_record();
 $DB->query("
-  SELECT Name, NameRJ, NameJP
+  SELECT Name
   FROM torrents_group
-  WHERE ID = $GroupID");
-[$GroupNameEng, $GroupNameRJ, $GroupNameJP] = $DB->next_record();
-$GroupName = $GroupNameEng ? $GroupNameEng : ($GroupNameRJ ? $GroupNameRJ : $GroupNameJP);
+  WHERE ID = {$GroupID}");
+[$GroupNameEng] = $DB->next_record();
+$GroupName = $GroupNameEng;
 
-Misc::send_pm($UploaderID, 0, "Torrent Reported: $GroupName", "Your torrent, \"[url=" . site_url() . "torrents.php?torrentid=$TorrentID]" . $GroupName . "[/url]\", was reported for the reason \"" . $ReportType['title'] . "\".\n\nThe reporter also said: \"$Extra\"\n\nIf you think this report was in error, please contact staff. Failure to challenge some types of reports in a timely manner will be regarded as a lack of defense and may result in the torrent being deleted.");
+Misc::send_pm($UploaderID, 0, sprintf('Torrent Reported: %s', $GroupName), 'Your torrent, "[url=' . site_url() . sprintf('torrents.php?torrentid=%s]', $TorrentID) . $GroupName . '[/url]", was reported for the reason "' . $ReportType['title'] . "\".\n\nThe reporter also said: \"{$Extra}\"\n\nIf you think this report was in error, please contact staff. Failure to challenge some types of reports in a timely manner will be regarded as a lack of defense and may result in the torrent being deleted.");
 
-$Cache->delete_value("reports_torrent_$TorrentID");
+$Cache->delete_value(sprintf('reports_torrent_%s', $TorrentID));
 
 $Cache->increment('num_torrent_reportsv2');
-header("Location: torrents.php?torrentid=$TorrentID");
+header(sprintf('Location: torrents.php?torrentid=%s', $TorrentID));

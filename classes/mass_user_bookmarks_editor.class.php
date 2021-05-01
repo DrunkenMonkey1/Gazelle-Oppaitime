@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 //require_once 'mass_user_torrents_editor.class.php';
 
 /**
@@ -14,7 +16,7 @@ class MASS_USER_BOOKMARKS_EDITOR extends MASS_USER_TORRENTS_EDITOR
     {
         $this->set_table($Table);
     }
-
+    
     /**
      * Runs a SQL query and clears the Cache key
      *
@@ -22,29 +24,30 @@ class MASS_USER_BOOKMARKS_EDITOR extends MASS_USER_TORRENTS_EDITOR
      *
      * @param string $sql
      */
-    protected function query_and_clear_cache($sql)
+    protected function query_and_clear_cache($sql): void
     {
         $QueryID = G::$DB->get_query_id();
-        if (is_string($sql) && G::$DB->query($sql)) {
+        $DBQuery = G::$DB->query($sql);
+        if (is_string($sql) && $DBQuery) {
             G::$Cache->delete_value('bookmarks_group_ids_' . G::$LoggedUser['ID']);
         }
         G::$DB->set_query_id($QueryID);
     }
-
+    
     /**
      * Uses (checkboxes) $_POST['remove'] to delete entries.
      *
      * Uses an IN() to match multiple items in one query.
      */
-    public function mass_remove()
+    public function mass_remove(): void
     {
         $SQL = [];
-        foreach ($_POST['remove'] as $GroupID => $K) {
+        foreach (array_keys($_POST['remove']) as $GroupID) {
             if (is_number($GroupID)) {
                 $SQL[] = sprintf('%d', $GroupID);
             }
         }
-
+        
         if (!empty($SQL)) {
             $SQL = sprintf(
                 '
@@ -58,11 +61,11 @@ class MASS_USER_BOOKMARKS_EDITOR extends MASS_USER_TORRENTS_EDITOR
             $this->query_and_clear_cache($SQL);
         }
     }
-
+    
     /**
      * Uses $_POST['sort'] values to update the DB.
      */
-    public function mass_update()
+    public function mass_update(): void
     {
         $SQL = [];
         foreach ($_POST['sort'] as $GroupID => $Sort) {
@@ -70,7 +73,7 @@ class MASS_USER_BOOKMARKS_EDITOR extends MASS_USER_TORRENTS_EDITOR
                 $SQL[] = sprintf('(%d, %d, %d)', $GroupID, $Sort, G::$LoggedUser['ID']);
             }
         }
-
+        
         if (!empty($SQL)) {
             $SQL = sprintf(
                 '
